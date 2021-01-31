@@ -34,12 +34,14 @@ def word_cluster():
             db.drop_all()
         db.create_all()
         keyword = request.form['keyword']
-        max_tweets = 10
+        max_tweets = int(request.form['tweet_num'])
 
         timedelta = dt.timedelta(days=100)
         dt_until = dt.datetime.now()
         dt_since = dt_until - timedelta
         top_word2vec = preprocess_all(keyword, max_tweets, dt_since.strftime('%Y-%m-%d'), dt_until.strftime('%Y-%m-%d'))
+        if top_word2vec == False:
+            return redirect(url_for('view.tweet'))
         clustering(top_word2vec, word_num=100)
 
     return render_template('word_clustering.html', figures=os.listdir(figure_dir))

@@ -20,6 +20,8 @@ from crover.models.tweet import Tweet
 def preprocess_all(keyword, max_tweets, since, until):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
     dict_word_count = scrape(keyword, max_tweets, since, until)
+    if dict_word_count == {}:
+        return False
     #all_word_count = AllWordCount.query().all()
     with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)
@@ -67,10 +69,10 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
 
         tweet_text = tweet.content
         # clean tweet
-        tweet_text = clean(tweet_text, regexes, sign_regex)
+        #tweet_text = clean(tweet_text, regexes, sign_regex)
 
         # update noun count dictionary
-        dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
+        #dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
 
         if (i+1) == max_tweets:
             db.session().add_all(tweets)
