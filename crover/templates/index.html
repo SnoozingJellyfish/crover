@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block body %}
+<form action ="{{ url_for('view.word_cluster') }}" method=post>
+    <div class="form-group">
+        <label for="InputTitle">キーワード</label>
+        <input type="text" class="form-control" id="InputTitle" name=keyword>
+    </div>
+
+    <button type="submit" class="btn btn-primary">検索</button>
+</form>
+{% endblock %}

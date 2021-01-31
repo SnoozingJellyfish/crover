@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="container">
+    <div class="row">
+        {% for figure in figures %}
+        <div class="col">
+            <img src="figure/{{figure}}" class="img-fluid" alt="{{figure}}" width="500" height="400">
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block body %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>日時</th>
+            <th>ツイート</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tweet in tweets %}
+        <tr>
+            <td>{{ tweet.tweeted_at }}</td>
+            <td>{{ tweet.text }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

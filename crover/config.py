@@ -1,0 +1,6 @@
+SQLALCHEMY_DATABASE_URI = 'sqlite:///crover.db'
+SQLALCHEMY_TRACK_MODIFICATIONS = True
+DEBUG = True
+SECRET_KEY = 'secret key'
+USERNAME = 'john'
+PASSWORD = 'due123'
