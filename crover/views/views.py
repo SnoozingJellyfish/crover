@@ -36,10 +36,10 @@ def word_cluster():
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
 
-        timedelta = dt.timedelta(days=100)
-        dt_until = dt.datetime.now()
-        dt_since = dt_until - timedelta
-        top_word2vec = preprocess_all(keyword, max_tweets, dt_since.strftime('%Y-%m-%d'), dt_until.strftime('%Y-%m-%d'))
+        #timedelta = dt.timedelta(days=100)
+        #dt_until = dt.datetime.now()
+        #dt_since = dt_until - timedelta
+        top_word2vec = preprocess_all(keyword, max_tweets)
         if top_word2vec == False:
             return redirect(url_for('view.tweet'))
         clustering(top_word2vec, word_num=100)

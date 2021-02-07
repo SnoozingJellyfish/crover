@@ -3,7 +3,10 @@ import re
 import datetime as dt
 import pickle
 import csv
+import requests
+import json
 
+from flask import current_app as app
 import snscrape.modules.twitter as sntwitter
 #from tqdm import tqdm
 #import MeCab
@@ -17,9 +20,10 @@ from crover import db
 from crover.models.tweet import Tweet
 #from crover.models.tweet import AllWordCount
 
-def preprocess_all(keyword, max_tweets, since, until):
+def preprocess_all(keyword, max_tweets):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
-    dict_word_count = scrape(keyword, max_tweets, since, until)
+    #dict_word_count = scrape(keyword, max_tweets, since, until)
+    dict_word_count = scrape_token(keyword, max_tweets)
     if dict_word_count == {}:
         return False
     #all_word_count = AllWordCount.query().all()
@@ -28,6 +32,103 @@ def preprocess_all(keyword, max_tweets, since, until):
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
     return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
 
+
+# To set your enviornment variables in your terminal run the following line:
+# export 'BEARER_TOKEN'='<your_bearer_token>'
+def auth():
+    #return os.environ.get("BEARER_TOKEN")
+    return app.config['TWITTER_BEARER_TOKEN']
+
+def create_url(keyword, next_token_id=None, max_results=10):
+    #query = "from:twitterdev -is:retweet"
+    query = keyword + " -is:retweet lang:ja"
+    # Tweet fields are adjustable.
+    # Options include:
+    # attachments, author_id, context_annotations,
+    # conversation_id, created_at, entities, geo, id,
+    # in_reply_to_user_id, lang, non_public_metrics, organic_metrics,
+    # possibly_sensitive, promoted_metrics, public_metrics, referenced_tweets,
+    # source, text, and withheld
+    tweet_fields = "tweet.fields=author_id,created_at"
+    mrf = "max_results={}".format(max_results)
+    if next_token_id:
+        next_token = 'next_token=' + next_token_id
+        url = "https://api.twitter.com/2/tweets/search/recent?query={}&{}&{}&{}".format(
+            query, tweet_fields, mrf, next_token
+        )
+    else:
+        url = "https://api.twitter.com/2/tweets/search/recent?query={}&{}&{}".format(
+            query, tweet_fields, mrf
+        )
+    return url
+
+
+def create_headers(bearer_token):
+    headers = {"Authorization": "Bearer {}".format(bearer_token)}
+    return headers
+
+
+def connect_to_endpoint(url, headers):
+    response = requests.request("GET", url, headers=headers)
+    print(response.status_code)
+    if response.status_code != 200:
+        raise Exception(response.status_code, response.text)
+    return response.json()
+
+
+def requestAPI():
+    bearer_token = auth()
+    url = create_url()
+    headers = create_headers(bearer_token)
+    json_response = connect_to_endpoint(url, headers)
+    print(json.dumps(json_response, indent=4, sort_keys=True))
+
+def scrape_token(keyword, max_tweets):
+    print('-------------- scrape start -----------------\n')
+    bearer_token = auth()
+    headers = create_headers(bearer_token)
+
+    # regex to clean tweets
+    regexes = [
+        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(" .*\.jp/.*$"),
+        re.compile('@\S* '),
+        re.compile('pic.twitter.*$'),
+        re.compile(' .*ニュース$'),
+        re.compile('[ 　]'),
+        re.compile('\n')
+    ]
+    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+
+    tweets = []
+    dict_word_count = {}
+    next_token_id = None
+    max_results = 100
+
+    for i in range(max_tweets // max_results + 1):
+        url = create_url(keyword, next_token_id, max_results)
+        result = connect_to_endpoint(url, headers)
+        next_token_id = result['meta']['next_token']
+
+        for j in range(max_results):
+            created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
+            created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+
+            tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text']))
+
+            tweet_text = result['data'][j]['text']
+            # clean tweet
+            #tweet_text = clean(tweet_text, regexes, sign_regex)
+
+            # update noun count dictionary
+            #dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
+
+    db.session().add_all(tweets)
+    db.session().commit()
+
+    print('-------------- scrape finish -----------------\n')
+
+    return dict_word_count
 
 def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
     print('-------------- scrape start -----------------\n')

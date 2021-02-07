@@ -144,3 +144,6 @@ crover/figure/
 # pycharm
 .idea/
 .idea*/
+
+# config
+crover/config.py
