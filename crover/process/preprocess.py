@@ -5,6 +5,8 @@ import pickle
 import csv
 import requests
 import json
+import subprocess
+import site
 
 from flask import current_app as app
 import snscrape.modules.twitter as sntwitter
@@ -22,6 +24,9 @@ from crover.models.tweet import Tweet, WordCount
 
 def preprocess_all(keyword, max_tweets):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
+    print(site.getsitepackages())
+    subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
+
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
     return dict_word_count
@@ -83,7 +88,7 @@ def requestAPI():
     json_response = connect_to_endpoint(url, headers)
     print(json.dumps(json_response, indent=4, sort_keys=True))
 
-def scrape_token(keyword, max_tweets):
+def scrape_token(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
     bearer_token = auth()
     headers = create_headers(bearer_token)
@@ -99,6 +104,12 @@ def scrape_token(keyword, max_tweets):
         re.compile('\n')
     ]
     sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+
+    if algo == 'mecab':
+        tokenizer_obj = MeCab.Tagger("-Ochasen")
+    elif algo == 'sudachi':
+        tokenizer_obj = suda_dict.Dictionary().create()
+        mode = tokenizer.Tokenizer.SplitMode.C
 
     tweets = []
     dict_word_count = {}
@@ -124,7 +135,7 @@ def scrape_token(keyword, max_tweets):
             #tweet_text = clean(tweet_text, regexes, sign_regex)
 
             # update noun count dictionary
-            dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
+            dict_word_count = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
     db.session().add_all(tweets)
 
@@ -138,7 +149,7 @@ def scrape_token(keyword, max_tweets):
 
     return dict_word_count
 
-def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
+def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
 
     dt_until = dt.datetime.strptime(until, '%Y-%m-%d')
@@ -155,6 +166,12 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
         re.compile('\n')
     ]
     sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+
+    if algo == 'mecab':
+        m = MeCab.Tagger("-Ochasen")
+    elif algo == 'sudachi':
+        tokenizer_obj = suda_dict.Dictionary().create()
+        mode = tokenizer.Tokenizer.SplitMode.C
 
     i = 0
     already_tweets = []
@@ -234,16 +251,10 @@ def clean(text, regexes, sign_regex):
 
 
 # 辞書型を使って名詞をカウントする
-def noun_count(text, dict_word_count, keyword=None, algo='sudachi'):
-    if algo == 'mecab':
-        m = MeCab.Tagger("-Ochasen")
-    elif algo == 'sudachi':
-        tokenizer_obj = suda_dict.Dictionary().create()
-        mode = tokenizer.Tokenizer.SplitMode.C
-
+def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, algo='sudachi'):
     try:
         if algo == 'mecab':
-            words = m.parse(text).split("\n")
+            words = tokenizer_obj.parse(text).split("\n")
         elif algo == 'sudachi':
             words = tokenizer_obj.tokenize(text, mode)
 
