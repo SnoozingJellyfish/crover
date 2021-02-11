@@ -7,6 +7,7 @@ import requests
 import json
 import subprocess
 import site
+import sys
 
 from flask import current_app as app
 import snscrape.modules.twitter as sntwitter
@@ -16,6 +17,7 @@ import snscrape.modules.twitter as sntwitter
 import numpy as np
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
+from sudachipy.config import set_default_dict_package
 import gensim
 
 from crover import db
@@ -24,8 +26,11 @@ from crover.models.tweet import Tweet, WordCount
 
 def preprocess_all(keyword, max_tweets):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
-    print(site.getsitepackages())
-    subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
+    #print(site.getsitepackages())
+    #subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
+    output = sys.stdout
+    dict_package = 'sudachidict_full'
+    dst_path = set_default_dict_package(dict_package, output)
 
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
