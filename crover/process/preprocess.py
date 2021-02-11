@@ -17,21 +17,21 @@ from sudachipy import dictionary as suda_dict
 import gensim
 
 from crover import db
-from crover.models.tweet import Tweet
+from crover.models.tweet import Tweet, WordCount
 #from crover.models.tweet import AllWordCount
 
 def preprocess_all(keyword, max_tweets):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
-    if dict_word_count == {}:
-        return False
+    return dict_word_count
     #all_word_count = AllWordCount.query().all()
+    '''
     with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
     return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
-
+    '''
 
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
@@ -102,10 +102,13 @@ def scrape_token(keyword, max_tweets):
 
     tweets = []
     dict_word_count = {}
+    word_count_list = []
     next_token_id = None
     max_results = 100
 
     for i in range(max_tweets // max_results + 1):
+        if i == max_tweets // max_results:
+            max_results = max_tweets % max_results
         url = create_url(keyword, next_token_id, max_results)
         result = connect_to_endpoint(url, headers)
         next_token_id = result['meta']['next_token']
@@ -121,9 +124,14 @@ def scrape_token(keyword, max_tweets):
             #tweet_text = clean(tweet_text, regexes, sign_regex)
 
             # update noun count dictionary
-            #dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
+            dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
 
     db.session().add_all(tweets)
+
+    for k in dict_word_count.keys():
+        word_count_list.append(WordCount(word=k, count=dict_word_count[k]))
+    db.session().add_all(word_count_list)
+
     db.session().commit()
 
     print('-------------- scrape finish -----------------\n')
@@ -152,6 +160,7 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
     already_tweets = []
     tweets = []
     dict_word_count = {}
+    word_count_list = []
 
     for _, tweet in enumerate(sntwitter.TwitterSearchScraper(keyword + 'since:' + since + ' until:' + until).get_items()):
         dt_naive = tweet.date.replace(tzinfo=None)
@@ -173,7 +182,7 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
         #tweet_text = clean(tweet_text, regexes, sign_regex)
 
         # update noun count dictionary
-        #dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
+        dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
 
         if (i+1) == max_tweets:
             db.session().add_all(tweets)
@@ -181,6 +190,9 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000):
             break
 
         i += 1
+
+    for k in dict_word_count.keys():
+        word_count_list.append(WordCount(word=k, count=dict_word_count[k]))
 
     print('-------------- scrape finish -----------------\n')
 

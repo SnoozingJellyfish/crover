@@ -14,8 +14,8 @@ class Tweet(db.Model):
     def __repr__(self):
         return '<id:{} tweeted_at:{} text:{}>'.format(self.id, self.tweeted_at, self.text)
 
-'''
-class AllWordCount(db.Model):
+
+class WordCount(db.Model):
     __tablename__ = 'all_word_count'
     id = db.Column(db.Integer, primary_key = True)
     word = db.Column(db.String(50), unique = True)
@@ -26,5 +26,5 @@ class AllWordCount(db.Model):
         self.count = count
 
     def __repr__(self):
-        return '<id:{} word:{} counr_rate:{}>'.format(self.id, self.word, self.count)
-'''
+        return '<id:{} word:{} count:{}>'.format(self.id, self.word, self.count)
+

@@ -12,7 +12,7 @@ from crover.process.preprocess import preprocess_all
 from crover.process.clustering import clustering
 #from crover.process.emotion_analyze import emotion_analyze
 #from crover.process.util import *
-from crover.models.tweet import Tweet
+from crover.models.tweet import Tweet, WordCount
 
 view = Blueprint('view', __name__)
 
@@ -39,10 +39,11 @@ def word_cluster():
         #timedelta = dt.timedelta(days=100)
         #dt_until = dt.datetime.now()
         #dt_since = dt_until - timedelta
-        top_word2vec = preprocess_all(keyword, max_tweets)
-        if top_word2vec == False:
-            return redirect(url_for('view.tweet'))
-        clustering(top_word2vec, word_num=100)
+        dict_word_count = preprocess_all(keyword, max_tweets)
+        #top_word2vec = preprocess_all(keyword, max_tweets)
+        return redirect(url_for('view.word_count'))
+        #return redirect(url_for('view.tweet'))
+        #clustering(top_word2vec, word_num=100)
 
     return render_template('word_clustering.html', figures=os.listdir(figure_dir))
 
@@ -51,4 +52,9 @@ def word_cluster():
 def tweet():
     tweets = Tweet.query.order_by(Tweet.id.desc()).all()
     return render_template('tweets.html', tweets=tweets)
+
+@view.route('/word_count', methods=['GET'])
+def word_count():
+    word_counts = WordCount.query.order_by(WordCount.count.desc()).all()
+    return render_template('word_counts.html', word_counts=word_counts)
 

@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block body %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>ワード</th>
+            <th>カウント</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for word_count in word_counts %}
+        <tr>
+            <td>{{ word_count.word }}</td>
+            <td>{{ word_count.count }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
