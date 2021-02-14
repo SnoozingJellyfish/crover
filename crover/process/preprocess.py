@@ -8,6 +8,7 @@ import json
 import subprocess
 import site
 import sys
+from io import BytesIO
 
 from flask import current_app as app
 import snscrape.modules.twitter as sntwitter
@@ -41,17 +42,17 @@ def preprocess_all(keyword, max_tweets):
         region_name=app.config['AWS_REGION']
     )
     bucket = s3_client.Bucket(app.config['AWS_BUCKET_NAME'])
-    bucket.download_file(app.config['ALL_WORD_COUNT'], os.path.join('crover', 'data', app.config['ALL_WORD_COUNT']))
-    bucket.download_file(app.config['WORD2VEC'], os.path.join('crover', 'data', app.config['WORD2VEC']))
+    obj = bucket.Object(app.config['ALL_WORD_COUNT'])
+    dict_all_count = pickle.load(BytesIO(obj.get()['Body'].read()))
+    obj = bucket.Object(app.config['WORD2VEC'])
+    word2vec_model = pickle.load(BytesIO(obj.get()['Body'].read()))
 
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
 
-    #all_word_count = AllWordCount.query().all()
+    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
 
-    dict_word_count_rate = word_count_rate(dict_word_count)
-
-    return make_top_word2vec_dic(dict_word_count_rate)
+    return make_top_word2vec_dic(dict_word_count_rate, word2vec_model)
     #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
 
@@ -305,10 +306,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, ignore_word_count=0):
-    with open(os.path.join('crover', 'data', app.config['ALL_WORD_COUNT']), 'rb') as f:
-        dict_all_count = pickle.load(f)
-
+def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
     for word in dict_word_count.keys():
@@ -332,20 +330,12 @@ def word_count_rate(dict_word_count, ignore_word_count=0):
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, word2vec_model=None, top_word_num=1000, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate, model, top_word_num=1000, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
     word_keys = list(dict_word_count_rate.keys())
     top_words = list(dict_word_count_rate.keys())[:min(top_word_num, len(word_keys))]
-
-    print('word2vec loading...\n')
-    # 学習済み分散表現の読み込み
-    if algo == 'mecab':
-        with open(os.path.join('crover', 'data', app.config['WORD2VEC']), mode='rb') as f:
-            model = pickle.load(f)
-    elif algo == 'sudachi':
-        model = gensim.models.KeyedVectors.load(word2vec_model)
 
     for word in top_words:
         if algo == 'mecab':
