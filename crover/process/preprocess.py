@@ -19,6 +19,7 @@ from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 from sudachipy.config import set_default_dict_package
 import gensim
+import boto3
 
 from crover import db
 from crover.models.tweet import Tweet, WordCount
@@ -30,18 +31,30 @@ def preprocess_all(keyword, max_tweets):
     #subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
     output = sys.stdout
     dict_package = 'sudachidict_full'
+    ### heroku ###
     dst_path = set_default_dict_package(dict_package, output)
+
+    s3_client = boto3.resource(
+        's3',
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+        region_name=app.config['AWS_REGION']
+    )
+    bucket = s3_client.Bucket(app.config['AWS_BUCKET_NAME'])
+    bucket.download_file(app.config['ALL_WORD_COUNT'], os.path.join('crover', 'data', app.config['ALL_WORD_COUNT']))
+    bucket.download_file(app.config['WORD2VEC'], os.path.join('crover', 'data', app.config['WORD2VEC']))
 
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
-    return dict_word_count
+
     #all_word_count = AllWordCount.query().all()
-    '''
-    with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
-        dict_all_count = pickle.load(f)
-    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
-    return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
-    '''
+
+    dict_word_count_rate = word_count_rate(dict_word_count)
+
+    return make_top_word2vec_dic(dict_word_count_rate)
+    #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
+    #return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
+
 
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
@@ -292,7 +305,10 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
+def word_count_rate(dict_word_count, ignore_word_count=0):
+    with open(os.path.join('crover', 'data', app.config['ALL_WORD_COUNT']), 'rb') as f:
+        dict_all_count = pickle.load(f)
+
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
     for word in dict_word_count.keys():
@@ -316,7 +332,7 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, word2vec_model, top_word_num=1000, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate, word2vec_model=None, top_word_num=1000, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
@@ -326,7 +342,7 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec_model, top_word_num=100
     print('word2vec loading...\n')
     # 学習済み分散表現の読み込み
     if algo == 'mecab':
-        with open(word2vec_model, mode='rb') as f:
+        with open(os.path.join('crover', 'data', app.config['WORD2VEC']), mode='rb') as f:
             model = pickle.load(f)
     elif algo == 'sudachi':
         model = gensim.models.KeyedVectors.load(word2vec_model)

@@ -146,4 +146,4 @@ crover/figure/
 .idea*/
 
 # config
-crover/config.py
+# crover/config.py

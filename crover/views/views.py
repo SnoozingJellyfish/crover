@@ -39,11 +39,11 @@ def word_cluster():
         #timedelta = dt.timedelta(days=100)
         #dt_until = dt.datetime.now()
         #dt_since = dt_until - timedelta
-        dict_word_count = preprocess_all(keyword, max_tweets)
-        #top_word2vec = preprocess_all(keyword, max_tweets)
-        return redirect(url_for('view.word_count'))
+        top_word2vec = preprocess_all(keyword, max_tweets)
+        print(top_word2vec)
+        #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
-        #clustering(top_word2vec, word_num=100)
+        clustering(top_word2vec, word_num=100)
 
     return render_template('word_clustering.html', figures=os.listdir(figure_dir))
 
