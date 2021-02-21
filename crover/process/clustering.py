@@ -85,7 +85,7 @@ def make_word_cloud(cluster_to_words):
     svgstrs = []
 
     for i in range(len(cluster_to_words)):
-        wordcloud = WordCloud(font_path="./data/font/NotoSansCJKjp-Regular.otf", background_color="white",
+        wordcloud = WordCloud(font_path="./crover/data/font/NotoSansCJKjp-Regular.otf", background_color="white",
                               width=100, height=100, colormap=colormaps[i])
         wordcloud.fit_words(cluster_to_words[i])
         plt.figure(figsize=(15, 12))
