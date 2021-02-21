@@ -9,6 +9,7 @@ import subprocess
 import site
 import sys
 from io import BytesIO
+import time
 
 from flask import current_app as app
 import snscrape.modules.twitter as sntwitter
@@ -33,7 +34,7 @@ def preprocess_all(keyword, max_tweets):
     output = sys.stdout
     dict_package = 'sudachidict_full'
     ### heroku ###
-    dst_path = set_default_dict_package(dict_package, output)
+    #dst_path = set_default_dict_package(dict_package, output)
 
     s3_client = boto3.resource(
         's3',
@@ -42,17 +43,28 @@ def preprocess_all(keyword, max_tweets):
         region_name=app.config['AWS_REGION']
     )
     bucket = s3_client.Bucket(app.config['AWS_BUCKET_NAME'])
+
+    for i in [1, 10, 100, 1000]:
+        start = time.time()
+        obj = bucket.Object('temp/word2vec_' + str(i) + '.pickle')
+        dict_all_count = pickle.load(BytesIO(obj.get()['Body'].read()))
+        print(str(i), ' data load time: ', time.time() - start)
+    return None
+    '''
     obj = bucket.Object(app.config['ALL_WORD_COUNT'])
     dict_all_count = pickle.load(BytesIO(obj.get()['Body'].read()))
     obj = bucket.Object(app.config['WORD2VEC'])
     word2vec_model = pickle.load(BytesIO(obj.get()['Body'].read()))
-
+    '''
+    '''
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
 
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
+    
 
     return make_top_word2vec_dic(dict_word_count_rate, word2vec_model)
+    '''
     #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
 
