@@ -1,7 +1,7 @@
 import os
 import csv
 import pickle
-import StringIO
+from io import StringIO
 
 import matplotlib.pyplot as plt
 #from matplotlib.font_manager import FontProperties
