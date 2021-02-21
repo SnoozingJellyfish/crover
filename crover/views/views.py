@@ -40,7 +40,7 @@ def word_cluster():
         #dt_until = dt.datetime.now()
         #dt_since = dt_until - timedelta
         top_word2vec = preprocess_all(keyword, max_tweets)
-        print(top_word2vec)
+        print(top_word2vec['word'])
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
         clustering(top_word2vec, word_num=100)
