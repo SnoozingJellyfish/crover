@@ -98,7 +98,7 @@ def make_word_cloud(cluster_to_words):
         plt.close()
         strio.seek(0)
         svgstr = strio.getvalue()
-        svgstrs.append(svgstr[svgstr.find("<svg"):].decode("utf-8"))
+        svgstrs.append(svgstr[svgstr.find("<svg"):])
         #plt.savefig('crover/figure/cluster' + str(i+1) + '.jpg')
         #plt.show()
 
