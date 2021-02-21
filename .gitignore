@@ -133,7 +133,8 @@ dmypy.json
 .pyre/
 
 # data
-crover/data/
+*.pickle
+*.kv
 
 # figure
 crover/figure/
