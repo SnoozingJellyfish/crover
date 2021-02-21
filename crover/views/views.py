@@ -43,9 +43,9 @@ def word_cluster():
         print(top_word2vec['word'])
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
-        clustering(top_word2vec, word_num=100)
+        svgstrs = clustering(top_word2vec, word_num=100)
 
-    return render_template('word_clustering.html', figures=os.listdir(figure_dir))
+    return render_template('word_clustering.html', svgstrs=svgstrs)
 
 
 @view.route('/tweet', methods=['GET'])

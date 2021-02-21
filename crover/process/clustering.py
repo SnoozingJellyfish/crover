@@ -1,8 +1,10 @@
 import os
 import csv
 import pickle
+import StringIO
 
 import matplotlib.pyplot as plt
+#from matplotlib.font_manager import FontProperties
 from wordcloud import WordCloud
 import numpy as np
 #from sklearn.cluster import KMeans
@@ -38,14 +40,13 @@ def clustering(top_word2vec, word_num=100, cluster_all=3, algo='ward'):
         for i in range(len(cluster_to_words)):
             cluster_to_words[i] = dict(sorted(cluster_to_words[i].items(), key=lambda x: x[1], reverse=True))
 
-        # word cloudを作る
-        make_word_cloud(cluster_to_words)
-
         #dendrogram(link, labels=labels)
         #plt.title('デンドログラム')
         #plt.savefig('dendrogram.jpg')
 
     print('------------------- clustering finish ---------------------')
+    # word cloudを作る
+    return make_word_cloud(cluster_to_words)
 
 
 # クラスターをさらにクラスタリングする（k-means法用）
@@ -81,14 +82,23 @@ def zoomClustering(file_name, cluster_csv, cluster_num, zoom_cluster_all):
 
 def make_word_cloud(cluster_to_words):
     colormaps = ['spring', 'summer', 'autumn', 'winter', 'PuRd', 'Wistia', 'cool', 'hot', 'YlGnBu', 'YlOrBr']
+    svgstrs = []
 
     for i in range(len(cluster_to_words)):
-        wordcloud = WordCloud(font_path="C:/font/Noto-hinted/NotoSansCJKjp-Regular.otf", background_color="white",
-                              width=500, height=500, colormap=colormaps[i])
+        wordcloud = WordCloud(font_path="./data/font/NotoSansCJKjp-Regular.otf", background_color="white",
+                              width=100, height=100, colormap=colormaps[i])
         wordcloud.fit_words(cluster_to_words[i])
         plt.figure(figsize=(15, 12))
         plt.imshow(wordcloud)
         plt.axis("off")
         plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
-        plt.savefig('crover/figure/cluster' + str(i+1) + '.jpg')
+
+        strio = StringIO.StringIO()
+        plt.savefig(strio, format="svg")
+        plt.close()
+        strio.seek(0)
+        svgstrs.append(strio.buf[strio.buf.find("<svg"):].decode("utf-8"))
+        #plt.savefig('crover/figure/cluster' + str(i+1) + '.jpg')
         #plt.show()
+
+    return svgstrs

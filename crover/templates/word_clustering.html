@@ -2,9 +2,11 @@
 {% block body %}
 <div class="container">
     <div class="row">
-        {% for figure in figures %}
+        <!-- {% for figure in figures %} -->
+        {% for svgstr in svgstrs %}
         <div class="col">
-            <img src="figure/{{figure}}" class="img-fluid" alt="{{figure}}" width="500" height="400">
+            <!-- <img src="figure/{{figure}}" class="img-fluid" alt="{{figure}}" width="500" height="400"> -->
+            {% autoescape false %}{{svgstr}}{% endautoescape %}
         </div>
         {% endfor %}
     </div>
