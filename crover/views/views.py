@@ -43,7 +43,7 @@ def word_cluster():
         print(top_word2vec)
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
-        #clustering(top_word2vec, word_num=100)
+        clustering(top_word2vec, word_num=100)
 
     return render_template('word_clustering.html', figures=os.listdir(figure_dir))
 

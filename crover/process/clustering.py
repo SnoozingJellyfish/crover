@@ -28,7 +28,6 @@ def clustering(top_word2vec, word_num=100, cluster_all=3, algo='ward'):
 
     elif algo == 'ward':
         link = linkage(vec, algo)
-
         labels = fcluster(link, 2, criterion='maxclust')
         # 1始まりを0始まりに変更
         labels = np.array(labels) - 1

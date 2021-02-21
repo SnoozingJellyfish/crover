@@ -34,7 +34,7 @@ def preprocess_all(keyword, max_tweets):
     output = sys.stdout
     dict_package = 'sudachidict_full'
     ### heroku ###
-    #dst_path = set_default_dict_package(dict_package, output)
+    dst_path = set_default_dict_package(dict_package, output)
 
     s3_client = boto3.resource(
         's3',
@@ -43,7 +43,7 @@ def preprocess_all(keyword, max_tweets):
         region_name=app.config['AWS_REGION']
     )
     bucket = s3_client.Bucket(app.config['AWS_BUCKET_NAME'])
-
+    '''
     for i in [1, 10, 100, 1000]:
         start = time.time()
         obj = bucket.Object('temp/word2vec_' + str(i) + '.pickle')
@@ -51,20 +51,21 @@ def preprocess_all(keyword, max_tweets):
         print(str(i), ' data load time: ', time.time() - start)
     return None
     '''
+    start = time.time()
     obj = bucket.Object(app.config['ALL_WORD_COUNT'])
     dict_all_count = pickle.load(BytesIO(obj.get()['Body'].read()))
-    obj = bucket.Object(app.config['WORD2VEC'])
-    word2vec_model = pickle.load(BytesIO(obj.get()['Body'].read()))
-    '''
-    '''
+    all_word_count_load_point = time.time()
+    print('ALL WORD COUNT load time: ', all_word_count_load_point - start)
+
+    obj = bucket.Object(app.config['WORD_ID'])
+    word_id = pickle.load(BytesIO(obj.get()['Body'].read()))
+    print('WORD ID load time: ', time.time() - all_word_count_load_point)
+
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
-
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
-    
+    return make_top_word2vec_dic(dict_word_count_rate, bucket, word_id)
 
-    return make_top_word2vec_dic(dict_word_count_rate, word2vec_model)
-    '''
     #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
 
@@ -315,7 +316,6 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
     return dict_word_count
 
 
-
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
 def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
@@ -342,7 +342,7 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, model, top_word_num=1000, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate, bucket, word_id, top_word_num=10, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
@@ -351,10 +351,15 @@ def make_top_word2vec_dic(dict_word_count_rate, model, top_word_num=1000, algo='
 
     for word in top_words:
         if algo == 'mecab':
-            if word in model.wv.index2word:
+            if word in list(word_id.keys()):
                 if OKword(word):
                     dict_top_word2vec['word'].append(word)
-                    dict_top_word2vec['vec'].append(model.wv[word])
+                    id = word_id[word]
+                    #source_path = os.path.join('mecab_word2vec_100d_per100-100', str(id//10000), 'word2vec_' + str((id%10000)//100) + '.pickle')
+                    source_path = 'mecab_word2vec_100d_per100-100/' + str(id//10000) + '/word2vec_' + str((id%10000)//100) + '.pickle'
+                    obj = bucket.Object(source_path)
+                    vec_dict = pickle.load(BytesIO(obj.get()['Body'].read()))
+                    dict_top_word2vec['vec'].append(vec_dict[id])
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
                 dict_top_word2vec['not_dict_word'].append(word)
