@@ -356,7 +356,7 @@ def make_top_word2vec_dic(dict_word_count_rate, bucket, word_id, top_word_num=10
                     dict_top_word2vec['word'].append(word)
                     id = word_id[word]
                     #source_path = os.path.join('mecab_word2vec_100d_per100-100', str(id//10000), 'word2vec_' + str((id%10000)//100) + '.pickle')
-                    source_path = 'mecab_word2vec_100d_per100-100/' + str(id//10000) + '/word2vec_' + str((id%10000)//100) + '.pickle'
+                    source_path = 'mecab_word2vec_100d_per100-100/' + str(id//10000*10000) + '/word2vec_' + str((id%10000)//100*100) + '.pickle'
                     obj = bucket.Object(source_path)
                     vec_dict = pickle.load(BytesIO(obj.get()['Body'].read()))
                     dict_top_word2vec['vec'].append(vec_dict[id])
