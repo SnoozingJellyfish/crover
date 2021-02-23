@@ -158,6 +158,8 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     for i in range(max_tweets // max_results + 1):
         if i == max_tweets // max_results:
             max_results = max_tweets % max_results
+            if max_results < 10:
+                break
         url = create_url(keyword, next_token_id, max_results)
         result = connect_to_endpoint(url, headers)
         next_token_id = result['meta']['next_token']
@@ -177,10 +179,11 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
 
     db.session().add_all(tweets)
 
+    '''
     for k in dict_word_count.keys():
         word_count_list.append(WordCount(word=k, count=dict_word_count[k]))
     db.session().add_all(word_count_list)
-
+    '''
     db.session().commit()
 
     print('-------------- scrape finish -----------------\n')
