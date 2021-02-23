@@ -2,6 +2,8 @@ import os
 import csv
 import pickle
 from io import StringIO
+import io
+import base64
 
 import matplotlib.pyplot as plt
 #from matplotlib.font_manager import FontProperties
@@ -82,24 +84,32 @@ def zoomClustering(file_name, cluster_csv, cluster_num, zoom_cluster_all):
 
 def make_word_cloud(cluster_to_words):
     colormaps = ['spring', 'summer', 'autumn', 'winter', 'PuRd', 'Wistia', 'cool', 'hot', 'YlGnBu', 'YlOrBr']
-    svgstrs = []
+    b64_figures = []
 
     for i in range(len(cluster_to_words)):
         wordcloud = WordCloud(font_path="./crover/data/font/NotoSansCJKjp-Regular.otf", background_color="white",
-                              width=100, height=100, colormap=colormaps[i])
+                              width=500, height=500, colormap=colormaps[i])
         wordcloud.fit_words(cluster_to_words[i])
         plt.figure(figsize=(15, 12))
         plt.imshow(wordcloud)
         plt.axis("off")
         plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
+        '''
         strio = StringIO()
         plt.savefig(strio, format="svg")
         plt.close()
         strio.seek(0)
         svgstr = strio.getvalue()
         svgstrs.append(svgstr[svgstr.find("<svg"):])
+        '''
         #plt.savefig('crover/figure/cluster' + str(i+1) + '.jpg')
         #plt.show()
 
-    return svgstrs
+        # 画像書き込み用バッファに画像を保存してhtmlに返す
+        buf = io.BytesIO()
+        plt.savefig(buf)
+        qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
+        b64_figures.append("data:image/png;base64,{}".format(qr_b64str))
+
+    return b64_figures

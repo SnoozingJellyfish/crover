@@ -33,8 +33,6 @@ def preprocess_all(keyword, max_tweets):
     #subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
     output = sys.stdout
     dict_package = 'sudachidict_full'
-    ### heroku ###
-    dst_path = set_default_dict_package(dict_package, output)
 
     s3_client = boto3.resource(
         's3',
@@ -51,6 +49,9 @@ def preprocess_all(keyword, max_tweets):
         print(str(i), ' data load time: ', time.time() - start)
     return None
     '''
+
+    ### heroku ###
+    dst_path = set_default_dict_package(dict_package, output)
     start = time.time()
     obj = bucket.Object(app.config['ALL_WORD_COUNT'])
     dict_all_count = pickle.load(BytesIO(obj.get()['Body'].read()))
@@ -60,7 +61,12 @@ def preprocess_all(keyword, max_tweets):
     obj = bucket.Object(app.config['WORD_ID'])
     word_id = pickle.load(BytesIO(obj.get()['Body'].read()))
     print('WORD ID load time: ', time.time() - all_word_count_load_point)
-
+    '''
+    with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
+        dict_all_count = pickle.load(f)
+    with open('crover/data/word_id.pickle', 'rb') as f:
+        word_id = pickle.load(f)
+    '''
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
@@ -342,7 +348,7 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, bucket, word_id, top_word_num=50, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate, bucket, word_id, top_word_num=20, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
