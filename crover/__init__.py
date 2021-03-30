@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 import pickle
-import BytesIO
+from io import BytesIO
 
 import logging
 # フォーマットを定義
@@ -12,7 +12,7 @@ formatter = '%(levelname)s : %(asctime)s : %(message)s'
 import cloudstorage
 retryparams_instance = cloudstorage.RetryParams(initial_delay=0.2, max_delay=5.0, backoff_factor=2, max_retry_period=15)
 cloudstorage.set_default_retry_params(retryparams_instance)
-dict_all_count_obj = cloudstorage.open(filename='/crover_word2vec/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
+dict_all_count_obj = cloudstorage.open(filename='/word2vec_id/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
 dict_all_count = pickle.load(BytesIO(dict_all_count_obj))
 dict_all_count_obj.close()
 print(type(dict_all_count))
