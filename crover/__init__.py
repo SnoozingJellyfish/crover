@@ -27,7 +27,7 @@ def load_from_cloud(bucket_name, filename):
 
 bucket_name = os.environ.get('BUCKET_NAME')
 dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
-word2vec = load_from_cloud(bucket_name, os.environ.get('WORD2VEC'))
+#word2vec = load_from_cloud(bucket_name, os.environ.get('WORD2VEC'))
 print(type(dict_all_count))
 
 # ログレベルを DEBUG に変更
