@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
+import os
 import pickle
 from io import BytesIO
 
@@ -9,12 +10,24 @@ import logging
 # フォーマットを定義
 formatter = '%(levelname)s : %(asctime)s : %(message)s'
 
-import cloudstorage
-retryparams_instance = cloudstorage.RetryParams(initial_delay=0.2, max_delay=5.0, backoff_factor=2, max_retry_period=15)
-cloudstorage.set_default_retry_params(retryparams_instance)
-dict_all_count_obj = cloudstorage.open(filename='/word2vec_id/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
-dict_all_count = pickle.load(BytesIO(dict_all_count_obj))
-dict_all_count_obj.close()
+from google.cloud import storage
+
+#import cloudstorage
+#retryparams_instance = cloudstorage.RetryParams(initial_delay=0.2, max_delay=5.0, backoff_factor=2, max_retry_period=15)
+#cloudstorage.set_default_retry_params(retryparams_instance)
+#dict_all_count_obj = cloudstorage.open(filename='/word2vec_id/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
+
+storage_client = storage.Client()
+
+def load_from_cloud(bucket_name, filename):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    bytedata = blob.download_as_bytes()
+    return pickle.load(BytesIO(bytedata))
+
+bucket_name = os.Getenv('BUCKET_NAME')
+dict_all_count = load_from_cloud(bucket_name, os.Getenv('DICT_ALL_COUNT'))
+word2vec = load_from_cloud(bucket_name, os.Getenv('WORD2VEC'))
 print(type(dict_all_count))
 
 # ログレベルを DEBUG に変更
