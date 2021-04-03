@@ -13,7 +13,7 @@ import time
 import logging
 
 from flask import current_app as app
-import snscrape.modules.twitter as sntwitter
+#import snscrape.modules.twitter as sntwitter
 #from tqdm import tqdm
 #import MeCab
 #import pandas as pd
