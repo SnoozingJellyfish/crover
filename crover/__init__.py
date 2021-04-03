@@ -26,8 +26,8 @@ def load_from_cloud(bucket_name, filename):
     return pickle.load(BytesIO(bytedata))
 
 bucket_name = os.Getenv('BUCKET_NAME')
-dict_all_count = load_from_cloud(bucket_name, os.Getenv('DICT_ALL_COUNT'))
-word2vec = load_from_cloud(bucket_name, os.Getenv('WORD2VEC'))
+dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
+word2vec = load_from_cloud(bucket_name, os.environ.get('WORD2VEC'))
 print(type(dict_all_count))
 
 # ログレベルを DEBUG に変更
