@@ -25,7 +25,8 @@ def load_from_cloud(bucket_name, filename):
     bytedata = blob.download_as_bytes()
     return pickle.load(BytesIO(bytedata))
 
-bucket_name = os.environ.get('BUCKET_NAME')
+#bucket_name = os.environ.get('BUCKET_NAME')
+bucket_name = os.environ.get('GOOGLE_CLOUD_PROJECT')
 dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
 #word2vec = load_from_cloud(bucket_name, os.environ.get('WORD2VEC'))
 print(type(dict_all_count))
