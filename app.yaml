@@ -1,5 +1,7 @@
 runtime: python39 # or another supported version
 
+instance_class: F4
+
 env_variables:
   BUCKET_NAME: "word2vec_id"
   DICT_ALL_COUNT: "all_1-200-000_word_count_sudachi.pickle"
