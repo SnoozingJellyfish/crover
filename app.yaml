@@ -1,5 +1,5 @@
 #runtime: python39 # or another supported version
-runtime: custom
+runtime: python36
 env: flex
 
 #instance_class: F4_1G
