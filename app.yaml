@@ -1,6 +1,6 @@
 runtime: python39 # or another supported version
 
-instance_class: F4
+instance_class: F4_1G
 
 env_variables:
   BUCKET_NAME: "word2vec_id"
