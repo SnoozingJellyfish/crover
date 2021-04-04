@@ -25,7 +25,7 @@ import gensim
 import boto3
 
 from crover import db
-from crover import dict_all_count
+#from crover import dict_all_count
 #from crover import dict_all_count, word2vec
 from crover.models.tweet import Tweet, WordCount
 #from crover.models.tweet import AllWordCount
