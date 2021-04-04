@@ -6,7 +6,7 @@ env: flex
 
 #instance_class: F4_1G
 resources:
-  memory_gb: 2.0
+  memory_gb: 4
 
 env_variables:
   BUCKET_NAME: "word2vec_id"
