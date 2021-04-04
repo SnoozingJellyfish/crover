@@ -26,10 +26,10 @@ def load_from_cloud(bucket_name, filename):
     return pickle.load(BytesIO(bytedata))
 
 #bucket_name = os.environ.get('BUCKET_NAME')
-#bucket_name = os.environ.get('GOOGLE_CLOUD_PROJECT')
-#dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
+bucket_name = os.environ.get('GOOGLE_CLOUD_PROJECT')
+dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
 #word2vec = load_from_cloud(bucket_name, os.environ.get('WORD2VEC'))
-#print(type(dict_all_count))
+print(type(dict_all_count))
 
 # ログレベルを DEBUG に変更
 logging.basicConfig(level=logging.INFO, format=formatter)
