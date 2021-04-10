@@ -1,4 +1,4 @@
-#runtime: python39 # or another supported version
+#runtime: python39 # or another supported version for standard environment
 runtime: python
 runtime_config:
     python_version: 3
@@ -7,7 +7,7 @@ entrypoint: gunicorn -b :$PORT main:app
 
 #instance_class: F4_1G
 resources:
-  memory_gb: 2
+  memory_gb: 3
 
 env_variables:
   BUCKET_NAME: "word2vec_id"
