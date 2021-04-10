@@ -21,7 +21,7 @@ import numpy as np
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 from sudachipy.config import set_default_dict_package
-import gensim
+#import gensim
 import boto3
 
 from crover import db
