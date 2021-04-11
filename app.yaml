@@ -16,3 +16,7 @@ env_variables:
 
 readiness_check:
   app_start_timeout_sec: 1200
+
+# Lock instances to 1
+manual_scaling:
+    instances: 1
