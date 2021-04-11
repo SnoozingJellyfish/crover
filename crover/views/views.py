@@ -49,7 +49,6 @@ def word_cluster():
     return render_template('word_clustering.html', b64_figures=b64_figures)
 
 
-
 @view.route('/tweet', methods=['GET'])
 def tweet():
     tweets = Tweet.query.order_by(Tweet.id.desc()).all()
