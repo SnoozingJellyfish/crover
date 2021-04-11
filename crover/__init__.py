@@ -28,7 +28,10 @@ def load_from_cloud(bucket_name, filename):
 bucket_name = os.environ.get('BUCKET_NAME')
 #bucket_name = os.environ.get('GOOGLE_CLOUD_PROJECT')
 dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
-#word2vec = load_from_cloud(bucket_name, os.environ.get('WORD2VEC'))
+word2vec = {}
+for i in range(9):
+    wv = load_from_cloud(bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
+    word2vec.update(wv)
 print(type(dict_all_count))
 
 # ログレベルを DEBUG に変更
