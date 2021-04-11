@@ -1,5 +1,6 @@
 import os
 import datetime as dt
+import logging
 
 from flask import request, redirect, url_for, render_template, flash, session
 from flask import current_app as app
@@ -46,6 +47,7 @@ def word_cluster():
         b64_figures = clustering(top_word2vec, word_num=100)
 
     return render_template('word_clustering.html', b64_figures=b64_figures)
+
 
 
 @view.route('/tweet', methods=['GET'])
