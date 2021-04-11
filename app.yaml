@@ -22,4 +22,5 @@ manual_scaling:
     instances: 1
 
 # secret token
-includes: secret.yaml
+includes:
+- secret.yaml
