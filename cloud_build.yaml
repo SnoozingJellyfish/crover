@@ -8,3 +8,6 @@ steps:
     env_variables:
       TWITTER_BEARER_TOKEN: $_TWITTER_BEARER_TOKEN
     EOF
+- name: "gcr.io/cloud-builders/gcloud"
+  args: ["app", "deploy", "--stop-previous-version"]
+  timeout: "1600s"
