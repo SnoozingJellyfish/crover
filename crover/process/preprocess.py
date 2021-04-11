@@ -88,7 +88,7 @@ def preprocess_all(keyword, max_tweets):
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
 def auth():
-    return os.environ.get("BEARER_TOKEN")
+    return os.environ.get("TWITTER_BEARER_TOKEN")
     #return app.config['TWITTER_BEARER_TOKEN']
 
 def create_url(keyword, next_token_id=None, max_results=10):

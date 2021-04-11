@@ -1,0 +1,10 @@
+steps:
+- name: "gcr.io/cloud-builders/gcloud"
+  entrypoint: /bin/sh
+  args:
+  - "-c"
+  - |
+    cat << EOF > secret.yaml
+    env_variables:
+      TWITTER_BEARER_TOKEN: $_TWITTER_BEARER_TOKEN
+    EOF

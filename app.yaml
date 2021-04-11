@@ -20,3 +20,6 @@ readiness_check:
 # Lock instances to 1
 manual_scaling:
     instances: 1
+
+# secret token
+includes: secret.yaml
