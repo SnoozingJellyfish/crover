@@ -57,6 +57,6 @@ def tweet():
 
 @view.route('/word_count', methods=['GET'])
 def word_count():
-    word_counts = WordCount.query.order_by(WordCount.reletive_frequent_rate.desc()).all()
+    word_counts = WordCount.query.order_by(WordCount.relative_frequent_rate.desc()).all()
     return render_template('word_counts.html', word_counts=word_counts)
 

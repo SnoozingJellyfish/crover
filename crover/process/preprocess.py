@@ -376,7 +376,7 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
 
     for word in top_words:
         print(word)
-        word_rate_list.append(WordCount(word=word, reletive_frequent_rate=dict_word_count_rate[word]))
+        word_rate_list.append(WordCount(word=word, relative_frequent_rate=dict_word_count_rate[word]))
 
         if algo == 'mecab':
             if word in list(word2vec.keys()):
