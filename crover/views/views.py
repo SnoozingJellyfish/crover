@@ -36,15 +36,16 @@ def word_cluster():
         db.create_all()
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
+        word_num = int(request.form['word_num'])
 
         #timedelta = dt.timedelta(days=100)
         #dt_until = dt.datetime.now()
         #dt_since = dt_until - timedelta
-        top_word2vec = preprocess_all(keyword, max_tweets)
+        top_word2vec = preprocess_all(keyword, max_tweets, word_num)
         print(top_word2vec['word'])
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
-        b64_figures = clustering(top_word2vec, word_num=100)
+        b64_figures = clustering(top_word2vec, word_num=word_num)
 
     return render_template('word_clustering.html', b64_figures=b64_figures)
 
@@ -56,6 +57,6 @@ def tweet():
 
 @view.route('/word_count', methods=['GET'])
 def word_count():
-    word_counts = WordCount.query.order_by(WordCount.count.desc()).all()
+    word_counts = WordCount.query.order_by(WordCount.reletive_frequent_rate.desc()).all()
     return render_template('word_counts.html', word_counts=word_counts)
 

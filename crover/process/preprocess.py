@@ -32,7 +32,7 @@ from crover.models.tweet import Tweet, WordCount
 
 logger = logging.getLogger(__name__)
 
-def preprocess_all(keyword, max_tweets):
+def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
     #print(site.getsitepackages())
     #subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
@@ -79,7 +79,7 @@ def preprocess_all(keyword, max_tweets):
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
-    return make_top_word2vec_dic(dict_word_count_rate, word2vec)
+    return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
 
     #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
@@ -359,6 +359,7 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
             continue
 
     dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
+
     print('------------ word count rate finish --------------')
     return dict_word_count_rate
 
@@ -371,8 +372,12 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
     word_keys = list(dict_word_count_rate.keys())
     top_words = list(dict_word_count_rate.keys())[:min(top_word_num, len(word_keys))]
 
+    word_rate_list = []
+
     for word in top_words:
         print(word)
+        word_rate_list.append(WordCount(word=word, reletive_frequent_rate=dict_word_count_rate[word]))
+
         if algo == 'mecab':
             if word in list(word2vec.keys()):
                 if OKword(word):
@@ -397,6 +402,9 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
                 dict_top_word2vec['not_dict_word'].append(word)
+
+    db.session().add_all(word_rate_list)
+    db.session().commit()
 
     print('-------------- making dict_top_word2vec finish -----------------\n')
 

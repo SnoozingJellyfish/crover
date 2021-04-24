@@ -4,14 +4,14 @@
     <thead>
         <tr>
             <th>ワード</th>
-            <th>カウント</th>
+            <th>相対頻出率</th>
         </tr>
     </thead>
     <tbody>
         {% for word_count in word_counts %}
         <tr>
             <td>{{ word_count.word }}</td>
-            <td>{{ word_count.count }}</td>
+            <td>{{ word_count.reletive_frequent_rate }}</td>
         </tr>
         {% endfor %}
     </tbody>
