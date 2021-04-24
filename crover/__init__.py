@@ -45,6 +45,7 @@ with open('crover/data/word_id.pickle', 'rb') as f:
     word_id = pickle.load(f)
 '''
 
+
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
     app.config.from_object('crover.config')
