@@ -364,7 +364,7 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, word2vec, word_id, top_word_num=20, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
@@ -374,7 +374,7 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, word_id, top_word_num=
     for word in top_words:
         print(word)
         if algo == 'mecab':
-            if word in list(word_id.keys()):
+            if word in list(word2vec.keys()):
                 if OKword(word):
                     print('OK')
                     dict_top_word2vec['word'].append(word)

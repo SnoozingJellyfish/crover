@@ -17,6 +17,9 @@ from google.cloud import storage
 #cloudstorage.set_default_retry_params(retryparams_instance)
 #dict_all_count_obj = cloudstorage.open(filename='/word2vec_id/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
 
+server = False
+
+#if server:
 storage_client = storage.Client()
 
 def load_from_cloud(bucket_name, filename):
@@ -38,11 +41,12 @@ print(type(dict_all_count))
 logging.basicConfig(level=logging.INFO, format=formatter)
 
 '''
-with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
-    dict_all_count = pickle.load(f)
+else:
+    with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
+        dict_all_count = pickle.load(f)
 
-with open('crover/data/word_id.pickle', 'rb') as f:
-    word_id = pickle.load(f)
+    with open('crover/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
+        word2vec = pickle.load(f)
 '''
 
 def create_app(test_config=None):
