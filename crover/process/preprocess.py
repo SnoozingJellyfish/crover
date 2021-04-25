@@ -171,14 +171,14 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         url = create_url(keyword, next_token_id, max_results)
         result = connect_to_endpoint(url, headers)
         print('finish scraping %d tweets', max_results)
-        next_token_id = result['meta']['next_token']
+
 
         print('start word count tweet')
-        for j in range(max_results):
+        for j in range(len(result['data'])):
             try:
                 created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
             except IndexError:
-                break
+                continue
             created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
 
             tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text']))
@@ -190,6 +190,11 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             # update noun count dictionary
             dict_word_count = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
         print('finish word count tweet')
+
+        if len(result['data']) == max_results:
+            next_token_id = result['meta']['next_token']
+        else:
+            break
     db.session().add_all(tweets)
 
     '''
