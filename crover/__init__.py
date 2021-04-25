@@ -20,7 +20,7 @@ from sudachipy.config import set_default_dict_package
 #cloudstorage.set_default_retry_params(retryparams_instance)
 #dict_all_count_obj = cloudstorage.open(filename='/word2vec_id/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
 
-server = True
+server = False
 
 if server:
     storage_client = storage.Client()
