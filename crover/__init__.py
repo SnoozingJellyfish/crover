@@ -10,6 +10,8 @@ from io import BytesIO
 import logging
 # フォーマットを定義
 formatter = '%(levelname)s : %(asctime)s : %(message)s'
+# ログレベルを DEBUG に変更
+logging.basicConfig(level=logging.INFO, format=formatter)
 
 from google.cloud import storage
 
@@ -39,9 +41,6 @@ if server:
         wv = load_from_cloud(bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
         word2vec.update(wv)
     print(type(dict_all_count))
-
-    # ログレベルを DEBUG に変更
-    logging.basicConfig(level=logging.INFO, format=formatter)
 
     dst_path = set_default_dict_package('sudachidict_full', sys.stdout)
 

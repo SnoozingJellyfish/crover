@@ -175,7 +175,10 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
 
         print('start word count tweet')
         for j in range(max_results):
-            created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
+            try:
+                created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
+            except IndexError:
+                break
             created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
 
             tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text']))
@@ -375,6 +378,7 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
 
     for word in top_words:
         print(word)
+        logger.info(word)
         word_rate_list.append(WordCount(word=word, relative_frequent_rate=dict_word_count_rate[word]))
 
         if algo == 'mecab':
