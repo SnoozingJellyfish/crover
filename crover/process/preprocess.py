@@ -20,7 +20,7 @@ from flask import current_app as app
 import numpy as np
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
-from sudachipy.config import set_default_dict_package
+
 #import gensim
 import boto3
 
@@ -36,8 +36,6 @@ def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
     #print(site.getsitepackages())
     #subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
-    dict_package = 'sudachidict_full'
-    dst_path = set_default_dict_package(dict_package, sys.stdout)
 
     '''
     s3_client = boto3.resource(

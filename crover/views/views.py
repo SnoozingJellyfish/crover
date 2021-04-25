@@ -31,8 +31,11 @@ def non_existant_route(error):
 def word_cluster():
     figure_dir = './crover/figure'
     if request.method == 'POST':
-        if os.path.exists('./crover/crover.db'):
+        #if os.path.exists('./crover/crover.db'):
+        try:
             db.drop_all()
+        except:
+            pass
         db.create_all()
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
