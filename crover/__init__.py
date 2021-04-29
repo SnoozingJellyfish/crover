@@ -22,23 +22,29 @@ from sudachipy.config import set_default_dict_package
 #cloudstorage.set_default_retry_params(retryparams_instance)
 #dict_all_count_obj = cloudstorage.open(filename='/word2vec_id/all_1-200-000_word_count_sudachi.pickle', mode='rb', retry_params=retryparams_instance)
 
-server = True
+def download_from_cloud(storage_client, bucket_name, filename):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    bytedata = blob.download_as_bytes()
+    return pickle.load(BytesIO(bytedata))
 
-if server:
+def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    blob.upload_from_string(bytedata)
+
+
+IS_SERVER = True
+
+if IS_SERVER:
     storage_client = storage.Client()
-
-    def load_from_cloud(bucket_name, filename):
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(filename)
-        bytedata = blob.download_as_bytes()
-        return pickle.load(BytesIO(bytedata))
 
     bucket_name = os.environ.get('BUCKET_NAME')
     #bucket_name = os.environ.get('GOOGLE_CLOUD_PROJECT')
-    dict_all_count = load_from_cloud(bucket_name, os.environ.get('DICT_ALL_COUNT'))
+    dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
     word2vec = {}
     for i in range(9):
-        wv = load_from_cloud(bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
+        wv = download_from_cloud(storage_client, bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
         word2vec.update(wv)
     print(type(dict_all_count))
 
@@ -48,11 +54,10 @@ else: # local
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)
 
-    with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
+    #with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
+    with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
         #pass
-
-
 
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')

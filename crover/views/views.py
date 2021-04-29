@@ -1,14 +1,16 @@
 import os
 import datetime as dt
 import logging
+import pickle
 
 from flask import request, redirect, url_for, render_template, flash, session
 from flask import current_app as app
 #from crover import app
 from functools import wraps
 from flask import Blueprint
+from google.cloud import storage
 
-from crover import db
+from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
 from crover.process.preprocess import preprocess_all
 from crover.process.clustering import clustering
 #from crover.process.emotion_analyze import emotion_analyze
@@ -17,6 +19,7 @@ from crover.models.tweet import Tweet, WordCount
 
 view = Blueprint('view', __name__)
 
+b64_figures = []
 
 
 @view.route('/')
@@ -48,6 +51,7 @@ def word_cluster():
         print(top_word2vec['word'])
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
+        global b64_figures
         b64_figures = clustering(top_word2vec, word_num=word_num)
 
     return render_template('word_clustering.html', b64_figures=b64_figures)

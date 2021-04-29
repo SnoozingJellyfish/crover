@@ -7,6 +7,7 @@ steps:
     cat << EOF > secret.yaml
     env_variables:
       TWITTER_BEARER_TOKEN: $_TWITTER_BEARER_TOKEN
+      TWITTER_BEARER_TOKEN2: $_TWITTER_BEARER_TOKEN2
     EOF
 - name: "gcr.io/cloud-builders/gcloud"
   args: ["app", "deploy", "--stop-previous-version"]
