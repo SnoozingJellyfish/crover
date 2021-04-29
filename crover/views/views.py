@@ -2,6 +2,7 @@ import os
 import datetime as dt
 import logging
 import pickle
+import copy
 
 from flask import request, redirect, url_for, render_template, flash, session
 from flask import current_app as app
@@ -11,8 +12,8 @@ from flask import Blueprint
 from google.cloud import storage
 
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
-from crover.process.preprocess import preprocess_all
-from crover.process.clustering import clustering
+from crover.process.preprocess import preprocess_all, make_part_word2vec_dic
+from crover.process.clustering import clustering, make_word_cloud
 #from crover.process.emotion_analyze import emotion_analyze
 #from crover.process.util import *
 from crover.models.tweet import Tweet, WordCount
@@ -20,6 +21,8 @@ from crover.models.tweet import Tweet, WordCount
 view = Blueprint('view', __name__)
 
 b64_figures = []
+cluster_to_words = [None]
+top_word2vec = {}
 
 
 @view.route('/')
@@ -34,6 +37,7 @@ def non_existant_route(error):
 def word_cluster():
     figure_dir = './crover/figure'
     if request.method == 'POST':
+        global b64_figures, cluster_to_words, top_word2vec
         #if os.path.exists('./crover/crover.db'):
         try:
             db.drop_all()
@@ -51,11 +55,34 @@ def word_cluster():
         print(top_word2vec['word'])
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
-        global b64_figures
-        b64_figures = clustering(top_word2vec, word_num=word_num)
+        #b64_figures = clustering(top_word2vec, word_num=word_num)
+        cluster_to_words[0] = clustering(top_word2vec, word_num=word_num)
+        b64_figures =  make_word_cloud(cluster_to_words[0])
 
     return render_template('word_clustering.html', b64_figures=b64_figures)
 
+@view.route('/zoom_cluster', methods=['GET', 'POST'])
+def zoom_cluster():
+    if request.method == 'POST':
+        if request.form['submit_button'] == 'return': # return to previous cluster
+            del cluster_to_words[-1]
+
+        else: # zoom
+            cluster_idx = int(request.form['submit_button']) - 1
+            clustered_words = cluster_to_words[-1][cluster_idx]
+            part_word2vec = make_part_word2vec_dic(clustered_words, top_word2vec)
+            zoom_cluster_to_words = clustering(part_word2vec)
+            pre_cluster_to_words = copy.deepcopy(cluster_to_words[-1])
+            cluster_to_words.append(copy.deepcopy(cluster_to_words[-1]))
+            cluster_to_words[-1][cluster_idx] = zoom_cluster_to_words[0]
+            cluster_to_words[-1][cluster_idx+1] = zoom_cluster_to_words[1]
+
+            for i in range(cluster_idx+1, len(list(pre_cluster_to_words.keys()))):
+                cluster_to_words[-1][i+1] = pre_cluster_to_words[i]
+
+        b64_figures = make_word_cloud(cluster_to_words[-1])
+
+    return render_template('word_clustering.html', b64_figures=b64_figures)
 
 @view.route('/tweet', methods=['GET'])
 def tweet():

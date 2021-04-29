@@ -419,6 +419,24 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
 
     return dict_top_word2vec
 
+# word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
+def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
+    print('-------------- making dict_part_word2vec start -----------------\n')
+
+    dict_part_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
+
+    for word in dict_word_count_rate.keys():
+        print(word)
+        logger.info(word)
+        word_idx = top_word2vec['word'].index(word)
+        dict_part_word2vec['word'].append(word)
+        dict_part_word2vec['vec'].append(top_word2vec['vec'][word_idx])
+        dict_part_word2vec['word_count_rate'].append(top_word2vec['word_count_rate'][word_idx])
+
+    print('-------------- making dict_part_word2vec finish -----------------\n')
+
+    return dict_part_word2vec
+
 
 # 汎用性の高い単語を除外する
 def OKword(word):

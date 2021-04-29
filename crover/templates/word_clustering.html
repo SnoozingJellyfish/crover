@@ -1,12 +1,16 @@
 {% extends "layout.html" %}
 {% block body %}
-<div class="container">
-    <div class="row">
-        {% for b64_figure in b64_figures %}
-        <div class="col">
-            <img src={{b64_figure}} class="img-fluid" width="500" height="400">
+<form action ="{{ url_for('view.zoom_cluster') }}" method=post>
+    <div class="container">
+        <div class="row">
+            {% for b64_figure in b64_figures %}
+            <div class="col">
+                <img src={{b64_figure}} class="img-fluid" width="500" height="400">
+                <button type="submit" name="submit_button" value={{loop.index}} class="btn btn-primary">さらに分類</button>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button>
     </div>
-</div>
+</form>
 {% endblock %}

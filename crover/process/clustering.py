@@ -48,7 +48,8 @@ def clustering(top_word2vec, word_num=100, cluster_all=3, algo='ward'):
 
     print('------------------- clustering finish ---------------------')
     # word cloudを作る
-    return make_word_cloud(cluster_to_words)
+    #return make_word_cloud(cluster_to_words)
+    return cluster_to_words
 
 
 # クラスターをさらにクラスタリングする（k-means法用）
