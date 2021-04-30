@@ -10,6 +10,7 @@
     <tbody>
         {% for tweet in tweets %}
         <tr>
+            <td>{{ loop.index }}</td>
             <td>{{ tweet.tweeted_at }}</td>
             <td>{{ tweet.text }}</td>
         </tr>

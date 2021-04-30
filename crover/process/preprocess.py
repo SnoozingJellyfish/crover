@@ -168,13 +168,11 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             if max_results < 10:
                 break
 
-        print('start scraping %d tweets', max_results)
+        logger.info('start scraping')
         url = create_url(keyword, next_token_id, max_results)
         result = connect_to_endpoint(url, headers)
-        print('finish scraping %d tweets', max_results)
 
-
-        print('start word count tweet')
+        logger.info('start word count tweet')
         for j in range(len(result['data'])):
             try:
                 created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
@@ -186,13 +184,12 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
 
             tweet_text = result['data'][j]['text']
             # clean tweet
-            logger.info('clean tweet')
+            #logger.info('clean tweet')
             tweet_text = clean(tweet_text, regexes, sign_regex)
 
             # update noun count dictionary
-            logger.info('noun count')
+            #logger.info('noun count')
             dict_word_count = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
-        print('finish word count tweet')
 
         if len(result['data']) == max_results:
             next_token_id = result['meta']['next_token']
@@ -377,7 +374,7 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
 def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
-    dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
+    dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
     word_keys = list(dict_word_count_rate.keys())
     top_words = list(dict_word_count_rate.keys())[:min(top_word_num, len(word_keys))]
     all_word_list = list(word2vec.keys())
@@ -403,7 +400,7 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
                     dict_top_word2vec['vec'].append(word2vec[word])
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
-                dict_top_word2vec['not_dict_word'].append(word)
+                dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
         elif algo == 'sudachi':
             if word in model:
@@ -412,7 +409,7 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
                     dict_top_word2vec['vec'].append(model[word])
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
-                dict_top_word2vec['not_dict_word'].append(word)
+                dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
     db.session().add_all(word_rate_list)
     db.session().commit()

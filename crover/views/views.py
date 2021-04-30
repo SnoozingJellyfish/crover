@@ -20,10 +20,10 @@ from crover.models.tweet import Tweet, WordCount
 
 view = Blueprint('view', __name__)
 
+
 b64_figures = []
 cluster_to_words = [None]
 top_word2vec = {}
-
 
 @view.route('/')
 def home():
@@ -35,9 +35,9 @@ def non_existant_route(error):
 
 @view.route('/word_cluster', methods=['GET', 'POST'])
 def word_cluster():
+    global b64_figures, cluster_to_words, top_word2vec
     figure_dir = './crover/figure'
     if request.method == 'POST':
-        global b64_figures, cluster_to_words, top_word2vec
         #if os.path.exists('./crover/crover.db'):
         try:
             db.drop_all()
@@ -57,12 +57,15 @@ def word_cluster():
         #return redirect(url_for('view.tweet'))
         #b64_figures = clustering(top_word2vec, word_num=word_num)
         cluster_to_words[0] = clustering(top_word2vec, word_num=word_num)
-        b64_figures =  make_word_cloud(cluster_to_words[0])
+        not_dictword_num = len(list(cluster_to_words[0].keys()))
+        cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
+        b64_figures = make_word_cloud(cluster_to_words[0])
 
-    return render_template('word_clustering.html', b64_figures=b64_figures)
+    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1])
 
 @view.route('/zoom_cluster', methods=['GET', 'POST'])
 def zoom_cluster():
+    global b64_figures, cluster_to_words, top_word2vec
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster
             del cluster_to_words[-1]
@@ -82,7 +85,7 @@ def zoom_cluster():
 
         b64_figures = make_word_cloud(cluster_to_words[-1])
 
-    return render_template('word_clustering.html', b64_figures=b64_figures)
+    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1])
 
 @view.route('/tweet', methods=['GET'])
 def tweet():
