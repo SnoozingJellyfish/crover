@@ -4,6 +4,8 @@ import pickle
 from io import StringIO
 import io
 import base64
+import logging
+import PIL
 
 import matplotlib.pyplot as plt
 #from matplotlib.font_manager import FontProperties
@@ -12,6 +14,8 @@ import numpy as np
 #from sklearn.cluster import KMeans
 from scipy.cluster.hierarchy import linkage,dendrogram, fcluster
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 
 # 相対頻出度が高いword_num個の単語をword2vec上でクラスタリングする
@@ -90,13 +94,15 @@ def make_word_cloud(cluster_to_words):
     for i in range(len(cluster_to_words)):
         wordcloud = WordCloud(font_path="./crover/data/font/NotoSansCJKjp-Regular.otf", background_color="white",
                               width=500, height=500, colormap=colormaps[i])
+        logger.info('fit word cloud')
         wordcloud.fit_words(cluster_to_words[i])
+        '''
+        logger.info('start plt')
         plt.figure(figsize=(15, 12))
         plt.imshow(wordcloud)
         plt.axis("off")
         plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
-        '''
         strio = StringIO()
         plt.savefig(strio, format="svg")
         plt.close()
@@ -107,9 +113,13 @@ def make_word_cloud(cluster_to_words):
         #plt.savefig('crover/figure/cluster' + str(i+1) + '.jpg')
         #plt.show()
 
+        logger.info('save word cloud')
         # 画像書き込み用バッファに画像を保存してhtmlに返す
         buf = io.BytesIO()
-        plt.savefig(buf)
+        #plt.savefig(buf)
+        img = wordcloud.to_image()
+        img.save(buf, 'PNG')
+        logger.info('b64 encode')
         qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
         b64_figures.append("data:image/png;base64,{}".format(qr_b64str))
 

@@ -2,6 +2,7 @@
 {% block body %}
 <form action ="{{ url_for('view.zoom_cluster') }}" method=post>
     <div class="container">
+        <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button>
         <div class="row">
             {% for b64_figure in b64_figures %}
             <div class="col">
@@ -10,7 +11,6 @@
             </div>
             {% endfor %}
         </div>
-        <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button>
     </div>
 </form>
 {% endblock %}

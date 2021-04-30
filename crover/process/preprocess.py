@@ -186,9 +186,11 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
 
             tweet_text = result['data'][j]['text']
             # clean tweet
+            logger.info('clean tweet')
             tweet_text = clean(tweet_text, regexes, sign_regex)
 
             # update noun count dictionary
+            logger.info('noun count')
             dict_word_count = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
         print('finish word count tweet')
 
