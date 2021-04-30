@@ -382,7 +382,6 @@ def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo=
     word_rate_list = []
 
     for word in top_words:
-        print(word)
         logger.info(word)
         word_rate_list.append(WordCount(word=word, relative_frequent_rate=dict_word_count_rate[word]))
 
@@ -425,7 +424,6 @@ def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
     dict_part_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
 
     for word in dict_word_count_rate.keys():
-        print(word)
         logger.info(word)
         word_idx = top_word2vec['word'].index(word)
         dict_part_word2vec['word'].append(word)

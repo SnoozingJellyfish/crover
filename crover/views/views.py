@@ -56,7 +56,7 @@ def word_cluster():
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
         #b64_figures = clustering(top_word2vec, word_num=word_num)
-        cluster_to_words[0] = clustering(top_word2vec, word_num=word_num)
+        cluster_to_words = [clustering(top_word2vec, word_num=word_num)]
         not_dictword_num = len(list(cluster_to_words[0].keys()))
         cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
         b64_figures = make_word_cloud(cluster_to_words[0])
