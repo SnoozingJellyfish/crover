@@ -69,9 +69,10 @@ def zoom_cluster():
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster
             del cluster_to_words[-1]
+            b64_figures = make_word_cloud(cluster_to_words[-1])
 
-        else: # zoom
-            cluster_idx = int(request.form['submit_button']) - 1
+        elif request.form['submit_button'][:4] == 'zoom': # zoom clustering
+            cluster_idx = int(request.form['submit_button'][4:])
             clustered_words = cluster_to_words[-1][cluster_idx]
             part_word2vec = make_part_word2vec_dic(clustered_words, top_word2vec)
             zoom_cluster_to_words = clustering(part_word2vec)
@@ -83,7 +84,12 @@ def zoom_cluster():
             for i in range(cluster_idx+1, len(list(pre_cluster_to_words.keys()))):
                 cluster_to_words[-1][i+1] = pre_cluster_to_words[i]
 
-        b64_figures = make_word_cloud(cluster_to_words[-1])
+            b64_figures = make_word_cloud(cluster_to_words[-1])
+
+        elif request.form['submit_button'][:4] == 'emot': # emotion analysis
+            cluster_idx = int(request.form['submit_button'][4:])
+            #TODO: emotion analysis
+
 
     return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1])
 

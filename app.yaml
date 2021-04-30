@@ -7,7 +7,7 @@ entrypoint: gunicorn -b :$PORT main:app --timeout 300
 
 #instance_class: F4_1G
 resources:
-  cpu: 2
+  cpu: 1
   memory_gb: 3
 
 env_variables:
