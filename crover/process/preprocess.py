@@ -191,7 +191,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             #logger.info('noun count')
             dict_word_count = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
-        if len(result['data']) == max_results:
+        if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
         else:
             break
