@@ -33,7 +33,6 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
     blob = bucket.blob(filename)
     blob.upload_from_string(bytedata)
 
-
 IS_SERVER = True
 
 if IS_SERVER:
