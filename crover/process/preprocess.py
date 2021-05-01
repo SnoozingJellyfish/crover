@@ -180,8 +180,6 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
                 continue
             created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
 
-            tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text']))
-
             tweet_text = result['data'][j]['text']
             # clean tweet
             #logger.info('clean tweet')
@@ -189,7 +187,9 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
 
             # update noun count dictionary
             #logger.info('noun count')
-            dict_word_count = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+            dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+
+            tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text'], word=split_word))
 
         if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
@@ -311,6 +311,7 @@ def clean(text, regexes, sign_regex):
 
 # 辞書型を使って名詞をカウントする
 def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, algo='sudachi'):
+    split_word = []
     try:
         if algo == 'mecab':
             words = tokenizer_obj.parse(text).split("\n")
@@ -330,6 +331,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
         elif algo == 'sudachi':
             noun = words[j].normalized_form()
+            split_word.append(noun)
             if (noun == keyword):
                 continue
             part = words[j].part_of_speech()[0]
@@ -340,7 +342,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
             else:
                 dict_word_count[noun] = 1
 
-    return dict_word_count
+    return dict_word_count, str(split_word)
 
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る

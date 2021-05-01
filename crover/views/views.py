@@ -65,8 +65,8 @@ def word_cluster():
 
     return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1], b64_chart=b64_chart)
 
-@view.route('/zoom_cluster', methods=['GET', 'POST'])
-def zoom_cluster():
+@view.route('/analysis', methods=['GET', 'POST'])
+def analysis():
     global b64_figures, b64_chart, cluster_to_words, top_word2vec
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster

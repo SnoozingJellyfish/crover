@@ -14,6 +14,7 @@ env_variables:
   BUCKET_NAME: "word2vec_id"
   DICT_ALL_COUNT: "all_1-200-000_word_count_sudachi.pickle"
   WORD2VEC: "mecab_word2vec_dict_100d_9split/mecab_word2vec_dict_100d_9-"
+  MLASK_EMOTION_DICTIONARY: "mlask_emotion_dictionary.pickle"
 
 readiness_check:
   app_start_timeout_sec: 1200

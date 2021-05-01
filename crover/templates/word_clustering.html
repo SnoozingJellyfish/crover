@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
-<form action ="{{ url_for('view.zoom_cluster') }}" method=post>
+<form action ="{{ url_for('view.analysis') }}" method=post>
     <div class="container">
         <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button>
         <div class="row">
@@ -17,6 +17,24 @@
         </div>
         {% if b64_chart != 'None' %}
         <img src={{b64_chart}} class="img-fluid" width="500" height="400">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ポジティブ</th>
+                    <th>ネガティブ</th>
+                    <th>ニュートラル</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tweet in tweets %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ tweet.tweeted_at }}</td>
+                    <td>{{ tweet.text }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% endif %}
     </div>
 </form>

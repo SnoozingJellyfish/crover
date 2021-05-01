@@ -6,11 +6,12 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mlask import MLAsk
+#from mlask import MLAsk
+from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
 from crover.models.tweet import Tweet, ClusterTweet
-from crover import db
+from crover import db, mlask_emotion_dictionary
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,10 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
     emotion_count = {'all': 0, 'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
 
     if algo == 'mlask':
-        emotion_analyzer = MLAsk()
+        emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
         for tweet in cluster_tweets:
             emotion_count['all'] += 1
-            result_dic = emotion_analyzer.analyze(tweet.text)
+            result_dic = emotion_analyzer.analyze(tweet.text, tweet.word)
             if result_dic['emotion'] == None:
                 cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion='None'))
             else:

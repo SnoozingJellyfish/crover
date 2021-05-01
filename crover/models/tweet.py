@@ -6,13 +6,15 @@ class Tweet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text)
     tweeted_at = db.Column(db.DateTime)
+    word = db.Column(db.Text)
 
-    def __init__(self, tweeted_at=None, text=None):
+    def __init__(self, tweeted_at=None, text=None, word=None):
         self.text = text
         self.tweeted_at = tweeted_at
+        self.word = word
 
     def __repr__(self):
-        return '<id:{} tweeted_at:{} text:{}>'.format(self.id, self.tweeted_at, self.text)
+        return '<id:{} tweeted_at:{} text:{} word: {}>'.format(self.id, self.tweeted_at, self.text, self.word)
 
 
 class ClusterTweet(db.Model):

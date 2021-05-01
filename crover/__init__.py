@@ -45,7 +45,8 @@ if IS_SERVER:
     for i in range(9):
         wv = download_from_cloud(storage_client, bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
         word2vec.update(wv)
-    print(type(dict_all_count))
+
+    mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
 
     dst_path = set_default_dict_package('sudachidict_full', sys.stdout)
 
@@ -57,6 +58,9 @@ else: # local
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
         #pass
+
+    with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
+        mlask_emotion_dictionary = pickle.load(f)
 
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
