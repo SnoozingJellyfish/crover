@@ -1,38 +1,39 @@
 import copy
 from pprint import pprint
+import io
+import base64
+import logging
 
-from tqdm import tqdm
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 from mlask import MLAsk
-import oseti
-from asari.api import Sonar
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
+from crover.models.tweet import Tweet, ClusterTweet
+from crover import db
 
-def all(file_name, cluster_csv, cluster_num):
-    algo = 'mlask'
-    tweet_collect(file_name, cluster_csv, cluster_num)
-    emotion_analyze(cluster_csv, cluster_num, algo=algo)
-    analyzed_csv = cluster_csv[:-4] + '-' + str(cluster_num) + '_analyzed-' + algo + '.csv'
-    emotion_count(analyzed_csv)
+logger = logging.getLogger(__name__)
+
+def emotion_analyze_all(words):
+    logger.info('collect tweet including cluster word')
+    cluster_tweets = tweet_collect(words)
+    logger.info('emotion analyze')
+    emotion_count = emotion_analyze(cluster_tweets)
+    logger.info('make pie chart')
+    b64_chart = make_emotion_pie_chart(emotion_count)
+    return b64_chart
 
 # クラスタリングされた単語を含むツイートを取得する
-def tweet_collect(file_name, cluster_csv, cluster_num):
-    tweet_csv = file_name + '.csv'
-    output_name = cluster_csv[:-4] + '-' + str(cluster_num) + '_tweet.csv'
-
-    df_cluster = pd.read_csv(cluster_csv, index_col=0).reset_index(drop=True)
-    words = df_cluster['cluster' + str(cluster_num)].to_numpy()
-    df_tweets = pd.read_csv(tweet_csv, index_col=0).reset_index(drop=True)
-
-    cluster_tweet_id = []
-    tweet_id = list(range(len(df_tweets['tweet'])))
+def tweet_collect(words):
+    tweets = np.array(Tweet.query.all())
+    tweet_id = list(np.arange(len(tweets)))
     tweet_id_new = copy.deepcopy(tweet_id)
-    for w in tqdm(words):
+    cluster_tweet_id = []
+
+    for w in words:
         for i in tweet_id:
             try:
-                if w in df_tweets['tweet'][i]:
+                if w in tweets[i].text:
                     cluster_tweet_id.append(i)
                     tweet_id_new.remove(i)
             except TypeError:
@@ -40,26 +41,25 @@ def tweet_collect(file_name, cluster_csv, cluster_num):
 
         tweet_id = copy.deepcopy(tweet_id_new)
 
-    df_tweets.iloc[cluster_tweet_id]['tweet'].to_csv(output_name)
+    cluster_tweets = tweets[cluster_tweet_id]
+    return cluster_tweets
 
 
 # 感情分析する
-def emotion_analyze(cluster_csv, cluster_num, algo='mlask'):
-    input_name = cluster_csv[:-4] + '-' + str(cluster_num) + '_tweet.csv'
-    output_name = cluster_csv[:-4] + '-' + str(cluster_num) + '_analyzed-' + algo + '.csv'
-    df_cluster = pd.read_csv(input_name, index_col=0).reset_index(drop=True)
+def emotion_analyze(cluster_tweets, algo='mlask'):
+    cluster_tweets_emotion = []
+    emotion_count = {'all': 0, 'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
 
     if algo == 'mlask':
         emotion_analyzer = MLAsk()
-        for i in tqdm(range(len(df_cluster))):
-            result_dic = emotion_analyzer.analyze(df_cluster['tweet'][i])
+        for tweet in cluster_tweets:
+            emotion_count['all'] += 1
+            result_dic = emotion_analyzer.analyze(tweet.text)
             if result_dic['emotion'] == None:
-                df_cluster.loc[i, 'emotion'] = 'None'
+                cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion='None'))
             else:
-                df_cluster.loc[i, 'orientation'] = result_dic['orientation']
-                df_cluster.loc[i, 'activation'] = result_dic['activation']
-                df_cluster.loc[i, 'intension'] = result_dic['intension']
-                df_cluster.loc[i, 'emotion'] = str(list(result_dic['emotion'].keys()))
+                cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion=result_dic['orientation']))
+                emotion_count[result_dic['orientation']] += 1
 
     elif algo == 'oseti':
         emotion_analyzer = oseti.Analyzer()
@@ -89,12 +89,29 @@ def emotion_analyze(cluster_csv, cluster_num, algo='mlask'):
             if (i+1) % 1000 == 0:
                 df_cluster.to_csv(cluster_csv[:-4] + '_' + algo + '_analyzed.csv')
     '''
+    db.session().add_all(cluster_tweets_emotion)
+    db.session().commit()
 
-    df_cluster.to_csv(output_name)
+    return emotion_count
+
+
+def make_emotion_pie_chart(emotion_count):
+    x = np.array([emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE'], emotion_count['NEUTRAL'], emotion_count['NEGATIVE'] + emotion_count['mostly_NEGATIVE']])
+    label = ['positive', 'neutral', 'negative']
+    colors = ["lightcoral", 'yellowgreen', 'cornflowerblue']
+    plt.figure(figsize=(15, 12))
+    patches, texts = plt.pie(x, labels=label, counterclock=False, startangle=90, colors=colors)
+    for t in texts:
+        t.set_size(48)
+    buf = io.BytesIO()
+    plt.savefig(buf)
+    qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
+    b64_chart = "data:image/png;base64,{}".format(qr_b64str)
+    return b64_chart
 
 
 # 感情分析の結果を出力する
-def emotion_count(analyzed_csv):
+def emotion_count(cluster_tweets):
     count_dic = {}
     df_cluster = pd.read_csv(analyzed_csv, index_col=0)
 
@@ -104,10 +121,5 @@ def emotion_count(analyzed_csv):
     nega = (df_cluster['orientation'] == 'NEGATIVE').sum()
     neut = len(df_cluster) - posi - m_posi - m_nega - nega
     count_dic['orientation'] = {'POSITIVE': posi, 'mostly_POSITIVE': m_posi, 'NEUTRAL': neut, 'mostly_NEGATIVE': m_nega, 'NEGATIVE': nega}
-
-    act = (df_cluster['activation'] == 'ACTIVE').sum()
-    pas = (df_cluster['activation'] == 'PASSIVE').sum()
-    neut = len(df_cluster) - act - pas
-    count_dic['activation'] = {'ACTIVE': act, 'NEUTRAL': neut, 'PASSIVE': pas}
 
     pprint(count_dic)

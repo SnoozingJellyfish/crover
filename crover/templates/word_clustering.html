@@ -15,6 +15,9 @@
                 <img src={{b64_figure_not_dictword}} class="img-fluid" width="500" height="400">
             </div>
         </div>
+        {% if b64_chart != 'None' %}
+        <img src={{b64_chart}} class="img-fluid" width="500" height="400">
+        {% endif %}
     </div>
 </form>
 {% endblock %}

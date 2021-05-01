@@ -3,7 +3,7 @@ from datetime import datetime
 
 class Tweet(db.Model):
     __tablename__ = 'tweet'
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text)
     tweeted_at = db.Column(db.DateTime)
 
@@ -13,6 +13,22 @@ class Tweet(db.Model):
 
     def __repr__(self):
         return '<id:{} tweeted_at:{} text:{}>'.format(self.id, self.tweeted_at, self.text)
+
+
+class ClusterTweet(db.Model):
+    __tablename__ = 'cluster_tweet'
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text)
+    tweeted_at = db.Column(db.DateTime)
+    emotion = db.Column(db.Integer)
+
+    def __init__(self, tweeted_at=None, text=None, emotion=None):
+        self.text = text
+        self.tweeted_at = tweeted_at
+        self.emotion = emotion
+
+    def __repr__(self):
+        return '<id:{} tweeted_at:{} text:{} emotion: {}>'.format(self.id, self.tweeted_at, self.text, self.emotion)
 
 
 class WordCount(db.Model):

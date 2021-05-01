@@ -14,6 +14,7 @@ from google.cloud import storage
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
 from crover.process.preprocess import preprocess_all, make_part_word2vec_dic
 from crover.process.clustering import clustering, make_word_cloud
+from crover.process.emotion_analyze import emotion_analyze_all
 #from crover.process.emotion_analyze import emotion_analyze
 #from crover.process.util import *
 from crover.models.tweet import Tweet, WordCount
@@ -22,6 +23,7 @@ view = Blueprint('view', __name__)
 
 
 b64_figures = []
+b64_chart = 'None'
 cluster_to_words = [None]
 top_word2vec = {}
 
@@ -61,11 +63,11 @@ def word_cluster():
         cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
         b64_figures = make_word_cloud(cluster_to_words[0])
 
-    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1])
+    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1], b64_chart=b64_chart)
 
 @view.route('/zoom_cluster', methods=['GET', 'POST'])
 def zoom_cluster():
-    global b64_figures, cluster_to_words, top_word2vec
+    global b64_figures, b64_chart, cluster_to_words, top_word2vec
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster
             del cluster_to_words[-1]
@@ -88,10 +90,11 @@ def zoom_cluster():
 
         elif request.form['submit_button'][:4] == 'emot': # emotion analysis
             cluster_idx = int(request.form['submit_button'][4:])
-            #TODO: emotion analysis
+            words = list(cluster_to_words[-1][cluster_idx].keys())
+            b64_chart = emotion_analyze_all(words)
 
 
-    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1])
+    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1], b64_chart=b64_chart)
 
 @view.route('/tweet', methods=['GET'])
 def tweet():
