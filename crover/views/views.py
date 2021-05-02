@@ -17,7 +17,7 @@ from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
 #from crover.process.emotion_analyze import emotion_analyze
 #from crover.process.util import *
-from crover.models.tweet import Tweet, WordCount
+from crover.models.tweet import Tweet, ClusterTweet, WordCount
 
 view = Blueprint('view', __name__)
 
@@ -68,6 +68,9 @@ def word_cluster():
 @view.route('/analysis', methods=['GET', 'POST'])
 def analysis():
     global b64_figures, b64_chart, cluster_to_words, top_word2vec
+    posi = []
+    neutral = []
+    nega = []
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster
             del cluster_to_words[-1]
@@ -92,9 +95,15 @@ def analysis():
             cluster_idx = int(request.form['submit_button'][4:])
             words = list(cluster_to_words[-1][cluster_idx].keys())
             b64_chart = emotion_analyze_all(words)
+            posi = ClusterTweet.query.filter(ClusterTweet.emotion == 'POSITIVE').all() + \
+                   ClusterTweet.query.filter(ClusterTweet.emotion == 'mostly_POSITIVE').all()
+            neutral = ClusterTweet.query.filter(ClusterTweet.emotion == 'NEUTRAL').all()
+            nega = ClusterTweet.query.filter(ClusterTweet.emotion == 'NEGATIVE').all() + \
+                   ClusterTweet.query.filter(ClusterTweet.emotion == 'mostly_NEGATIVE').all()
 
 
-    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1], b64_chart=b64_chart)
+    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],
+                           b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
 
 @view.route('/tweet', methods=['GET'])
 def tweet():

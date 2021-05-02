@@ -49,15 +49,15 @@ def tweet_collect(words):
 # 感情分析する
 def emotion_analyze(cluster_tweets, algo='mlask'):
     cluster_tweets_emotion = []
-    emotion_count = {'all': 0, 'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
+    emotion_count = {'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
 
     if algo == 'mlask':
         emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
         for tweet in cluster_tweets:
-            emotion_count['all'] += 1
             result_dic = emotion_analyzer.analyze(tweet.text, tweet.word)
             if result_dic['emotion'] == None:
-                cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion='None'))
+                cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion='NEUTRAL'))
+                emotion_count['NEUTRAL'] += 1
             else:
                 cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion=result_dic['orientation']))
                 emotion_count[result_dic['orientation']] += 1
@@ -100,10 +100,12 @@ def make_emotion_pie_chart(emotion_count):
     x = np.array([emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE'], emotion_count['NEUTRAL'], emotion_count['NEGATIVE'] + emotion_count['mostly_NEGATIVE']])
     label = ['positive', 'neutral', 'negative']
     colors = ["lightcoral", 'yellowgreen', 'cornflowerblue']
-    plt.figure(figsize=(15, 12))
+    font_color = ["firebrick", 'darkgreen', 'darkblue']
+    plt.figure(figsize=(10, 8))
     patches, texts = plt.pie(x, labels=label, counterclock=False, startangle=90, colors=colors)
-    for t in texts:
-        t.set_size(48)
+    for i in range(len(texts)):
+        texts[i].set_size(48)
+        texts[i].set_color(font_color[i])
     buf = io.BytesIO()
     plt.savefig(buf)
     qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")

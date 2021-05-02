@@ -7,7 +7,7 @@
             {% for b64_figure in b64_figures %}
             <div class="col">
                 <img src={{b64_figure}} class="img-fluid" width="500" height="400">
-                <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-primary">さらに分類</button>
+                <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-primary">分ける</button>
                 <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-primary">感情分析</button>
             </div>
             {% endfor %}
@@ -16,24 +16,58 @@
             </div>
         </div>
         {% if b64_chart != 'None' %}
-        <img src={{b64_chart}} class="img-fluid" width="500" height="400">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ポジティブ</th>
-                    <th>ネガティブ</th>
-                    <th>ニュートラル</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tweet in tweets %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>{{ tweet.tweeted_at }}</td>
-                    <td>{{ tweet.text }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+        <img src={{b64_chart}} class="img-fluid" width="250" height="200">
+        <table border="0">
+            <tr>
+                <td valign="top">
+                    <table class="table" border="1" width="30%" align="left">
+                        <thead>
+                            <tr>
+                                <th>ポジティブ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for posi_tweet in posi_tweets %}
+                            <tr>
+                                <td>{{ posi_tweet.text }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+                <td valign="top">
+                    <table class="table" border="1" width="30%" align="left">
+                        <thead>
+                            <tr>
+                                <th>ニュートラル</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for neutral_tweet in neutral_tweets %}
+                            <tr>
+                                <td>{{ neutral_tweet.text }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+                <td valign="top">
+                    <table class="table" border="1" width="30%">
+                        <thead>
+                            <tr>
+                                <th>ネガティブ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for nega_tweet in nega_tweets %}
+                            <tr>
+                                <td>{{ nega_tweet.text }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
         </table>
         {% endif %}
     </div>
