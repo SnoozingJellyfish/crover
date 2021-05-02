@@ -26,6 +26,9 @@ b64_figures = []
 b64_chart = 'None'
 cluster_to_words = [None]
 top_word2vec = {}
+posi = []
+neutral = []
+nega = []
 
 @view.route('/')
 def home():
@@ -37,9 +40,10 @@ def non_existant_route(error):
 
 @view.route('/word_cluster', methods=['GET', 'POST'])
 def word_cluster():
-    global b64_figures, cluster_to_words, top_word2vec
+    global b64_figures, b64_chart, cluster_to_words, top_word2vec, posi, neutral, nega
     figure_dir = './crover/figure'
     if request.method == 'POST':
+        b64_chart = 'None'
         #if os.path.exists('./crover/crover.db'):
         try:
             db.drop_all()
@@ -63,11 +67,12 @@ def word_cluster():
         cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
         b64_figures = make_word_cloud(cluster_to_words[0])
 
-    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1], b64_chart=b64_chart)
+    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],
+                           b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
 
 @view.route('/analysis', methods=['GET', 'POST'])
 def analysis():
-    global b64_figures, b64_chart, cluster_to_words, top_word2vec
+    global b64_figures, b64_chart, cluster_to_words, top_word2vec, posi, neutral, nega
     posi = []
     neutral = []
     nega = []
@@ -94,12 +99,17 @@ def analysis():
         elif request.form['submit_button'][:4] == 'emot': # emotion analysis
             cluster_idx = int(request.form['submit_button'][4:])
             words = list(cluster_to_words[-1][cluster_idx].keys())
-            b64_chart = emotion_analyze_all(words)
+            b64_chart, emotion_tweet = emotion_analyze_all(words)
+            '''
             posi = ClusterTweet.query.filter(ClusterTweet.emotion == 'POSITIVE').all() + \
                    ClusterTweet.query.filter(ClusterTweet.emotion == 'mostly_POSITIVE').all()
             neutral = ClusterTweet.query.filter(ClusterTweet.emotion == 'NEUTRAL').all()
             nega = ClusterTweet.query.filter(ClusterTweet.emotion == 'NEGATIVE').all() + \
                    ClusterTweet.query.filter(ClusterTweet.emotion == 'mostly_NEGATIVE').all()
+            '''
+            posi = emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE']
+            neutral = emotion_tweet['NEUTRAL']
+            nega = emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
 
 
     return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],

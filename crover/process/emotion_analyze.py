@@ -19,10 +19,10 @@ def emotion_analyze_all(words):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words)
     logger.info('emotion analyze')
-    emotion_count = emotion_analyze(cluster_tweets)
+    emotion_count, emotion_tweet = emotion_analyze(cluster_tweets)
     logger.info('make pie chart')
     b64_chart = make_emotion_pie_chart(emotion_count)
-    return b64_chart
+    return b64_chart, emotion_tweet
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words):
@@ -48,8 +48,11 @@ def tweet_collect(words):
 
 # 感情分析する
 def emotion_analyze(cluster_tweets, algo='mlask'):
+    #if engine.dialect.has_table(engine, ClusterTweet.__tablename__):
+        #ClusterTweet.__table__.drop(engine)
     cluster_tweets_emotion = []
     emotion_count = {'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
+    emotion_tweet = {'POSITIVE': [], 'mostly_POSITIVE': [], 'NEUTRAL': [], 'mostly_NEGATIVE': [], 'NEGATIVE': []}
 
     if algo == 'mlask':
         emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
@@ -58,9 +61,11 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
             if result_dic['emotion'] == None:
                 cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion='NEUTRAL'))
                 emotion_count['NEUTRAL'] += 1
+                emotion_tweet['NEUTRAL'].append(tweet.text)
             else:
                 cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion=result_dic['orientation']))
                 emotion_count[result_dic['orientation']] += 1
+                emotion_tweet[result_dic['orientation']].append(tweet.text)
 
     elif algo == 'oseti':
         emotion_analyzer = oseti.Analyzer()
@@ -93,7 +98,7 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
     db.session().add_all(cluster_tweets_emotion)
     db.session().commit()
 
-    return emotion_count
+    return emotion_count, emotion_tweet
 
 
 def make_emotion_pie_chart(emotion_count):
@@ -101,7 +106,7 @@ def make_emotion_pie_chart(emotion_count):
     label = ['positive', 'neutral', 'negative']
     colors = ["lightcoral", 'yellowgreen', 'cornflowerblue']
     font_color = ["firebrick", 'darkgreen', 'darkblue']
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 8))
     patches, texts = plt.pie(x, labels=label, counterclock=False, startangle=90, colors=colors)
     for i in range(len(texts)):
         texts[i].set_size(48)

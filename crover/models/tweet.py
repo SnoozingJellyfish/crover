@@ -1,5 +1,8 @@
+from sqlalchemy import create_engine
 from crover import db
 from datetime import datetime
+
+#engine = create_engine('sqlite://', echo=False)
 
 class Tweet(db.Model):
     __tablename__ = 'tweet'
