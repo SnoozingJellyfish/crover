@@ -77,7 +77,8 @@ def preprocess_all(keyword, max_tweets, word_num):
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
-    return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
+    return dict_word_count_rate
+    #return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
 
     #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec_model='crover/data/jawiki.all_vectors.100d.pickle')
@@ -347,7 +348,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
+def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, ignore_word_count=0):
     print('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
@@ -367,23 +368,22 @@ def word_count_rate(dict_word_count, dict_all_count, ignore_word_count=0):
             continue
 
     dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
+    extract_word_num = min(top_word_num, len(list(dict_word_count_rate.keys())))
+    dict_word_count_rate = dict(list(dict_word_count_rate.items())[:extract_word_num])
 
     print('------------ word count rate finish --------------')
     return dict_word_count_rate
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=20, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
-    word_keys = list(dict_word_count_rate.keys())
-    top_words = list(dict_word_count_rate.keys())[:min(top_word_num, len(word_keys))]
     all_word_list = list(word2vec.keys())
-
     word_rate_list = []
 
-    for word in top_words:
+    for word in dict_word_count_rate.keys():
         logger.info(word)
         word_rate_list.append(WordCount(word=word, relative_frequent_rate=dict_word_count_rate[word]))
 

@@ -12,7 +12,7 @@ from flask import Blueprint
 from google.cloud import storage
 
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
-from crover.process.preprocess import preprocess_all, make_part_word2vec_dic
+from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
 #from crover.process.emotion_analyze import emotion_analyze
@@ -20,7 +20,6 @@ from crover.process.emotion_analyze import emotion_analyze_all
 from crover.models.tweet import Tweet, ClusterTweet, WordCount
 
 view = Blueprint('view', __name__)
-
 
 b64_figures = []
 b64_chart = 'None'
@@ -57,18 +56,20 @@ def word_cluster():
         #timedelta = dt.timedelta(days=100)
         #dt_until = dt.datetime.now()
         #dt_since = dt_until - timedelta
-        top_word2vec = preprocess_all(keyword, max_tweets, word_num)
-        print(top_word2vec['word'])
+        cluster_to_words = [{0: preprocess_all(keyword, max_tweets, word_num)}]
         #return redirect(url_for('view.word_count'))
         #return redirect(url_for('view.tweet'))
         #b64_figures = clustering(top_word2vec, word_num=word_num)
-        cluster_to_words = [clustering(top_word2vec, word_num=word_num)]
-        not_dictword_num = len(list(cluster_to_words[0].keys()))
-        cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
+        #cluster_to_words = [clustering(top_word2vec, word_num=word_num)]
+        #not_dictword_num = len(list(cluster_to_words[0].keys()))
+        #cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
         b64_figures = make_word_cloud(cluster_to_words[0])
 
-    return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],
-                           b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
+    if len(b64_figures) == 1:
+        return render_template('word_clustering.html', b64_figures=b64_figures, b64_figure_not_dictword='None', b64_chart='None')
+    else:
+        return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],
+                               b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
 
 @view.route('/analysis', methods=['GET', 'POST'])
 def analysis():
@@ -76,23 +77,33 @@ def analysis():
     posi = []
     neutral = []
     nega = []
+    b64_chart = 'None'
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster
-            del cluster_to_words[-1]
-            b64_figures = make_word_cloud(cluster_to_words[-1])
+            if len(b64_figures) == 1:
+                return redirect(url_for('view.home'))
+            else:
+                del cluster_to_words[-1]
+                b64_figures = make_word_cloud(cluster_to_words[-1])
 
         elif request.form['submit_button'][:4] == 'zoom': # zoom clustering
-            cluster_idx = int(request.form['submit_button'][4:])
-            clustered_words = cluster_to_words[-1][cluster_idx]
-            part_word2vec = make_part_word2vec_dic(clustered_words, top_word2vec)
-            zoom_cluster_to_words = clustering(part_word2vec)
-            pre_cluster_to_words = copy.deepcopy(cluster_to_words[-1])
-            cluster_to_words.append(copy.deepcopy(cluster_to_words[-1]))
-            cluster_to_words[-1][cluster_idx] = zoom_cluster_to_words[0]
-            cluster_to_words[-1][cluster_idx+1] = zoom_cluster_to_words[1]
+            if len(b64_figures) == 1:
+                top_word2vec = make_top_word2vec_dic(cluster_to_words[0][0])
+                cluster_to_words.append(clustering(top_word2vec))
+                not_dictword_num = len(list(cluster_to_words[-1].keys()))
+                cluster_to_words[-1][not_dictword_num] = top_word2vec['not_dict_word']
+            else:
+                cluster_idx = int(request.form['submit_button'][4:])
+                clustered_words = cluster_to_words[-1][cluster_idx]
+                part_word2vec = make_part_word2vec_dic(clustered_words, top_word2vec)
+                zoom_cluster_to_words = clustering(part_word2vec)
+                pre_cluster_to_words = copy.deepcopy(cluster_to_words[-1])
+                cluster_to_words.append(copy.deepcopy(cluster_to_words[-1]))
+                cluster_to_words[-1][cluster_idx] = zoom_cluster_to_words[0]
+                cluster_to_words[-1][cluster_idx+1] = zoom_cluster_to_words[1]
 
-            for i in range(cluster_idx+1, len(list(pre_cluster_to_words.keys()))):
-                cluster_to_words[-1][i+1] = pre_cluster_to_words[i]
+                for i in range(cluster_idx+1, len(list(pre_cluster_to_words.keys()))):
+                    cluster_to_words[-1][i+1] = pre_cluster_to_words[i]
 
             b64_figures = make_word_cloud(cluster_to_words[-1])
 

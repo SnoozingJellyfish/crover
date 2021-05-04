@@ -19,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 # 相対頻出度が高いword_num個の単語をword2vec上でクラスタリングする
-def clustering(top_word2vec, word_num=100, cluster_all=3, algo='ward'):
+def clustering(top_word2vec, cluster_all=3, algo='ward'):
     print('------------------- clustering start ---------------------')
 
-    word_num = min(word_num, len(top_word2vec['word']))
-    words = top_word2vec['word'][:word_num]
-    vec = top_word2vec['vec'][:word_num]
-    word_count_rates = top_word2vec['word_count_rate'][:word_num]
+    #word_num = min(word_num, len(top_word2vec['word']))
+    words = top_word2vec['word']
+    vec = top_word2vec['vec']
+    word_count_rates = top_word2vec['word_count_rate']
     not_dict_word = top_word2vec['not_dict_word']
 
     if algo == 'kmeans':
