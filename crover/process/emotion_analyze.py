@@ -107,7 +107,7 @@ def make_emotion_pie_chart(emotion_count):
     colors = ["lightcoral", 'yellowgreen', 'cornflowerblue']
     font_color = ["firebrick", 'darkgreen', 'darkblue']
     plt.figure(figsize=(12, 8))
-    patches, texts = plt.pie(x, labels=label, counterclock=False, startangle=90, colors=colors)
+    patches, texts = plt.pie(x, labels=label, counterclock=True, startangle=90, colors=colors)
     for i in range(len(texts)):
         texts[i].set_size(48)
         texts[i].set_color(font_color[i])

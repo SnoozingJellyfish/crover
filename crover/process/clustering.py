@@ -90,10 +90,13 @@ def zoomClustering(file_name, cluster_csv, cluster_num, zoom_cluster_all):
 def make_word_cloud(cluster_to_words):
     colormaps = ['spring', 'summer', 'autumn', 'winter', 'PuRd', 'Wistia', 'cool', 'hot', 'YlGnBu', 'YlOrBr']
     b64_figures = []
+    #font_path = "./crover/data/font/NotoSansCJKjp-Regular.otf"
+    font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"
 
     for i in range(len(cluster_to_words)):
-        wordcloud = WordCloud(font_path="./crover/data/font/NotoSansCJKjp-Regular.otf", background_color="white",
+        wordcloud = WordCloud(font_path=font_path, background_color="white",
                               width=500, height=500, colormap=colormaps[i])
+        #wordcloud = WordCloud(background_color="white", width=500, height=500, colormap=colormaps[i])
         logger.info('fit word cloud')
         wordcloud.fit_words(cluster_to_words[i])
         '''

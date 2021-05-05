@@ -66,7 +66,8 @@ def word_cluster():
         b64_figures = make_word_cloud(cluster_to_words[0])
 
     if len(b64_figures) == 1:
-        return render_template('word_clustering.html', b64_figures=b64_figures, b64_figure_not_dictword='None', b64_chart='None')
+        return render_template('word_clustering.html', b64_figures=b64_figures, b64_figure_not_dictword='None',
+                               b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
     else:
         return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],
                                b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
@@ -80,8 +81,13 @@ def analysis():
     b64_chart = 'None'
     if request.method == 'POST':
         if request.form['submit_button'] == 'return': # return to previous cluster
-            if len(b64_figures) == 1:
+            if len(cluster_to_words) == 1:
                 return redirect(url_for('view.home'))
+            elif len(cluster_to_words) == 2:
+                del cluster_to_words[-1]
+                b64_figures = make_word_cloud(cluster_to_words[-1])
+                return render_template('word_clustering.html', b64_figures=b64_figures, b64_figure_not_dictword='None',
+                                       b64_chart='None')
             else:
                 del cluster_to_words[-1]
                 b64_figures = make_word_cloud(cluster_to_words[-1])
@@ -121,6 +127,10 @@ def analysis():
             posi = emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE']
             neutral = emotion_tweet['NEUTRAL']
             nega = emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
+
+            if len(cluster_to_words) == 1:
+                return render_template('word_clustering.html', b64_figures=b64_figures, b64_figure_not_dictword='None',
+                                       b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
 
 
     return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],

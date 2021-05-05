@@ -76,7 +76,7 @@ def preprocess_all(keyword, max_tweets, word_num):
 
     #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
-    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count)
+    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num)
     return dict_word_count_rate
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
 
@@ -368,11 +368,22 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, ignore_wor
             continue
 
     dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
-    extract_word_num = min(top_word_num, len(list(dict_word_count_rate.keys())))
-    dict_word_count_rate = dict(list(dict_word_count_rate.items())[:extract_word_num])
+    i = 0
+    extract_dict = {}
+    word_rate_list = []
+    for w in dict_word_count_rate.keys():
+        if OKword(w):
+            extract_dict[w] = dict_word_count_rate[w]
+            word_rate_list.append(WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
+            i += 1
+            if i >= top_word_num:
+                break
+
+    db.session().add_all(word_rate_list)
+    db.session().commit()
 
     print('------------ word count rate finish --------------')
-    return dict_word_count_rate
+    return extract_dict
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
@@ -381,25 +392,23 @@ def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
     all_word_list = list(word2vec.keys())
-    word_rate_list = []
+    #word_rate_list = []
 
     for word in dict_word_count_rate.keys():
         logger.info(word)
-        word_rate_list.append(WordCount(word=word, relative_frequent_rate=dict_word_count_rate[word]))
+        #word_rate_list.append(WordCount(word=word, relative_frequent_rate=dict_word_count_rate[word]))
 
         if algo == 'mecab':
             if word in all_word_list:
-                if OKword(word):
-                    print('OK')
-                    dict_top_word2vec['word'].append(word)
-                    #id = word_id[word]
-                    #source_path = os.path.join('mecab_word2vec_100d_per100-100', str(id//10000), 'word2vec_' + str((id%10000)//100) + '.pickle')
-                    #source_path = 'mecab_word2vec_100d_per100-100/' + str(id//10000*10000) + '/word2vec_' + str((id%10000)//100*100) + '.pickle'
-                    #obj = bucket.Object(source_path)
-                    #vec_dict = pickle.load(BytesIO(obj.get()['Body'].read()))
-                    #dict_top_word2vec['vec'].append(vec_dict[id])
-                    dict_top_word2vec['vec'].append(word2vec[word])
-                    dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
+                dict_top_word2vec['word'].append(word)
+                #id = word_id[word]
+                #source_path = os.path.join('mecab_word2vec_100d_per100-100', str(id//10000), 'word2vec_' + str((id%10000)//100) + '.pickle')
+                #source_path = 'mecab_word2vec_100d_per100-100/' + str(id//10000*10000) + '/word2vec_' + str((id%10000)//100*100) + '.pickle'
+                #obj = bucket.Object(source_path)
+                #vec_dict = pickle.load(BytesIO(obj.get()['Body'].read()))
+                #dict_top_word2vec['vec'].append(vec_dict[id])
+                dict_top_word2vec['vec'].append(word2vec[word])
+                dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
                 dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
@@ -411,9 +420,6 @@ def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
                 dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
-
-    db.session().add_all(word_rate_list)
-    db.session().commit()
 
     print('-------------- making dict_top_word2vec finish -----------------\n')
 
