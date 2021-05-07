@@ -22,7 +22,7 @@ from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 
 #import gensim
-import boto3
+#import boto3
 
 from crover import db
 #from crover import dict_all_count
