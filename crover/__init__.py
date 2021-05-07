@@ -35,7 +35,6 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
 
 IS_SERVER = True
 
-
 if IS_SERVER:
     storage_client = storage.Client()
 
