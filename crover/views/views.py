@@ -1,6 +1,7 @@
 import copy
 import logging
 
+import numpy as np
 from flask import request, redirect, url_for, render_template, flash, session
 #from flask import current_app as app
 #from crover import app
@@ -36,7 +37,7 @@ def home():
     entities = []
     for w in word2vec.keys():
         entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
-        entity.update({'vec': list(word2vec[w])})
+        entity.update({'vec': list(word2vec[w].astype(np.float64))})
         entities.append(entity)
         i += 1
         if i % 1000 == 0:
