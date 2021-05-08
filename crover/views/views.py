@@ -1,23 +1,17 @@
-import os
-import datetime as dt
-import logging
-import pickle
 import copy
 
 from flask import request, redirect, url_for, render_template, flash, session
-from flask import current_app as app
+#from flask import current_app as app
 #from crover import app
-from functools import wraps
+#from functools import wraps
 from flask import Blueprint
-from google.cloud import storage
+#from google.cloud import storage
 
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
-#from crover.process.emotion_analyze import emotion_analyze
-#from crover.process.util import *
-from crover.models.tweet import Tweet, ClusterTweet, WordCount
+from crover.models.tweet import Tweet, WordCount
 
 view = Blueprint('view', __name__)
 
@@ -52,17 +46,7 @@ def word_cluster():
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
         word_num = int(request.form['word_num'])
-
-        #timedelta = dt.timedelta(days=100)
-        #dt_until = dt.datetime.now()
-        #dt_since = dt_until - timedelta
         cluster_to_words = [{0: preprocess_all(keyword, max_tweets, word_num)}]
-        #return redirect(url_for('view.word_count'))
-        #return redirect(url_for('view.tweet'))
-        #b64_figures = clustering(top_word2vec, word_num=word_num)
-        #cluster_to_words = [clustering(top_word2vec, word_num=word_num)]
-        #not_dictword_num = len(list(cluster_to_words[0].keys()))
-        #cluster_to_words[0][not_dictword_num] = top_word2vec['not_dict_word']
         b64_figures = make_word_cloud(cluster_to_words[0])
 
     if len(b64_figures) == 1:

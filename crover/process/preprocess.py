@@ -5,18 +5,8 @@ import pickle
 import csv
 import requests
 import json
-import subprocess
-import site
-import sys
-from io import BytesIO
-import time
 import logging
 
-from flask import current_app as app
-#import snscrape.modules.twitter as sntwitter
-#from tqdm import tqdm
-#import MeCab
-#import pandas as pd
 import numpy as np
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict

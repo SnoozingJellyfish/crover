@@ -20,8 +20,11 @@ readiness_check:
   app_start_timeout_sec: 1200
 
 # Lock instances to 1
-manual_scaling:
-    instances: 1
+#manual_scaling:
+#    instances: 1
+automatic_scaling:
+  min_num_instances: 1
+  max_num_instances: 2
 
 # secret token
 includes:
