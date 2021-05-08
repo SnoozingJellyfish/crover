@@ -25,8 +25,8 @@ readiness_check:
 automatic_scaling:
   min_num_instances: 1
   max_num_instances: 2
-  min_idle_instances: 1
-  max_idle_instances: 1
+  min_num_idle_instances: 1
+  max_num_idle_instances: 1
 
 # secret token
 includes:
