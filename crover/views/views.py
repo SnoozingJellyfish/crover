@@ -40,7 +40,7 @@ def home():
         entity.update({'vec': list(word2vec[w].astype(np.float64))})
         entities.append(entity)
         i += 1
-        if i % 1000 == 0:
+        if i % 400 == 0:
             logger.info(i)
             client.put_multi(entities)
             entities = []
