@@ -3,7 +3,7 @@ runtime: python
 runtime_config:
     python_version: 3
 env: flex
-entrypoint: gunicorn -b :$PORT main:app --timeout 300
+entrypoint: gunicorn -b :$PORT main:app --timeout 3000
 
 #instance_class: F4_1G
 resources:

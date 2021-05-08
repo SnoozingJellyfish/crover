@@ -1,4 +1,5 @@
 import copy
+import logging
 
 from flask import request, redirect, url_for, render_template, flash, session
 #from flask import current_app as app
@@ -7,13 +8,14 @@ from flask import request, redirect, url_for, render_template, flash, session
 from flask import Blueprint
 #from google.cloud import storage
 
-from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
+from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud, word2vec
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
 from crover.models.tweet import Tweet, WordCount
 
 view = Blueprint('view', __name__)
+logger = logging.getLogger(__name__)
 
 b64_figures = []
 b64_chart = 'None'
@@ -25,38 +27,24 @@ nega = []
 
 @view.route('/')
 def home():
-    # test
+    # word2vec datastore upload
     from google.cloud import datastore
     # For help authenticating your client, visit
     # https://cloud.google.com/docs/authentication/getting-started
     client = datastore.Client()
-    task0_0 = datastore.Entity(client.key("test", 'a'))
-    task0_0.update(
-        {
-            "category": [1, 2],
-        }
-    )
-    client.put(task0_0)
-    task0 = datastore.Entity(client.key("test", 'あい'))
-    task0.update(
-        {
-            "category": [1, 2],
-        }
-    )
-    client.put(task0)
-    task1 = datastore.Entity(client.key("test", 'あ'))
-    task1.update(
-        {
-            "category": [1.2, 2.3],
-        }
-    )
-    task2 = datastore.Entity(client.key("test", 'いあ'))
-    task2.update(
-        {
-            "category": [3.3, 4.4]
-        }
-    )
-    client.put_multi([task1, task2])
+    i = 0
+    entities = []
+    for w in word2vec.keys():
+        entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
+        entity.update({'vec': list(word2vec[w])})
+        entities.append(entity)
+        i += 1
+        if i % 1000 == 0:
+            logger.info(i)
+            client.put_multi(entities)
+            entities = []
+
+    client.put_multi(entities)
 
     return render_template('index.html')
 
