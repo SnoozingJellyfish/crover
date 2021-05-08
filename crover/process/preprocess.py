@@ -450,13 +450,15 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
         traceback.print_exc()
         print(entities)
 
-    for i in range(len(dict_word)):
-        if entities[i]:
-            dict_top_word2vec['word'].append(dict_word[i])
-            dict_top_word2vec['vec'].append(np.array(entities[i]['vec']))
-            dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[dict_word[i]])
+    for entity in entities:
+        word = entity.key.name
+        print(word)
+        if word in dict_word:
+            dict_top_word2vec['word'].append(word)
+            dict_top_word2vec['vec'].append(np.array(entity['vec']))
+            dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
         else:
-            dict_top_word2vec['not_dict_word'][dict_word[i]] = dict_word_count_rate[dict_word[i]]
+            dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
 
     print('-------------- making dict_top_word2vec finish -----------------\n')
