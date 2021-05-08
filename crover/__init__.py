@@ -49,6 +49,7 @@ if IS_SERVER:
     mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
 
     dst_path = set_default_dict_package('sudachidict_full', sys.stdout)
+    
 
 else: # local
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
