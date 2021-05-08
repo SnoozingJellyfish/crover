@@ -50,6 +50,25 @@ if IS_SERVER:
 
     dst_path = set_default_dict_package('sudachidict_full', sys.stdout)
 
+    # test
+    from google.cloud import datastore
+    # For help authenticating your client, visit
+    # https://cloud.google.com/docs/authentication/getting-started
+    client = datastore.Client()
+    task1 = datastore.Entity(client.key("test", 'あ'))
+    task1.update(
+        {
+            "category": [1.2, 2.3],
+        }
+    )
+    task2 = datastore.Entity(client.key("test", 'いあ'))
+    task2.update(
+        {
+            "category": [3.3, 4.4]
+        }
+    )
+    client.put_multi([task1, task2])
+
 else: # local
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)
