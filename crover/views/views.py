@@ -9,8 +9,9 @@ from flask import request, redirect, url_for, render_template, flash, session
 from flask import Blueprint
 #from google.cloud import storage
 
-from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud, word2vec
-from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic
+from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
+#import  word2vec
+from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
 from crover.models.tweet import Tweet, WordCount
@@ -28,6 +29,7 @@ nega = []
 
 @view.route('/')
 def home():
+    '''
     # word2vec datastore upload
     from google.cloud import datastore
     # For help authenticating your client, visit
@@ -46,6 +48,7 @@ def home():
             entities = []
 
     client.put_multi(entities)
+    '''
 
     return render_template('index.html')
 
@@ -100,7 +103,8 @@ def analysis():
 
         elif request.form['submit_button'][:4] == 'zoom': # zoom clustering
             if len(b64_figures) == 1:
-                top_word2vec = make_top_word2vec_dic(cluster_to_words[0][0])
+                #top_word2vec = make_top_word2vec_dic(cluster_to_words[0][0])
+                top_word2vec = make_top_word2vec_dic_datastore(cluster_to_words[0][0])
                 cluster_to_words.append(clustering(top_word2vec))
                 not_dictword_num = len(list(cluster_to_words[-1].keys()))
                 cluster_to_words[-1][not_dictword_num] = top_word2vec['not_dict_word']

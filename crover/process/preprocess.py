@@ -6,17 +6,19 @@ import csv
 import requests
 import json
 import logging
+import traceback
 
 import numpy as np
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
+from google.cloud import datastore
 
 #import gensim
 #import boto3
 
 from crover import db
-#from crover import dict_all_count
-from crover import dict_all_count, word2vec
+from crover import dict_all_count
+#from crover import dict_all_count, word2vec
 from crover.models.tweet import Tweet, WordCount
 #from crover.models.tweet import AllWordCount
 
@@ -410,6 +412,52 @@ def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
             else:
                 dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
+
+    print('-------------- making dict_top_word2vec finish -----------------\n')
+
+
+def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
+    print('-------------- making dict_top_word2vec start -----------------\n')
+
+    dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
+    client = datastore.Client()
+    keys = []
+    dict_word = list(dict_word_count_rate.keys())
+
+    try:
+        logger.info('2005年')
+        entity = client.get(client.key('mecab_word2vec_100d', '2005年'))
+        print(entity)
+    except:
+        traceback.print_exc()
+
+    try:
+        logger.info('##2005年##')
+        entity = client.get(client.key('mecab_word2vec_100d', '##2005年##'))
+        print(entity)
+    except:
+        traceback.print_exc()
+
+    for word in dict_word_count_rate.keys():
+        logger.info(word)
+        keys.append(client.key('mecab_word2vec_100d', word))
+
+    try:
+        logger.info('entities')
+        entities = client.get_multi(keys)
+        print(entities)
+    except:
+        traceback.print_exc()
+        print(entities)
+
+    for i in range(len(dict_word)):
+        if entities[i]:
+            dict_top_word2vec['word'].append(dict_word[i])
+            dict_top_word2vec['vec'].append(np.array(entities[i]['vec']))
+            dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[dict_word[i]])
+        else:
+            dict_top_word2vec['not_dict_word'][dict_word[i]] = dict_word_count_rate[dict_word[i]]
+
 
     print('-------------- making dict_top_word2vec finish -----------------\n')
 
