@@ -25,6 +25,39 @@ nega = []
 
 @view.route('/')
 def home():
+    # test
+    from google.cloud import datastore
+    # For help authenticating your client, visit
+    # https://cloud.google.com/docs/authentication/getting-started
+    client = datastore.Client()
+    task0_0 = datastore.Entity(client.key("test", 'a'))
+    task0_0.update(
+        {
+            "category": [1, 2],
+        }
+    )
+    client.put(task0_0)
+    task0 = datastore.Entity(client.key("test", 'あい'))
+    task0.update(
+        {
+            "category": [1, 2],
+        }
+    )
+    client.put(task0)
+    task1 = datastore.Entity(client.key("test", 'あ'))
+    task1.update(
+        {
+            "category": [1.2, 2.3],
+        }
+    )
+    task2 = datastore.Entity(client.key("test", 'いあ'))
+    task2.update(
+        {
+            "category": [3.3, 4.4]
+        }
+    )
+    client.put_multi([task1, task2])
+
     return render_template('index.html')
 
 @view.app_errorhandler(404)
