@@ -10,7 +10,7 @@ from flask import Blueprint
 #from google.cloud import storage
 
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
-from crover import  word2vec
+from crover import word2vec
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
@@ -29,29 +29,6 @@ nega = []
 
 @view.route('/')
 def home():
-
-    # word2vec datastore upload
-    from google.cloud import datastore
-    # For help authenticating your client, visit
-    # https://cloud.google.com/docs/authentication/getting-started
-    client = datastore.Client()
-    i = 0
-    entities = []
-
-    for w in word2vec.keys():
-        i += 1
-        if i > 390000 and w[0] != '_' and w != '':
-            entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
-            entity.update({'vec': list(word2vec[w].astype(np.float64))})
-            entities.append(entity)
-
-        if i > 390000 and i % 400 == 0:
-            logger.info(i)
-            client.put_multi(entities)
-            entities = []
-
-    client.put_multi(entities)
-
     return render_template('index.html')
 
 @view.app_errorhandler(404)
@@ -73,6 +50,24 @@ def word_cluster():
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
         word_num = int(request.form['word_num'])
+
+        # word2vec datastore upload
+        from google.cloud import datastore
+        client = datastore.Client()
+        i = 0
+        entities = []
+        for w in word2vec.keys():
+            i += 1
+            if i > word_num and w[0] != '_' and w != '':
+                entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
+                entity.update({'vec': list(word2vec[w].astype(np.float64))})
+                entities.append(entity)
+            if i > word_num and i % 400 == 0:
+                logger.info(i)
+                client.put_multi(entities)
+                entities = []
+        client.put_multi(entities)
+
         cluster_to_words = [{0: preprocess_all(keyword, max_tweets, word_num)}]
         b64_figures = make_word_cloud(cluster_to_words[0])
 
