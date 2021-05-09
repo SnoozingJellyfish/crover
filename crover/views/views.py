@@ -52,7 +52,6 @@ def home():
 
     client.put_multi(entities)
 
-
     return render_template('index.html')
 
 @view.app_errorhandler(404)
