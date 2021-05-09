@@ -37,19 +37,23 @@ def home():
     client = datastore.Client()
     i = 0
     entities = []
+
     for w in word2vec.keys():
-        i += 1
-        if i > 345000:
-            entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
-            entity.update({'vec': list(word2vec[w].astype(np.float64))})
-            entities.append(entity)
+        try:
+            i += 1
+            if i > 390000:
+                entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
+                entity.update({'vec': list(word2vec[w].astype(np.float64))})
+                entities.append(entity)
 
-            if i % 400 == 0:
-                logger.info(i)
-                client.put_multi(entities)
-                entities = []
+                if i % 400 == 0:
+                    logger.info(i)
+                    client.put_multi(entities)
+                    entities = []
 
-    client.put_multi(entities)
+            client.put_multi(entities)
+        except:
+            logger.info('catch except: ' + str(i))
 
 
     return render_template('index.html')
