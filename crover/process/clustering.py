@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import numpy as np
 #from sklearn.cluster import KMeans
-from scipy.cluster.hierarchy import linkage,dendrogram, fcluster
+from scipy.cluster.hierarchy import linkage,dendrogram, fcluster, cut_tree
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -36,9 +36,10 @@ def clustering(top_word2vec, cluster_all=3, algo='ward'):
 
     elif algo == 'ward':
         link = linkage(vec, algo)
-        labels = fcluster(link, 2, criterion='maxclust')
+        #labels = fcluster(link, 2, criterion='maxclust')
         # 1始まりを0始まりに変更
-        labels = np.array(labels) - 1
+        #labels = np.array(labels) - 1
+        labels = cut_tree(link, n_clusters=2)[:, 0]
         cluster_to_words = defaultdict(dict)
         for cluster_id, word, word_count_rate in zip(labels, words, word_count_rates):
             cluster_to_words[cluster_id][word] = word_count_rate

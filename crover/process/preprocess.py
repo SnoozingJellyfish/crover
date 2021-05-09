@@ -414,6 +414,7 @@ def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
                 dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
     print('-------------- making dict_top_word2vec finish -----------------\n')
+    return dict_top_word2vec
 
 
 def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
@@ -423,20 +424,6 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
     client = datastore.Client()
     keys = []
     dict_word = list(dict_word_count_rate.keys())
-
-    try:
-        logger.info('2005年')
-        entity = client.get(client.key('mecab_word2vec_100d', '2005年'))
-        print(entity)
-    except:
-        traceback.print_exc()
-
-    try:
-        logger.info('##2005年##')
-        entity = client.get(client.key('mecab_word2vec_100d', '##2005年##'))
-        print(entity)
-    except:
-        traceback.print_exc()
 
     for word in dict_word_count_rate.keys():
         logger.info(word)
@@ -449,6 +436,7 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
     except:
         traceback.print_exc()
         print(entities)
+    logger.info('get multi word2vec')
 
     for entity in entities:
         word = entity.key.name

@@ -111,6 +111,10 @@ def analysis():
             else:
                 cluster_idx = int(request.form['submit_button'][4:])
                 clustered_words = cluster_to_words[-1][cluster_idx]
+                if len(clustered_words) == 1:
+                    return render_template('word_clustering.html', b64_figures=b64_figures[:-1],
+                                           b64_figure_not_dictword=b64_figures[-1],
+                                           b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
                 part_word2vec = make_part_word2vec_dic(clustered_words, top_word2vec)
                 zoom_cluster_to_words = clustering(part_word2vec)
                 pre_cluster_to_words = copy.deepcopy(cluster_to_words[-1])
