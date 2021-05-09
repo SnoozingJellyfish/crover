@@ -39,14 +39,13 @@ if IS_SERVER:
     storage_client = storage.Client()
 
     bucket_name = os.environ.get('BUCKET_NAME')
-    #bucket_name = os.environ.get('GOOGLE_CLOUD_PROJECT')
     dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
-    '''
+
     word2vec = {}
     for i in range(9):
         wv = download_from_cloud(storage_client, bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
         word2vec.update(wv)
-    '''
+
 
     mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
 

@@ -10,7 +10,7 @@ from flask import Blueprint
 #from google.cloud import storage
 
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
-#import  word2vec
+from crover import  word2vec
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
@@ -29,7 +29,7 @@ nega = []
 
 @view.route('/')
 def home():
-    '''
+
     # word2vec datastore upload
     from google.cloud import datastore
     # For help authenticating your client, visit
@@ -38,17 +38,19 @@ def home():
     i = 0
     entities = []
     for w in word2vec.keys():
-        entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
-        entity.update({'vec': list(word2vec[w].astype(np.float64))})
-        entities.append(entity)
         i += 1
-        if i % 400 == 0:
-            logger.info(i)
-            client.put_multi(entities)
-            entities = []
+        if i > 345000:
+            entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
+            entity.update({'vec': list(word2vec[w].astype(np.float64))})
+            entities.append(entity)
+
+            if i % 400 == 0:
+                logger.info(i)
+                client.put_multi(entities)
+                entities = []
 
     client.put_multi(entities)
-    '''
+
 
     return render_template('index.html')
 
@@ -102,7 +104,7 @@ def analysis():
                 b64_figures = make_word_cloud(cluster_to_words[-1])
 
         elif request.form['submit_button'][:4] == 'zoom': # zoom clustering
-            if len(b64_figures) == 1:
+            if len(cluster_to_words) == 1:
                 #top_word2vec = make_top_word2vec_dic(cluster_to_words[0][0])
                 top_word2vec = make_top_word2vec_dic_datastore(cluster_to_words[0][0])
                 cluster_to_words.append(clustering(top_word2vec))

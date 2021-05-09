@@ -448,7 +448,6 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
             logger.info('vec not exist: ' + word)
             dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
-    print(dict_top_word2vec)
     print('-------------- making dict_top_word2vec finish -----------------\n')
 
     return dict_top_word2vec
