@@ -423,32 +423,32 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
     client = datastore.Client()
     keys = []
-    dict_word = list(dict_word_count_rate.keys())
 
     for word in dict_word_count_rate.keys():
         logger.info(word)
         keys.append(client.key('mecab_word2vec_100d', word))
 
-    try:
-        logger.info('entities')
-        entities = client.get_multi(keys)
-        print(entities)
-    except:
-        traceback.print_exc()
-        print(entities)
+    logger.info('entities')
+    entities = client.get_multi(keys)
+    print(entities)
     logger.info('get multi word2vec')
 
+    vec_exist_words = []
     for entity in entities:
-        word = entity.key.name
-        print(word)
-        if word in dict_word:
+        vec_exist_words.append(entity.key.name)
+
+    for word in dict_word_count_rate.keys():
+        if word in vec_exist_words:
+            logger.info('vec exist: ' + word)
             dict_top_word2vec['word'].append(word)
+            entity = entities[vec_exist_words.index(word)]
             dict_top_word2vec['vec'].append(np.array(entity['vec']))
             dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
         else:
+            logger.info('vec not exist: ' + word)
             dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
-
+    print(dict_top_word2vec)
     print('-------------- making dict_top_word2vec finish -----------------\n')
 
     return dict_top_word2vec
