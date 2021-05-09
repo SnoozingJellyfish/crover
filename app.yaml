@@ -8,7 +8,7 @@ entrypoint: gunicorn -b :$PORT main:app --timeout 30000
 #instance_class: F4_1G
 resources:
   cpu: 1
-  memory_gb: 1.7
+  memory_gb: 1
 
 env_variables:
   BUCKET_NAME: "word2vec_id"

@@ -26,9 +26,6 @@ logger = logging.getLogger(__name__)
 
 def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
-    #print(site.getsitepackages())
-    #subprocess.Popen(os.path.join(site.getsitepackages()[0], "Scripts", "sudachipy.exe") + " link -t full")
-
     '''
     s3_client = boto3.resource(
         's3',
@@ -66,9 +63,8 @@ def preprocess_all(keyword, max_tweets, word_num):
         word_id = pickle.load(f)
     '''
 
-    #dict_word_count = scrape(keyword, max_tweets, since, until)
     dict_word_count = scrape_token(keyword, max_tweets)
-    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num)
+    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets)
     return dict_word_count_rate
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
 
@@ -340,7 +336,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, ignore_word_count=0):
+def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=0):
     print('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
@@ -355,7 +351,7 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, ignore_wor
             all_count = 0
 
         try:
-            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/2 + 1)
+            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1)
         except TypeError:
             continue
 
