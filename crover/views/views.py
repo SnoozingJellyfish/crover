@@ -50,6 +50,7 @@ def word_cluster():
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
         word_num = int(request.form['word_num'])
+        up_vec_num = int(request.form['up_vec_num'])
 
         # word2vec datastore upload
         from google.cloud import datastore
@@ -58,11 +59,11 @@ def word_cluster():
         entities = []
         for w in word2vec.keys():
             i += 1
-            if i > word_num and w[0] != '_' and w != '':
+            if i > up_vec_num and w[0] != '_' and w != '':
                 entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
                 entity.update({'vec': list(word2vec[w].astype(np.float64))})
                 entities.append(entity)
-            if i > word_num and i % 400 == 0:
+            if i > up_vec_num and i % 400 == 0:
                 logger.info(i)
                 client.put_multi(entities)
                 entities = []
