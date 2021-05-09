@@ -149,3 +149,4 @@ crover/figure/
 # config
 # crover/config.py
 requirements_old.txt
+requirements_flex.txt
