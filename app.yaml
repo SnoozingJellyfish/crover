@@ -3,7 +3,7 @@ runtime: python37 # or another supported version for standard environment
 #runtime_config: # flex
 #    python_version: 3 # flex
 #env: flex
-entrypoint: gunicorn -b :$PORT main:app --timeout 30000
+#entrypoint: gunicorn -b :$PORT main:app --timeout 30000
 
 instance_class: F4
 #resources: # flex
