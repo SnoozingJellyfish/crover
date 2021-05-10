@@ -12,6 +12,7 @@ import logging
 formatter = '%(levelname)s : %(asctime)s : %(message)s'
 # ログレベルを DEBUG に変更
 logging.basicConfig(level=logging.INFO, format=formatter)
+logger = logging.getLogger(__name__)
 
 from google.cloud import storage
 
@@ -36,10 +37,12 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
 IS_SERVER = True
 
 if IS_SERVER:
+    '''
     storage_client = storage.Client()
 
     bucket_name = os.environ.get('BUCKET_NAME')
     dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
+    '''
     '''
     word2vec = {}
     for i in range(9):
@@ -47,9 +50,10 @@ if IS_SERVER:
         word2vec.update(wv)
     '''
 
-    mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
-
+    #mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
+    logger.info('start setting sudachidict')
     dst_path = set_default_dict_package('sudachidict_full', sys.stdout)
+    logger.info('finish setting sudachidict')
 
 
 else: # local

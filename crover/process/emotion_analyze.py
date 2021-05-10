@@ -11,7 +11,7 @@ from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
 from crover.models.tweet import Tweet, ClusterTweet
-from crover import db, mlask_emotion_dictionary
+#from crover import db, mlask_emotion_dictionary
 
 logger = logging.getLogger(__name__)
 
