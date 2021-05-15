@@ -152,7 +152,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         logger.info(lib_path)
         #tokenizer_obj = suda_dict.Dictionary().create()
         tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                             resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
+                                             resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
         mode = tokenizer.Tokenizer.SplitMode.C
 
     tweets = []
