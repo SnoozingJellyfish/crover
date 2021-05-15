@@ -29,7 +29,6 @@ nega = []
 
 @view.route('/')
 def home():
-    datastore_upload()
     return render_template('index.html')
 
 @view.app_errorhandler(404)
@@ -50,7 +49,7 @@ def word_cluster():
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
         word_num = int(request.form['word_num'])
-        #datastore_upload(int(request.form['up_vec_num']))
+        datastore_upload(int(request.form['up_vec_num']))
 
         cluster_to_words = [{0: preprocess_all(keyword, max_tweets, word_num)}]
         b64_figures = make_word_cloud(cluster_to_words[0])
