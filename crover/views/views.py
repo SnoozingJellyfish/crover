@@ -1,3 +1,4 @@
+import os
 import copy
 import logging
 
@@ -7,7 +8,7 @@ from flask import request, redirect, url_for, render_template, flash, session
 #from crover import app
 #from functools import wraps
 from flask import Blueprint
-#from google.cloud import storage
+from google.cloud import storage
 
 from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
@@ -28,6 +29,7 @@ nega = []
 
 @view.route('/')
 def home():
+    datastore_upload()
     return render_template('index.html')
 
 @view.app_errorhandler(404)
@@ -141,18 +143,28 @@ def word_count():
 
 
 # datastore upload
-def datastore_upload(up_vec_num):
+def datastore_upload(up_vec_num=0):
     from google.cloud import datastore
-    from crover import word2vec
+    #from crover import word2vec
     client = datastore.Client()
+
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
+    dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
+    upload_dict = dict_all_count
+    print('num of dict_all_count:', len(upload_dict.keys()))
+    #upload_folder_name = "mecab_word2vec_100d"
+    upload_folder_name = "sudachi_all_word_count"
     i = 0
     entities = []
 
-    for w in word2vec.keys():
+    #for w in word2vec.keys():
+    for w in upload_dict.keys():
         i += 1
         if i > up_vec_num and w[0] != '_' and w != '':
-            entity = datastore.Entity(client.key("mecab_word2vec_100d", w))
-            entity.update({'vec': list(word2vec[w].astype(np.float64))})
+            entity = datastore.Entity(client.key(upload_folder_name, w))
+            #entity.update({'vec': list(upload_dict[w].astype(np.float64))})
+            entity.update({'count': upload_dict[w]})
             entities.append(entity)
         if i > up_vec_num and i % 400 == 0:
             logger.info(i)

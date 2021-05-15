@@ -7,7 +7,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 #from mlask import MLAsk
-from crover.process.mlask_no_mecab import MLAskNoMecab
+#from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
 from crover.models.tweet import Tweet, ClusterTweet

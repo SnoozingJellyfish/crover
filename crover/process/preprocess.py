@@ -9,8 +9,9 @@ import logging
 import traceback
 
 import numpy as np
-from sudachipy import tokenizer
+#from crover.library.sudachipy_modified import tokenizer
 from sudachipy import dictionary as suda_dict
+#from crover.library.sudachipy_modified import dictionary as suda_dict
 from google.cloud import datastore
 
 #import gensim
@@ -142,7 +143,9 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
-        tokenizer_obj = suda_dict.Dictionary().create()
+        #tokenizer_obj = suda_dict.Dictionary().create()
+        tokenizer_obj = suda_dict.Dictionary(config_path='C:/Users/直也/Documents/twitter_analysis/crover_git/crover/crover/library/sudachipy_modified/resources/sudachi.json',
+                                             resource_dir='C:/Users/直也/Documents/twitter_analysis/crover_git/crover/venv/Lib/site-packages/sudachipy/resources').create()
         mode = tokenizer.Tokenizer.SplitMode.C
 
     tweets = []
