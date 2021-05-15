@@ -6,18 +6,20 @@ import csv
 import requests
 import json
 import logging
+import site
 import traceback
 
 import numpy as np
 #from crover.library.sudachipy_modified import tokenizer
+from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 #from crover.library.sudachipy_modified import dictionary as suda_dict
-from google.cloud import datastore
+from google.cloud import datastore, storage
 
 #import gensim
 #import boto3
 
-from crover import db
+from crover import db, IS_SERVER, download_from_cloud
 #from crover import dict_all_count
 #from crover import dict_all_count, word2vec
 from crover.models.tweet import Tweet, WordCount
@@ -65,6 +67,9 @@ def preprocess_all(keyword, max_tweets, word_num):
     '''
 
     dict_word_count = scrape_token(keyword, max_tweets)
+    logger.info('start loading dict_all_count')
+    dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
+    logger.info('finish loading dict_all_count')
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets)
     return dict_word_count_rate
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
@@ -143,9 +148,11 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
+        lib_path = site.getsitepackages()
+        logger.info(lib_path)
         #tokenizer_obj = suda_dict.Dictionary().create()
-        tokenizer_obj = suda_dict.Dictionary(config_path='C:/Users/直也/Documents/twitter_analysis/crover_git/crover/crover/library/sudachipy_modified/resources/sudachi.json',
-                                             resource_dir='C:/Users/直也/Documents/twitter_analysis/crover_git/crover/venv/Lib/site-packages/sudachipy/resources').create()
+        tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
+                                             resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
         mode = tokenizer.Tokenizer.SplitMode.C
 
     tweets = []
@@ -339,7 +346,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=0):
+def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=5):
     print('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
@@ -350,6 +357,62 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
 
         if (word in dict_all_count.keys()):
             all_count = dict_all_count[word]
+        else:
+            all_count = 0
+
+        try:
+            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1)
+        except TypeError:
+            continue
+
+    dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
+    i = 0
+    extract_dict = {}
+    word_rate_list = []
+    for w in dict_word_count_rate.keys():
+        if OKword(w):
+            extract_dict[w] = dict_word_count_rate[w]
+            word_rate_list.append(WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
+            i += 1
+            if i >= top_word_num:
+                break
+
+    db.session().add_all(word_rate_list)
+    db.session().commit()
+
+    print('------------ word count rate finish --------------')
+    return extract_dict
+
+
+# load all word count from datastore
+def word_count_rate_datastore(dict_word_count, top_word_num=20, max_tweets=100, ignore_word_count=5):
+    print('------------ word count rate start --------------')
+    client = datastore.Client()
+    keys = []
+
+    for word in dict_word_count.keys():
+        logger.info(word)
+        keys.append(client.key('sudachi_all_word_count', word))
+
+    logger.info('entities')
+    entities = client.get_multi(keys)
+    logger.info('get multi word2vec')
+
+    count_exist_words = []
+    for entity in entities:
+        count_exist_words.append(entity.key.name)
+    print(count_exist_words)
+
+    dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count_rate = {}
+    for word in dict_word_count.keys():
+        # 出現頻度の低い単語は無視
+        if dict_word_count[word] < ignore_word_count:
+            break
+
+        #if (word in dict_all_count.keys()):
+        if word in count_exist_words:
+            all_count = entities[count_exist_words.index(word)]['count']
         else:
             all_count = 0
 

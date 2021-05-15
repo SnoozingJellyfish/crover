@@ -3,15 +3,17 @@ from pprint import pprint
 import io
 import base64
 import logging
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
 #from mlask import MLAsk
-#from crover.process.mlask_no_mecab import MLAskNoMecab
+from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
 from crover.models.tweet import Tweet, ClusterTweet
 #from crover import db, mlask_emotion_dictionary
+from crover import db
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,8 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
     emotion_tweet = {'POSITIVE': [], 'mostly_POSITIVE': [], 'NEUTRAL': [], 'mostly_NEGATIVE': [], 'NEGATIVE': []}
 
     if algo == 'mlask':
+        with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
+            mlask_emotion_dictionary = pickle.load(f)
         emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
         for tweet in cluster_tweets:
             result_dic = emotion_analyzer.analyze(tweet.text, tweet.word)

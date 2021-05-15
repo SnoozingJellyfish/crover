@@ -133,7 +133,7 @@ dmypy.json
 .pyre/
 
 # data
-*.pickle
+*sudachi.pickle
 *.kv
 
 # figure
