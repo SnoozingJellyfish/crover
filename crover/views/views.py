@@ -149,7 +149,11 @@ def datastore_upload(up_vec_num=0):
 
     storage_client = storage.Client()
     bucket_name = os.environ.get('BUCKET_NAME')
+    logger.info('start loading dict_all_count')
     dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
+    logger.info('start loading mlask dict')
+    mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
+    logger.info('finish loading')
     upload_dict = dict_all_count
     print('num of dict_all_count:', len(upload_dict.keys()))
     #upload_folder_name = "mecab_word2vec_100d"
