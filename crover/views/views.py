@@ -161,7 +161,7 @@ def datastore_upload(up_vec_num=0):
     #for w in word2vec.keys():
     for w in upload_dict.keys():
         i += 1
-        if i > up_vec_num and w[0] != '_' and w != '':
+        if i > up_vec_num and type(w) == str and w[0] != '_' and w != '':
             entity = datastore.Entity(client.key(upload_folder_name, w))
             #entity.update({'vec': list(upload_dict[w].astype(np.float64))})
             entity.update({'count': upload_dict[w]})
