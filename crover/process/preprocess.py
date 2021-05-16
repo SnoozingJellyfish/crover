@@ -19,9 +19,10 @@ from google.cloud import datastore, storage
 #import gensim
 #import boto3
 
-from crover import db, IS_SERVER, download_from_cloud
+from crover import db, LOCAL_ENV, download_from_cloud
 #from crover import dict_all_count
-#from crover import dict_all_count, word2vec
+if LOCAL_ENV:
+    from crover import dict_all_count, word2vec
 from crover.models.tweet import Tweet, WordCount
 #from crover.models.tweet import AllWordCount
 
@@ -67,9 +68,12 @@ def preprocess_all(keyword, max_tweets, word_num):
     '''
 
     dict_word_count = scrape_token(keyword, max_tweets)
-    logger.info('start loading dict_all_count')
-    dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
-    logger.info('finish loading dict_all_count')
+    if not LOCAL_ENV:
+        logger.info('start loading dict_all_count')
+        dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
+        logger.info('finish loading dict_all_count')
+    else:
+        from crover import dict_all_count
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets)
     return dict_word_count_rate
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
@@ -151,8 +155,12 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         lib_path = site.getsitepackages()
         logger.info(lib_path)
         #tokenizer_obj = suda_dict.Dictionary().create()
-        tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                             resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+        try:
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+        except:
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
+                                                 resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
+
         mode = tokenizer.Tokenizer.SplitMode.C
 
     tweets = []
@@ -172,6 +180,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         result = connect_to_endpoint(url, headers)
 
         logger.info('start word count tweet')
+        tweets_list = []
         for j in range(len(result['data'])):
             try:
                 created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
@@ -189,7 +198,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
             tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text'], word=split_word))
-
+            tweets_list.append([created_at, result['data'][j]['text'], split_word])
         if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
         else:

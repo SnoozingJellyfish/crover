@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 from google.cloud import storage
 
-from sudachipy.config import set_default_dict_package
+#from sudachipy.config import set_default_dict_package
 
 #import cloudstorage
 #retryparams_instance = cloudstorage.RetryParams(initial_delay=0.2, max_delay=5.0, backoff_factor=2, max_retry_period=15)
@@ -34,29 +34,9 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
     blob = bucket.blob(filename)
     blob.upload_from_string(bytedata)
 
-IS_SERVER = True
+LOCAL_ENV = False
 
-if IS_SERVER:
-    '''
-    storage_client = storage.Client()
-
-    bucket_name = os.environ.get('BUCKET_NAME')
-    dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
-    '''
-    '''
-    word2vec = {}
-    for i in range(9):
-        wv = download_from_cloud(storage_client, bucket_name, os.environ.get('WORD2VEC') + str(i+1) + '.pickle')
-        word2vec.update(wv)
-    '''
-
-    #mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
-    #logger.info('start setting sudachidict')
-    #dst_path = set_default_dict_package('sudachidict_full', sys.stdout)
-    #logger.info('finish setting sudachidict')
-    pass
-
-else: # local
+if LOCAL_ENV:
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)
 
@@ -65,12 +45,11 @@ else: # local
         word2vec = pickle.load(f)
         #pass
 
-    with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
-        mlask_emotion_dictionary = pickle.load(f)
-
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
     app.config.from_object('crover.config')
+
+    app.config['SECRET_KEY'] = 'secret_key' # add
 
     if test_config:
         app.config.from_mapping(test_config)

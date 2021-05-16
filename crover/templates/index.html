@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
 <form action ="{{ url_for('view.word_cluster') }}" method=post>
+    <p>{{count}}</p>
     <div class="form-group">
         <label for="InputWord">キーワード</label>
         <input type="text" class="form-control" id="InputWord" name=keyword>

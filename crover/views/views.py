@@ -9,7 +9,7 @@ from flask import request, redirect, url_for, render_template, flash, session
 from flask import Blueprint
 from google.cloud import storage
 
-from crover import db, IS_SERVER, download_from_cloud, upload_to_cloud
+from crover import db, LOCAL_ENV, download_from_cloud, upload_to_cloud
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
@@ -28,7 +28,12 @@ nega = []
 
 @view.route('/')
 def home():
-    return render_template('index.html')
+    if 'tmp' in session:
+        session['tmp'] += 1
+    else:
+        session['tmp'] = 1
+    logger.info('session counter: ' + str(session['tmp']))
+    return render_template('index.html', count=session['tmp'])
 
 @view.app_errorhandler(404)
 def non_existant_route(error):
@@ -82,8 +87,10 @@ def analysis():
 
         elif request.form['submit_button'][:4] == 'zoom': # zoom clustering
             if len(cluster_to_words) == 1:
-                #top_word2vec = make_top_word2vec_dic(cluster_to_words[0][0])
-                top_word2vec = make_top_word2vec_dic_datastore(cluster_to_words[0][0])
+                if LOCAL_ENV:
+                    top_word2vec = make_top_word2vec_dic(cluster_to_words[0][0])
+                else:
+                    top_word2vec = make_top_word2vec_dic_datastore(cluster_to_words[0][0])
                 cluster_to_words.append(clustering(top_word2vec))
                 not_dictword_num = len(list(cluster_to_words[-1].keys()))
                 cluster_to_words[-1][not_dictword_num] = top_word2vec['not_dict_word']
