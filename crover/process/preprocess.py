@@ -16,16 +16,23 @@ from sudachipy import dictionary as suda_dict
 #from crover.library.sudachipy_modified import dictionary as suda_dict
 from google.cloud import datastore, storage
 from flask import session, request
+from sqlalchemy import create_engine
 
 #import gensim
 #import boto3
 
-from crover import db_session, LOCAL_ENV, download_from_cloud
+from crover import LOCAL_ENV, download_from_cloud, Base, engine
 #from crover import dict_all_count
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
-from crover.models.tweet import Tweet, WordCount
+#from crover.models.tweet import Tweet, WordCount
+from crover import Tweet, WordCount
 #from crover.models.tweet import AllWordCount
+#engine = create_engine('sqlite:///restaurantMenu.db')
+Base.metadata.bind=engine
+from sqlalchemy.orm import sessionmaker
+Session = sessionmaker(bind=engine)
+db_session = Session()
 
 logger = logging.getLogger(__name__)
 
