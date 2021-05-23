@@ -1,15 +1,17 @@
-from sqlalchemy import create_engine
-from crover import db
+#from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, Float, DateTime
+#from crover import db
+from crover import Base
 from datetime import datetime
 
 #engine = create_engine('sqlite://', echo=False)
 
-class Tweet(db.Model):
+class Tweet(Base):
     __tablename__ = 'tweet'
-    id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.Text)
-    tweeted_at = db.Column(db.DateTime)
-    word = db.Column(db.Text)
+    id = Column('id', Integer, primary_key=True)
+    text = Column('text', String)
+    tweeted_at = Column('tweeted_at', DateTime)
+    word = Column('word', String)
 
     def __init__(self, tweeted_at=None, text=None, word=None):
         self.text = text
@@ -20,12 +22,12 @@ class Tweet(db.Model):
         return '<id:{} tweeted_at:{} text:{} word: {}>'.format(self.id, self.tweeted_at, self.text, self.word)
 
 
-class ClusterTweet(db.Model):
+class ClusterTweet(Base):
     __tablename__ = 'cluster_tweet'
-    id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.Text)
-    tweeted_at = db.Column(db.DateTime)
-    emotion = db.Column(db.Integer)
+    id = Column('id', Integer, primary_key=True)
+    text = Column('text', String)
+    tweeted_at = Column('tweeted_at', DateTime)
+    emotion = Column('emotion', Integer)
 
     def __init__(self, tweeted_at=None, text=None, emotion=None):
         self.text = text
@@ -36,12 +38,12 @@ class ClusterTweet(db.Model):
         return '<id:{} tweeted_at:{} text:{} emotion: {}>'.format(self.id, self.tweeted_at, self.text, self.emotion)
 
 
-class WordCount(db.Model):
+class WordCount(Base):
     __tablename__ = 'all_word_count'
-    id = db.Column(db.Integer, primary_key=True)
-    word = db.Column(db.String(50), unique=True)
+    id = Column('id', Integer, primary_key=True)
+    word = Column('word', String, unique=True)
     #count = db.Column(db.Integer)
-    relative_frequent_rate = db.Column(db.Float)
+    relative_frequent_rate = Column('relative_frequent_rate', Float)
 
     def __init__(self, word=None, count=None, relative_frequent_rate=None):
         self.word = word
