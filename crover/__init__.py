@@ -54,6 +54,8 @@ else:
     db_pass = os.environ["DB_PASS"]
     db_name = os.environ["DB_NAME"]
     db_host = os.environ["DB_HOST"]
+    db_socket_dir = os.environ.get("DB_SOCKET_DIR", "/cloudsql")
+    cloud_sql_connection_name = os.environ["CLOUD_SQL_CONNECTION_NAME"]
 
     # Extract host and port from db_host
     host_args = db_host.split(":")
@@ -66,9 +68,14 @@ else:
             drivername="mysql+pymysql",
             username=db_user,  # e.g. "my-database-user"
             password=db_pass,  # e.g. "my-database-password"
-            host=db_hostname,  # e.g. "127.0.0.1"
-            port=db_port,  # e.g. 3306
+            #host=db_hostname,  # e.g. "127.0.0.1"
+            #port=db_port,  # e.g. 3306
             database=db_name,  # e.g. "my-database-name"
+            query={
+                "unix_socket": "{}/{}".format(
+                    db_socket_dir,  # e.g. "/cloudsql"
+                    cloud_sql_connection_name)  # i.e "<PROJECT-NAME>:<INSTANCE-REGION>:<INSTANCE-NAME>"
+            }
         )
     )
     db_session = scoped_session(sessionmaker(bind=engine))
