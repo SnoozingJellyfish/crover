@@ -15,11 +15,12 @@ from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 #from crover.library.sudachipy_modified import dictionary as suda_dict
 from google.cloud import datastore, storage
+from flask import session, request
 
 #import gensim
 #import boto3
 
-from crover import db, LOCAL_ENV, download_from_cloud
+from crover import db_session, LOCAL_ENV, download_from_cloud
 #from crover import dict_all_count
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
@@ -67,7 +68,7 @@ def preprocess_all(keyword, max_tweets, word_num):
         word_id = pickle.load(f)
     '''
 
-    dict_word_count = scrape_token(keyword, max_tweets)
+    dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
@@ -75,7 +76,7 @@ def preprocess_all(keyword, max_tweets, word_num):
     else:
         from crover import dict_all_count
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets)
-    return dict_word_count_rate
+    return dict_word_count_rate, tweets_list
     #return make_top_word2vec_dic(dict_word_count_rate, word2vec, top_word_num=word_num)
 
     #return make_top_word2vec_dic(dict_word_count, word2vec_model='crover/data/chive-1.2-mc30.kv')
@@ -203,18 +204,23 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             next_token_id = result['meta']['next_token']
         else:
             break
-    db.session().add_all(tweets)
+    #session['tweets'] = tweets_list
+    #session.modified = True
+    db_session.add_all(tweets)
+    logger.info(session['time4'] + 'prepro')
+    #time3 = request.cookies.get('time3', None)
+    #logger.info(time3 + ' prepro')
 
     '''
     for k in dict_word_count.keys():
         word_count_list.append(WordCount(word=k, count=dict_word_count[k]))
     db.session().add_all(word_count_list)
     '''
-    db.session().commit()
+    db_session().commit()
 
     print('-------------- scrape finish -----------------\n')
 
-    return dict_word_count
+    return dict_word_count, tweets_list
 
 def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
@@ -269,8 +275,8 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudach
         dict_word_count = noun_count(tweet_text, dict_word_count, keyword)
 
         if (i+1) == max_tweets:
-            db.session().add_all(tweets)
-            db.session().commit()
+            db_session().add_all(tweets)
+            db_session().commit()
             break
 
         i += 1
@@ -386,8 +392,8 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
             if i >= top_word_num:
                 break
 
-    db.session().add_all(word_rate_list)
-    db.session().commit()
+    db_session().add_all(word_rate_list)
+    db_session().commit()
 
     print('------------ word count rate finish --------------')
     return extract_dict
@@ -442,8 +448,8 @@ def word_count_rate_datastore(dict_word_count, top_word_num=20, max_tweets=100, 
             if i >= top_word_num:
                 break
 
-    db.session().add_all(word_rate_list)
-    db.session().commit()
+    db_session().add_all(word_rate_list)
+    db_session().commit()
 
     print('------------ word count rate finish --------------')
     return extract_dict

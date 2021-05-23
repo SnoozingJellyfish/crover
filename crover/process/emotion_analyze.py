@@ -7,13 +7,14 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
+from flask import session
 #from mlask import MLAsk
 from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
 from crover.models.tweet import Tweet, ClusterTweet
 #from crover import db, mlask_emotion_dictionary
-from crover import db
+from crover import db_session
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def emotion_analyze_all(words):
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words):
     tweets = np.array(Tweet.query.all())
+    #tweets = np.array(session['tweets'])
     tweet_id = list(np.arange(len(tweets)))
     tweet_id_new = copy.deepcopy(tweet_id)
     cluster_tweet_id = []
@@ -37,6 +39,7 @@ def tweet_collect(words):
         for i in tweet_id:
             try:
                 if w in tweets[i].text:
+                #if w in tweets[i, 1]:
                     cluster_tweet_id.append(i)
                     tweet_id_new.remove(i)
             except TypeError:
@@ -62,12 +65,15 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
         emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
         for tweet in cluster_tweets:
             result_dic = emotion_analyzer.analyze(tweet.text, tweet.word)
+            #result_dic = emotion_analyzer.analyze(tweet[1], tweet[2])
             if result_dic['emotion'] == None:
                 cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion='NEUTRAL'))
+                #cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet[0], text=tweet[1], emotion='NEUTRAL'))
                 emotion_count['NEUTRAL'] += 1
                 emotion_tweet['NEUTRAL'].append(tweet.text)
             else:
                 cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet.tweeted_at, text=tweet.text, emotion=result_dic['orientation']))
+                #cluster_tweets_emotion.append(ClusterTweet(tweeted_at=tweet[0], text=tweet[1], emotion=result_dic['orientation']))
                 emotion_count[result_dic['orientation']] += 1
                 emotion_tweet[result_dic['orientation']].append(tweet.text)
 
@@ -99,8 +105,8 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
             if (i+1) % 1000 == 0:
                 df_cluster.to_csv(cluster_csv[:-4] + '_' + algo + '_analyzed.csv')
     '''
-    db.session().add_all(cluster_tweets_emotion)
-    db.session().commit()
+    db_session().add_all(cluster_tweets_emotion)
+    db_session().commit()
 
     return emotion_count, emotion_tweet
 

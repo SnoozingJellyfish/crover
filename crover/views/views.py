@@ -1,15 +1,16 @@
 import os
 import copy
 import logging
+from datetime import timedelta, datetime
 
-from flask import request, redirect, url_for, render_template, flash, session
-#from flask import current_app as app
+from flask import request, redirect, url_for, render_template, flash, session, make_response
+from flask import current_app as app
 #from crover import app
 #from functools import wraps
 from flask import Blueprint
 from google.cloud import storage
 
-from crover import db, LOCAL_ENV, download_from_cloud, upload_to_cloud
+from crover import db_session, LOCAL_ENV, download_from_cloud, upload_to_cloud
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
@@ -28,12 +29,12 @@ nega = []
 
 @view.route('/')
 def home():
-    if 'tmp' in session:
-        session['tmp'] += 1
-    else:
-        session['tmp'] = 1
-    logger.info('session counter: ' + str(session['tmp']))
-    return render_template('index.html', count=session['tmp'])
+    #session.permanent = False
+    #app.permanent_session_lifetime = timedelta(minutes=5)
+    #if 'time' not in session:
+    #session['time2'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    #logger.info(session['time2'])
+    return render_template('index.html')
 
 @view.app_errorhandler(404)
 def non_existant_route(error):
@@ -44,18 +45,28 @@ def word_cluster():
     global b64_figures, b64_chart, cluster_to_words, top_word2vec, posi, neutral, nega
 
     if request.method == 'POST':
+        #if 'time' not in session:
+        #response = make_response('tmpsessi')
+        #response.set_cookie('time3', value=datetime.now().strftime('%Y%m%d_%H%M%S_%f'))
+        session['time4'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        logger.info(session['time4'])
+
         b64_chart = 'None'
+        '''
         try:
             db.drop_all()
         except:
             pass
         db.create_all()
+        '''
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
         word_num = int(request.form['word_num'])
         #datastore_upload(int(request.form['up_vec_num']))
-
-        cluster_to_words = [{0: preprocess_all(keyword, max_tweets, word_num)}]
+        dict_word_count_rate, tweets_list = preprocess_all(keyword, max_tweets, word_num)
+        #session['tmp2'] = 'session_tmp2'
+        #session['tweets'] = tweets_list
+        cluster_to_words = [{0: dict_word_count_rate}]
         b64_figures = make_word_cloud(cluster_to_words[0])
 
     if len(b64_figures) == 1:
@@ -136,9 +147,13 @@ def analysis():
     return render_template('word_clustering.html', b64_figures=b64_figures[:-1], b64_figure_not_dictword=b64_figures[-1],
                            b64_chart=b64_chart, posi_tweets=posi, neutral_tweets=neutral, nega_tweets=nega)
 
-@view.route('/tweet', methods=['GET'])
+#@view.route('/tweet', methods=['GET'])
+@view.route('/tweet')
 def tweet():
     tweets = Tweet.query.order_by(Tweet.id.desc()).all()
+    logger.info(session['time4'] + ' tweet')
+    #time3 = request.cookies.get('time3', None)
+    #logger.info(time3 + ' tweet')
     return render_template('tweets.html', tweets=tweets)
 
 @view.route('/word_count', methods=['GET'])

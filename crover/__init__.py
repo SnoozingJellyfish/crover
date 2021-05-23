@@ -1,6 +1,9 @@
-from flask import Flask
+from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
-db = SQLAlchemy()
+import sqlalchemy
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+#db = SQLAlchemy()
 
 import os
 import sys
@@ -13,6 +16,8 @@ formatter = '%(levelname)s : %(asctime)s : %(message)s'
 # ログレベルを DEBUG に変更
 logging.basicConfig(level=logging.INFO, format=formatter)
 logger = logging.getLogger(__name__)
+
+import numpy as np
 
 from google.cloud import storage
 
@@ -44,17 +49,47 @@ if LOCAL_ENV:
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
         #pass
+else:
+    db_user = os.environ["DB_USER"]
+    db_pass = os.environ["DB_PASS"]
+    db_name = os.environ["DB_NAME"]
+    db_host = os.environ["DB_HOST"]
+
+    # Extract host and port from db_host
+    host_args = db_host.split(":")
+    db_hostname, db_port = host_args[0], int(host_args[1])
+
+    engine = sqlalchemy.create_engine(
+        # Equivalent URL:
+        # mysql+pymysql://<db_user>:<db_pass>@<db_host>:<db_port>/<db_name>
+        sqlalchemy.engine.url.URL(
+            drivername="mysql+pymysql",
+            username=db_user,  # e.g. "my-database-user"
+            password=db_pass,  # e.g. "my-database-password"
+            host=db_hostname,  # e.g. "127.0.0.1"
+            port=db_port,  # e.g. 3306
+            database=db_name,  # e.g. "my-database-name"
+        )
+    )
+    db_session = scoped_session(sessionmaker(bind=engine))
+    Base = declarative_base()
+    Base.query = db_session.query_property()
+    import crover.models
+
+    Base.metadata.create_all(bind=engine)
 
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
     app.config.from_object('crover.config')
 
-    app.config['SECRET_KEY'] = 'secret_key' # add
+    app.config['SECRET_KEY'] = 'session_key_' + str(np.random.randint(100000, 999999))
+
 
     if test_config:
         app.config.from_mapping(test_config)
 
-    db.init_app(app)
+    #db.init_app(app)
+
 
     from crover.views.views import view
     app.register_blueprint(view)

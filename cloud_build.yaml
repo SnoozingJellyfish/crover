@@ -8,6 +8,10 @@ steps:
     env_variables:
       TWITTER_BEARER_TOKEN: $_TWITTER_BEARER_TOKEN
       TWITTER_BEARER_TOKEN2: $_TWITTER_BEARER_TOKEN2
+      DB_USER: $_DB_USER
+      DB_PASS: $_DB_PASS
+      DB_NAME: $_DB_NAME
+      DB_HOST: $_DB_HOST
     EOF
 - name: "gcr.io/cloud-builders/gcloud"
   args: ["app", "deploy", "--stop-previous-version"]
