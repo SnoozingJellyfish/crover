@@ -10,9 +10,9 @@ class Tweet(Base):
     __tablename__ = 'tweet'
     __table_args__ = {'extend_existing': True}
     id = Column('id', Integer, primary_key=True)
-    text = Column('text', Text)
+    text = Column('text', Text())
     tweeted_at = Column('tweeted_at', DateTime)
-    word = Column('word', Text)
+    word = Column('word', Text())
 
     def __init__(self, tweeted_at=None, text=None, word=None):
         self.text = text
@@ -27,7 +27,7 @@ class ClusterTweet(Base):
     __tablename__ = 'cluster_tweet'
     __table_args__ = {'extend_existing': True}
     id = Column('id', Integer, primary_key=True)
-    text = Column('text', Text)
+    text = Column('text', Text())
     tweeted_at = Column('tweeted_at', DateTime)
     emotion = Column('emotion', Integer)
 
