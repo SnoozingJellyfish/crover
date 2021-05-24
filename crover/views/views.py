@@ -10,7 +10,7 @@ from flask import current_app as app
 from flask import Blueprint
 from google.cloud import storage
 
-from crover import db_session, LOCAL_ENV, download_from_cloud, upload_to_cloud
+from crover import db_session, LOCAL_ENV, download_from_cloud, upload_to_cloud, Base, engine
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
@@ -34,6 +34,8 @@ def home():
     #if 'time' not in session:
     #session['time2'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
     #logger.info(session['time2'])
+
+    Base.metadata.create_all(bind=engine)
     return render_template('index.html')
 
 @view.app_errorhandler(404)

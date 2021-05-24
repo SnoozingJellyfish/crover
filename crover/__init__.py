@@ -1,5 +1,5 @@
 from flask import Flask, session
-from flask_sqlalchemy import SQLAlchemy
+#from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -80,12 +80,12 @@ else:
         )
     )
 
-    #db_session = scoped_session(sessionmaker(bind=engine))
+    db_session = scoped_session(sessionmaker(bind=engine))
     Base = declarative_base()
     #Base.query = db_session.query_property()
     import crover.models
 
-    Base.metadata.create_all(bind=engine)
+    #Base.metadata.create_all(bind=engine)
 
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
