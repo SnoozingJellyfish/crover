@@ -8,7 +8,7 @@ from datetime import datetime
 
 class Tweet(Base):
     __tablename__ = 'tweet'
-    __table_args__ = {'extend_existing': True, "mysql_charset": "utf8mb4"}
+    __table_args__ = {'extend_existing': True, "mysql_charset": "utf8"}
     id = Column('id', Integer, primary_key=True)
     text = Column('text', Text())
     tweeted_at = Column('tweeted_at', DateTime)
@@ -25,7 +25,7 @@ class Tweet(Base):
 
 class ClusterTweet(Base):
     __tablename__ = 'cluster_tweet'
-    __table_args__ = {'extend_existing': True, "mysql_charset": "utf8mb4"}
+    __table_args__ = {'extend_existing': True, "mysql_charset": "utf8"}
     id = Column('id', Integer, primary_key=True)
     text = Column('text', Text())
     tweeted_at = Column('tweeted_at', DateTime)
@@ -43,7 +43,7 @@ class ClusterTweet(Base):
 
 class WordCount(Base):
     __tablename__ = 'all_word_count'
-    __table_args__ = {'extend_existing': True, "mysql_charset": "utf8mb4"}
+    __table_args__ = {'extend_existing': True, "mysql_charset": "utf8"}
     id = Column('id', Integer, primary_key=True)
     word = Column('word', String(20), unique=True)
     #count = db.Column(db.Integer)
