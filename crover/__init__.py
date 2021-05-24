@@ -107,7 +107,7 @@ def create_app(test_config=None):
 
     return app
 
-
+'''
 class Tweet(Base):
     __tablename__ = 'tweet'
     id = Column('id', Integer, primary_key=True)
@@ -156,4 +156,4 @@ class WordCount(Base):
         #return '<id:{} word:{} count:{}>'.format(self.id, self.word, self.count)
         return '<id:{} word:{} relative_frequent_rate:{}>'.format(self.id, self.word, self.relative_frequent_rate)
 
-
+'''
