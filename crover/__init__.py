@@ -76,11 +76,10 @@ else:
                 "unix_socket": "{}/{}".format(
                     db_socket_dir,  # e.g. "/cloudsql"
                     cloud_sql_connection_name),  # i.e "<PROJECT-NAME>:<INSTANCE-REGION>:<INSTANCE-NAME>"
-                'charset': 'utf8'
+                'charset': 'utf8mb4'
             }
 
-        ),
-        encoding="utf8"
+        )
     )
 
     db_session = scoped_session(sessionmaker(bind=engine))
