@@ -368,7 +368,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=5):
+def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=5, word_length=20):
     print('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
@@ -392,7 +392,7 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
     extract_dict = {}
     word_rate_list = []
     for w in dict_word_count_rate.keys():
-        if OKword(w):
+        if OKword(w) and len(w) < word_length:
             extract_dict[w] = dict_word_count_rate[w]
             word_rate_list.append(WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
             i += 1

@@ -12,7 +12,7 @@ class Tweet(Base):
     id = Column('id', Integer, primary_key=True)
     text = Column('text', Text)
     tweeted_at = Column('tweeted_at', DateTime)
-    word = Column('word', String(20))
+    word = Column('word', Text)
 
     def __init__(self, tweeted_at=None, text=None, word=None):
         self.text = text
