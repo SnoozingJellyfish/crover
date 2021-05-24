@@ -1,5 +1,5 @@
 #from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text
 #from crover import db
 from crover import Base
 from datetime import datetime
@@ -10,9 +10,9 @@ class Tweet(Base):
     __tablename__ = 'tweet'
     __table_args__ = {'extend_existing': True}
     id = Column('id', Integer, primary_key=True)
-    text = Column('text', String)
+    text = Column('text', Text)
     tweeted_at = Column('tweeted_at', DateTime)
-    word = Column('word', String)
+    word = Column('word', String(20))
 
     def __init__(self, tweeted_at=None, text=None, word=None):
         self.text = text
@@ -27,7 +27,7 @@ class ClusterTweet(Base):
     __tablename__ = 'cluster_tweet'
     __table_args__ = {'extend_existing': True}
     id = Column('id', Integer, primary_key=True)
-    text = Column('text', String)
+    text = Column('text', Text)
     tweeted_at = Column('tweeted_at', DateTime)
     emotion = Column('emotion', Integer)
 
@@ -44,7 +44,7 @@ class WordCount(Base):
     __tablename__ = 'all_word_count'
     __table_args__ = {'extend_existing': True}
     id = Column('id', Integer, primary_key=True)
-    word = Column('word', String, unique=True)
+    word = Column('word', String(20), unique=True)
     #count = db.Column(db.Integer)
     relative_frequent_rate = Column('relative_frequent_rate', Float)
 
