@@ -40,6 +40,7 @@ class ClusterTweet(Base):
         return '<id:{} tweeted_at:{} text:{} emotion: {}>'.format(self.id, self.tweeted_at, self.text, self.emotion)
 
 
+
 class WordCount(Base):
     __tablename__ = 'all_word_count'
     __table_args__ = {'extend_existing': True}
