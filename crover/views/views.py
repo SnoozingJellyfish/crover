@@ -15,7 +15,7 @@ from crover import db_session, LOCAL_ENV, download_from_cloud, upload_to_cloud, 
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
-from crover.models.tweet import Tweet, WordCount
+from crover.models.tweet import Tweet, WordCount, ClusterTweet
 
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
@@ -48,6 +48,10 @@ def word_cluster():
     global b64_figures, b64_chart, cluster_to_words, top_word2vec, posi, neutral, nega
 
     if request.method == 'POST':
+        db_session.query(Tweet).delete()
+        db_session.query(WordCount).delete()
+
+
         #if 'time' not in session:
         #response = make_response('tmpsessi')
         #response.set_cookie('time3', value=datetime.now().strftime('%Y%m%d_%H%M%S_%f'))

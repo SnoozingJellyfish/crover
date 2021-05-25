@@ -19,6 +19,7 @@ from crover import db_session
 logger = logging.getLogger(__name__)
 
 def emotion_analyze_all(words):
+    db_session.query(ClusterTweet).delete()
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words)
     logger.info('emotion analyze')
