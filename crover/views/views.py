@@ -9,6 +9,7 @@ from flask import current_app as app
 #from functools import wraps
 from flask import Blueprint
 from google.cloud import storage
+from sqlalchemy import desc
 
 from crover import db_session, LOCAL_ENV, download_from_cloud, upload_to_cloud, Base, engine
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
@@ -152,7 +153,9 @@ def analysis():
 #@view.route('/tweet', methods=['GET'])
 @view.route('/tweet')
 def tweet():
-    tweets = Tweet.query.order_by(Tweet.id.desc()).all()
+    #tweets = Tweet.query.order_by(Tweet.id.desc()).all()
+    logger.info('start getting tweets from DB')
+    tweets = db_session.query(Tweet).all()
     logger.info(session['time4'] + ' tweet')
     #time3 = request.cookies.get('time3', None)
     #logger.info(time3 + ' tweet')
@@ -160,7 +163,8 @@ def tweet():
 
 @view.route('/word_count', methods=['GET'])
 def word_count():
-    word_counts = WordCount.query.order_by(WordCount.relative_frequent_rate.desc()).all()
+    #word_counts = WordCount.query.order_by(WordCount.relative_frequent_rate.desc()).all()
+    word_counts = db_session.query(WordCount).order_by(desc(WordCount.relative_frequent_rate)).all()
     return render_template('word_counts.html', word_counts=word_counts)
 
 

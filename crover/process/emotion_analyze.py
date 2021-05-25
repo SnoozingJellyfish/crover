@@ -29,7 +29,8 @@ def emotion_analyze_all(words):
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words):
-    tweets = np.array(Tweet.query.all())
+    #tweets = np.array(Tweet.query.all())
+    tweets = np.array(db_session.query(Tweet).all())
     #tweets = np.array(session['tweets'])
     tweet_id = list(np.arange(len(tweets)))
     tweet_id_new = copy.deepcopy(tweet_id)

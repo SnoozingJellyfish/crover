@@ -223,7 +223,9 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         word_count_list.append(WordCount(word=k, count=dict_word_count[k]))
     db.session().add_all(word_count_list)
     '''
+    logger.info('start committing tweets to DB')
     db_session().commit()
+    logger.info('finish committing tweets to DB')
 
     print('-------------- scrape finish -----------------\n')
 
