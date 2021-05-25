@@ -29,7 +29,7 @@ class ClusterTweet(Base):
     id = Column('id', Integer, primary_key=True)
     text = Column('text', Text())
     tweeted_at = Column('tweeted_at', DateTime)
-    emotion = Column('emotion', Integer)
+    emotion = Column('emotion', String(20))
 
     def __init__(self, tweeted_at=None, text=None, emotion=None):
         self.text = text
