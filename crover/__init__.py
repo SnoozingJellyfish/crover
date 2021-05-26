@@ -69,13 +69,13 @@ else:
             drivername="mysql+pymysql",
             username=db_user,  # e.g. "my-database-user"
             password=db_pass,  # e.g. "my-database-password"
-            #host=db_hostname,  # e.g. "127.0.0.1"
-            #port=db_port,  # e.g. 3306
+            host=db_hostname,  # e.g. "127.0.0.1" # internal IP
+            port=db_port,  # e.g. 3306 # internal IP
             database=db_name,  # e.g. "my-database-name"
             query={
-                "unix_socket": "{}/{}".format(
-                    db_socket_dir,  # e.g. "/cloudsql"
-                    cloud_sql_connection_name), # i.e "<PROJECT-NAME>:<INSTANCE-REGION>:<INSTANCE-NAME>"
+                #"unix_socket": "{}/{}".format(
+                #    db_socket_dir,  # e.g. "/cloudsql"
+                #    cloud_sql_connection_name), # i.e "<PROJECT-NAME>:<INSTANCE-REGION>:<INSTANCE-NAME>"
                 "charset": "utf8mb4"
             }
         )

@@ -36,7 +36,7 @@ def home():
     #session['time2'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
     #logger.info(session['time2'])
 
-    #Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     return render_template('index.html')
 
 @view.app_errorhandler(404)
