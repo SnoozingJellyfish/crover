@@ -32,3 +32,6 @@ automatic_scaling:
 # secret token
 includes:
 - secret.yaml
+
+vpc_access_connector:
+  name: "projects/crover-twitter/locations/us-central1/connectors/crover-twitter-connector"
