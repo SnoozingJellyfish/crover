@@ -85,7 +85,6 @@ else:
     Base = declarative_base()
     Base.query = db_session.query_property()
     import crover.models
-
     #Base.metadata.create_all(bind=engine)
 
 def create_app(test_config=None):
