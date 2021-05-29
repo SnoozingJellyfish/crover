@@ -1,13 +1,11 @@
 from flask import Flask, session
 #from flask_sqlalchemy import SQLAlchemy
-import sqlalchemy
-from sqlalchemy import Column, Integer, String, Float, DateTime
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+#import sqlalchemy
+#from sqlalchemy import Column, Integer, String, Float, DateTime
+#from sqlalchemy.orm import scoped_session, sessionmaker
+#from sqlalchemy.ext.declarative import declarative_base
 #db = SQLAlchemy()
 
-import os
-import sys
 import pickle
 from io import BytesIO
 
@@ -19,10 +17,6 @@ logging.basicConfig(level=logging.INFO, format=formatter)
 logger = logging.getLogger(__name__)
 
 import numpy as np
-
-from google.cloud import storage
-
-#from sudachipy.config import set_default_dict_package
 
 #import cloudstorage
 #retryparams_instance = cloudstorage.RetryParams(initial_delay=0.2, max_delay=5.0, backoff_factor=2, max_retry_period=15)
@@ -40,7 +34,7 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
     blob = bucket.blob(filename)
     blob.upload_from_string(bytedata)
 
-LOCAL_ENV = False
+LOCAL_ENV = True
 
 if LOCAL_ENV:
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
@@ -49,10 +43,10 @@ if LOCAL_ENV:
     #with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
-        #pass
+
+'''
 else:
-    pass
-    '''
+    # Cloud SQL
     db_user = os.environ["DB_USER"]
     db_pass = os.environ["DB_PASS"]
     db_name = os.environ["DB_NAME"]
@@ -88,24 +82,18 @@ else:
     Base.query = db_session.query_property()
     import crover.models
     #Base.metadata.create_all(bind=engine)
-    '''
-    
+'''
+
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
     app.config.from_object('crover.config')
-
     app.config['SECRET_KEY'] = 'session_key_' + str(np.random.randint(100000, 999999))
-
 
     if test_config:
         app.config.from_mapping(test_config)
 
-    #db.init_app(app)
-
-
     from crover.views.views import view
     app.register_blueprint(view)
-
     from crover.views import views
 
     return app
