@@ -34,7 +34,7 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
     blob = bucket.blob(filename)
     blob.upload_from_string(bytedata)
 
-LOCAL_ENV = True
+LOCAL_ENV = False
 
 if LOCAL_ENV:
     with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:

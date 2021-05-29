@@ -33,5 +33,6 @@ automatic_scaling:
 includes:
 - secret.yaml
 
-vpc_access_connector:
-  name: "projects/crover-twitter/locations/us-central1/connectors/crover-twitter-connector"
+# for internal IP address using cloud SQL
+#vpc_access_connector:
+#  name: "projects/crover-twitter/locations/us-central1/connectors/crover-twitter-connector"
