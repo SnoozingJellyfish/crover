@@ -10,8 +10,8 @@
     <tbody>
         {% for word_count in word_counts %}
         <tr>
-            <td>{{ word_count.word }}</td>
-            <td>{{ word_count.relative_frequent_rate }}</td>
+            <td>{{ word_count[0] }}</td>
+            <td>{{ word_count[1] }}</td>
         </tr>
         {% endfor %}
     </tbody>

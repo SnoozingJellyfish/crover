@@ -20,6 +20,7 @@
             <span class="navbar-toggler-icon"></span>
             </button>
 
+            {% if sess_info_at != 'first' %}
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class ="nav navbar-nav navbar-right">
                     <li class="nav-item">
@@ -33,6 +34,7 @@
                     </li>
                 </ul>
             </div>
+            {% endif %}
         </nav>
 
         {% for message in get_flashed_messages() %}

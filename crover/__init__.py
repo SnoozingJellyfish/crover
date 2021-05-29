@@ -51,6 +51,8 @@ if LOCAL_ENV:
         word2vec = pickle.load(f)
         #pass
 else:
+    pass
+    '''
     db_user = os.environ["DB_USER"]
     db_pass = os.environ["DB_PASS"]
     db_name = os.environ["DB_NAME"]
@@ -86,7 +88,8 @@ else:
     Base.query = db_session.query_property()
     import crover.models
     #Base.metadata.create_all(bind=engine)
-
+    '''
+    
 def create_app(test_config=None):
     app = Flask(__name__, static_folder='figure')
     app.config.from_object('crover.config')
@@ -106,54 +109,3 @@ def create_app(test_config=None):
     from crover.views import views
 
     return app
-
-'''
-class Tweet(Base):
-    __tablename__ = 'tweet'
-    id = Column('id', Integer, primary_key=True)
-    text = Column('text', String)
-    tweeted_at = Column('tweeted_at', DateTime)
-    word = Column('word', String)
-
-    def __init__(self, tweeted_at=None, text=None, word=None):
-        self.text = text
-        self.tweeted_at = tweeted_at
-        self.word = word
-
-    def __repr__(self):
-        return '<id:{} tweeted_at:{} text:{} word: {}>'.format(self.id, self.tweeted_at, self.text, self.word)
-
-
-class ClusterTweet(Base):
-    __tablename__ = 'cluster_tweet'
-    id = Column('id', Integer, primary_key=True)
-    text = Column('text', String)
-    tweeted_at = Column('tweeted_at', DateTime)
-    emotion = Column('emotion', Integer)
-
-    def __init__(self, tweeted_at=None, text=None, emotion=None):
-        self.text = text
-        self.tweeted_at = tweeted_at
-        self.emotion = emotion
-
-    def __repr__(self):
-        return '<id:{} tweeted_at:{} text:{} emotion: {}>'.format(self.id, self.tweeted_at, self.text, self.emotion)
-
-
-class WordCount(Base):
-    __tablename__ = 'all_word_count'
-    id = Column('id', Integer, primary_key=True)
-    word = Column('word', String, unique=True)
-    #count = db.Column(db.Integer)
-    relative_frequent_rate = Column('relative_frequent_rate', Float)
-
-    def __init__(self, word=None, count=None, relative_frequent_rate=None):
-        self.word = word
-        #self.count = count
-        self.relative_frequent_rate = relative_frequent_rate
-
-    def __repr__(self):
-        #return '<id:{} word:{} count:{}>'.format(self.id, self.word, self.count)
-        return '<id:{} word:{} relative_frequent_rate:{}>'.format(self.id, self.word, self.relative_frequent_rate)
-
-'''

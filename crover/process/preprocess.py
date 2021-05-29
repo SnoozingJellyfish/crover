@@ -21,11 +21,12 @@ from sqlalchemy import create_engine
 #import gensim
 #import boto3
 
-from crover import LOCAL_ENV, download_from_cloud, Base, engine, db_session
+#from crover import LOCAL_ENV, download_from_cloud, Base, engine, db_session
+from crover import LOCAL_ENV, download_from_cloud
 #from crover import dict_all_count
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
-from crover.models.tweet import Tweet, WordCount
+#from crover.models.tweet import Tweet, WordCount
 #from crover import Tweet, WordCount
 #from crover.models.tweet import AllWordCount
 #engine = create_engine('sqlite:///restaurantMenu.db')
@@ -205,7 +206,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             #logger.info('noun count')
             dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
-            tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text'], word=split_word))
+            #tweets.append(Tweet(tweeted_at=created_at, text=result['data'][j]['text'], word=split_word))
             tweets_list.append([created_at, result['data'][j]['text'], split_word])
         if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
@@ -213,8 +214,8 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             break
     #session['tweets'] = tweets_list
     #session.modified = True
-    db_session.add_all(tweets)
-    logger.info(session['time4'] + 'prepro')
+    #db_session.add_all(tweets)
+    #logger.info(session['time4'] + 'prepro')
     #time3 = request.cookies.get('time3', None)
     #logger.info(time3 + ' prepro')
 
@@ -224,7 +225,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     db.session().add_all(word_count_list)
     '''
     logger.info('start committing tweets to DB')
-    db_session().commit()
+    #db_session().commit()
     logger.info('finish committing tweets to DB')
 
     print('-------------- scrape finish -----------------\n')
@@ -396,13 +397,13 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
     for w in dict_word_count_rate.keys():
         if OKword(w) and len(w) < word_length:
             extract_dict[w] = dict_word_count_rate[w]
-            word_rate_list.append(WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
+            #word_rate_list.append(WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
             i += 1
             if i >= top_word_num:
                 break
 
-    db_session().add_all(word_rate_list)
-    db_session().commit()
+    #db_session().add_all(word_rate_list)
+    #db_session().commit()
 
     print('------------ word count rate finish --------------')
     return extract_dict
