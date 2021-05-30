@@ -7,6 +7,7 @@ import requests
 import json
 import logging
 import site
+import concurrent.futures
 
 import numpy as np
 from sudachipy import tokenizer
@@ -22,7 +23,8 @@ logger = logging.getLogger(__name__)
 def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
-    dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
+    #dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
+    dict_word_count, tweets_list = scrape_token_multi_thread(keyword, max_tweets)
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
@@ -144,6 +146,111 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape finish -----------------\n')
 
     return dict_word_count, tweets_list
+
+
+def scrape_next_tweets(max_results, keyword, headers, next_token_id):
+    url = create_url(keyword, next_token_id, max_results)
+    tweets_result = connect_to_endpoint(url, headers)
+
+    return tweets_result
+
+def word_count(tweets, regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count):
+    result = tweets.result()
+    tweets_info = []
+    for j in range(len(result['data'])):
+        try:
+            created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000",
+                                                  '%Y-%m-%dT%H:%M:%S.%f%z')
+        except IndexError:
+            continue
+        created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+
+        tweet_text = result['data'][j]['text']
+        # clean tweet
+        # logger.info('clean tweet')
+        tweet_text = clean(tweet_text, regexes, sign_regex)
+
+        # update noun count dictionary
+        # logger.info('noun count')
+        dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+
+        tweets_info.append([created_at, result['data'][j]['text'], split_word])
+
+    return tweets_info, dict_word_count
+
+# マルチスレッドでツイートの取得、クリーン、名詞抽出・カウント、
+def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
+    print('-------------- scrape start -----------------\n')
+    bearer_token = auth()
+    headers = create_headers(bearer_token)
+
+    # regex to clean tweets
+    regexes = [
+        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(" .*\.jp/.*$"),
+        re.compile('@\S* '),
+        re.compile('pic.twitter.*$'),
+        re.compile(' .*ニュース$'),
+        re.compile('[ 　]'),
+        re.compile('\n')
+    ]
+    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+
+    if algo == 'mecab':
+        tokenizer_obj = MeCab.Tagger("-Ochasen")
+    elif algo == 'sudachi':
+        lib_path = site.getsitepackages()
+        logger.info(lib_path)
+        try:
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+        except:
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
+                                                 resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
+
+        mode = tokenizer.Tokenizer.SplitMode.C
+
+    dict_word_count = {}
+    next_token_id = None
+    max_results = 100
+
+    tweets = []
+    tweets_info_tasks = []
+    tweets_info_list = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        for i in range(max_tweets // max_results + 1):
+            if i == max_tweets // max_results:
+                max_results = max_tweets % max_results
+                if max_results < 10:
+                    break
+
+            logger.info('start scraping')
+            #url = create_url(keyword, next_token_id, max_results)
+            #result = connect_to_endpoint(url, headers)
+
+            tweets.append(executor.submit(scrape_next_tweets, max_results, keyword, headers, next_token_id))
+
+            if i > 0:
+                tweets_info, dict_word_count = tweets_info_tasks[-1].result()
+                tweets_info_list.extend(tweets_info)
+
+            logger.info('start word count tweet')
+            tweets_info_tasks.append(executor.submit(word_count, tweets[-1], regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
+
+            result = tweets[-1].result()
+            if 'next_token' in result['meta']:
+                next_token_id = result['meta']['next_token']
+            else:
+                break
+
+    tweets_info, dict_word_count = tweets_info_tasks[-1].result()
+    tweets_info_list.extend(tweets_info)
+        #tweets_info_list = tweets_info_tasks[0].result()
+        #for i in range(1, len(tweets_info_tasks)):
+        #    tweets_info_list.extend(tweets_info_tasks[i].result())
+    #tweets_info_list = [x.result() for x in tweets_info_tasks]
+    logger.info('-------------- scrape finish -----------------\n')
+
+    return dict_word_count, tweets_info_list
 
 
 # 正規表現でツイート中の不要文字を除去する
