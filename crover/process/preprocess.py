@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
-    #dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
-    dict_word_count, tweets_list = scrape_token_multi_thread(keyword, max_tweets)
+    dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
+    #dict_word_count, tweets_list = scrape_token_multi_thread(keyword, max_tweets)
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
