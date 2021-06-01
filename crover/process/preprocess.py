@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
-    #dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
-    dict_word_count, tweets_list = scrape_token_multi_thread(keyword, max_tweets)
+    dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
+    #dict_word_count, tweets_list = scrape_token_multi_thread(keyword, max_tweets)
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
@@ -154,8 +154,8 @@ def scrape_next_tweets(max_results, keyword, headers, next_token_id):
 
     return tweets_result
 
-def word_count(tweets, regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count):
-    result = tweets.result()
+def word_count(result, regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count):
+    #result = tweets.result()
     tweets_info = []
     for j in range(len(result['data'])):
         try:
@@ -177,6 +177,7 @@ def word_count(tweets, regexes, sign_regex, tokenizer_obj, mode, keyword, dict_w
         tweets_info.append([created_at, result['data'][j]['text'], split_word])
 
     return tweets_info, dict_word_count
+    #return tweets_info
 
 # マルチスレッドでツイートの取得、クリーン、名詞抽出・カウント、
 def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
@@ -232,10 +233,11 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
 
             if i > 0:
                 tweets_info, dict_word_count = tweets_info_tasks[-1].result()
+                #tweets_info = tweets_info_tasks[-1].result()
                 tweets_info_list.extend(tweets_info)
 
             logger.info('start word count tweet')
-            tweets_info_tasks.append(executor.submit(word_count, tweets[-1], regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
+            tweets_info_tasks.append(executor.submit(word_count, tweets[-1].result(), regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
 
             result = tweets[-1].result()
             if 'next_token' in result['meta']:
@@ -244,6 +246,7 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
                 break
 
     tweets_info, dict_word_count = tweets_info_tasks[-1].result()
+    #tweets_info = tweets_info_tasks[-1].result()
     tweets_info_list.extend(tweets_info)
         #tweets_info_list = tweets_info_tasks[0].result()
         #for i in range(1, len(tweets_info_tasks)):
