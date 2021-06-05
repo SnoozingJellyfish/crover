@@ -7,6 +7,8 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
+from wordcloud import WordCloud
+
 from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
@@ -16,10 +18,11 @@ def emotion_analyze_all(words, tweets):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
-    emotion_count, emotion_tweet = emotion_analyze(cluster_tweets)
+    emotion_count, emotion_tweet, emotion_word = emotion_analyze(cluster_tweets)
     logger.info('make pie chart')
     b64_chart = make_emotion_pie_chart(emotion_count)
-    return b64_chart, emotion_tweet
+    b64_figure = make_emotion_wordcloud(emotion_word)
+    return b64_chart, b64_figure, emotion_tweet
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words, tweets):
@@ -47,6 +50,7 @@ def tweet_collect(words, tweets):
 def emotion_analyze(cluster_tweets, algo='mlask'):
     emotion_count = {'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
     emotion_tweet = {'POSITIVE': [], 'mostly_POSITIVE': [], 'NEUTRAL': [], 'mostly_NEGATIVE': [], 'NEGATIVE': []}
+    emotion_word = {}
 
     if algo == 'mlask':
         with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
@@ -58,6 +62,13 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
                 emotion_count['NEUTRAL'] += 1
                 emotion_tweet['NEUTRAL'].append(tweet[1])
             else:
+                for emo in result_dic['emotion'].keys():
+                    for w in result_dic['emotion'][emo]:
+                        if w in emotion_word.keys():
+                            emotion_word[w] += 1
+                        else:
+                            emotion_word[w] = 1
+
                 emotion_count[result_dic['orientation']] += 1
                 emotion_tweet[result_dic['orientation']].append(tweet[1])
 
@@ -90,7 +101,7 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
                 df_cluster.to_csv(cluster_csv[:-4] + '_' + algo + '_analyzed.csv')
     '''
 
-    return emotion_count, emotion_tweet
+    return emotion_count, emotion_tweet, emotion_word
 
 
 def make_emotion_pie_chart(emotion_count):
@@ -108,6 +119,26 @@ def make_emotion_pie_chart(emotion_count):
     qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
     b64_chart = "data:image/png;base64,{}".format(qr_b64str)
     return b64_chart
+
+
+def make_emotion_wordcloud(emotion_word):
+    font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"  # 通常使われる漢字を抽出したサブセット
+
+    wordcloud = WordCloud(font_path=font_path, background_color="white",
+                          width=500, height=500, colormap='rainbow')
+    logger.info('fit word cloud')
+    wordcloud.fit_words(emotion_word)
+
+    logger.info('save word cloud')
+    # 画像書き込み用バッファに画像を保存してhtmlに返す
+    buf = io.BytesIO()
+    img = wordcloud.to_image()
+    img.save(buf, 'PNG')
+    logger.info('b64 encode')
+    qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
+    b64_figure = "data:image/png;base64,{}".format(qr_b64str)
+
+    return b64_figure
 
 
 # 感情分析の結果を出力する

@@ -24,7 +24,6 @@ def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
     dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
-    #dict_word_count, tweets_list = scrape_token_multi_thread(keyword, max_tweets)
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
@@ -38,8 +37,8 @@ def preprocess_all(keyword, max_tweets, word_num):
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
 def auth():
-    return os.environ.get("TWITTER_BEARER_TOKEN")
-    #return os.environ.get("TWITTER_BEARER_TOKEN2")
+    tokens = [os.environ.get("TWITTER_BEARER_TOKEN"), os.environ.get("TWITTER_BEARER_TOKEN2")]
+    return tokens[np.random.randint(0, len(tokens))]
 
 def create_url(keyword, next_token_id=None, max_results=10):
     #query = "from:twitterdev -is:retweet"
@@ -103,7 +102,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
                                                  resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
 
-        mode = tokenizer.Tokenizer.SplitMode.C
+        mode = tokenizer.Tokenizer.SplitMode.C # 最も長い分割ルール
 
     dict_word_count = {}
     next_token_id = None
@@ -154,108 +153,6 @@ def scrape_next_tweets(max_results, keyword, headers, next_token_id):
 
     return tweets_result
 
-def word_count(result, regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count):
-    #result = tweets.result()
-    tweets_info = []
-    for j in range(len(result['data'])):
-        try:
-            created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000",
-                                                  '%Y-%m-%dT%H:%M:%S.%f%z')
-        except IndexError:
-            continue
-        created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
-
-        tweet_text = result['data'][j]['text']
-        # clean tweet
-        # logger.info('clean tweet')
-        tweet_text = clean(tweet_text, regexes, sign_regex)
-
-        # update noun count dictionary
-        # logger.info('noun count')
-        dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
-
-        tweets_info.append([created_at, result['data'][j]['text'], split_word])
-
-    return tweets_info, dict_word_count
-    #return tweets_info
-
-# マルチスレッドでツイートの取得、クリーン、名詞抽出・カウント、
-def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
-    print('-------------- scrape start -----------------\n')
-    bearer_token = auth()
-    headers = create_headers(bearer_token)
-
-    # regex to clean tweets
-    regexes = [
-        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
-        re.compile(" .*\.jp/.*$"),
-        re.compile('@\S* '),
-        re.compile('pic.twitter.*$'),
-        re.compile(' .*ニュース$'),
-        re.compile('[ 　]'),
-        re.compile('\n')
-    ]
-    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
-
-    if algo == 'mecab':
-        tokenizer_obj = MeCab.Tagger("-Ochasen")
-    elif algo == 'sudachi':
-        lib_path = site.getsitepackages()
-        logger.info(lib_path)
-        try:
-            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
-        except:
-            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                                 resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
-
-        mode = tokenizer.Tokenizer.SplitMode.C
-
-    dict_word_count = {}
-    next_token_id = None
-    max_results = 100
-
-    tweets = []
-    tweets_info_tasks = []
-    tweets_info_list = []
-    #with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor: # multi thread
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor: # multi core
-        for i in range(max_tweets // max_results + 1):
-            if i == max_tweets // max_results:
-                max_results = max_tweets % max_results
-                if max_results < 10:
-                    break
-
-            logger.info('start scraping')
-            #url = create_url(keyword, next_token_id, max_results)
-            #result = connect_to_endpoint(url, headers)
-
-            tweets.append(executor.submit(scrape_next_tweets, max_results, keyword, headers, next_token_id))
-
-            if i > 0:
-                tweets_info, dict_word_count = tweets_info_tasks[-1].result()
-                #tweets_info = tweets_info_tasks[-1].result()
-                tweets_info_list.extend(tweets_info)
-
-            logger.info('start word count tweet')
-            tweets_info_tasks.append(executor.submit(word_count, tweets[-1].result(), regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
-
-            result = tweets[-1].result()
-            if 'next_token' in result['meta']:
-                next_token_id = result['meta']['next_token']
-            else:
-                break
-
-    tweets_info, dict_word_count = tweets_info_tasks[-1].result()
-    #tweets_info = tweets_info_tasks[-1].result()
-    tweets_info_list.extend(tweets_info)
-        #tweets_info_list = tweets_info_tasks[0].result()
-        #for i in range(1, len(tweets_info_tasks)):
-        #    tweets_info_list.extend(tweets_info_tasks[i].result())
-    #tweets_info_list = [x.result() for x in tweets_info_tasks]
-    logger.info('-------------- scrape finish -----------------\n')
-
-    return dict_word_count, tweets_info_list
-
 
 # 正規表現でツイート中の不要文字を除去する
 def clean(text, regexes, sign_regex):
@@ -292,27 +189,34 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
             part = word_info[3][:2]
 
         elif algo == 'sudachi':
-            noun = words[j].normalized_form()
-            split_word.append(noun)
-            if (noun == keyword):
+            word = words[j].normalized_form()
+            split_word.append(word)
+            if (word == keyword):
                 continue
             part = words[j].part_of_speech()[0]
 
         if (part == "名詞"):
-            if (noun in dict_word_count.keys()):
-                dict_word_count[noun] += 1
+            if (word in dict_word_count.keys()):
+                dict_word_count[word] += 1
             else:
-                dict_word_count[noun] = 1
+                dict_word_count[word] = 1
 
     return dict_word_count, str(split_word)
 
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=5, word_length=20):
+def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=10, word_length=20):
     print('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
+
+    # 除外単語リストを取得
+    with open('crover/data/word_list/excluded_word.txt', 'r', encoding='utf-8') as f:
+        excluded_word = f.read().split('\n')
+    with open('crover/data/word_list/excluded_char.txt', 'r', encoding='utf-8') as f:
+        excluded_char = f.read().split('\n')
+
     for word in dict_word_count.keys():
         # 出現頻度の低い単語は無視
         if dict_word_count[word] < ignore_word_count:
@@ -334,7 +238,7 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
 
     # 相対出現頻度が高いワードからword_length個抽出
     for w in dict_word_count_rate.keys():
-        if OKword(w) and len(w) < word_length:
+        if OKword(w, excluded_word, excluded_char) and len(w) < word_length:
             extract_dict[w] = dict_word_count_rate[w]
             i += 1
             if i >= top_word_num:
@@ -364,7 +268,7 @@ def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
 
         elif algo == 'sudachi':
             if word in model:
-                if OKword(word):
+                if OKword(word, excluded_word, excluded_char):
                     dict_top_word2vec['word'].append(word)
                     dict_top_word2vec['vec'].append(model[word])
                     dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
@@ -429,9 +333,9 @@ def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
 
 
 # 汎用性の高い単語を除外する
-def OKword(word):
-    excluded_word = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '億', '独紙', 'RT', 'フォロー', 'いいね', 'お気に入り', 'まとめ', '日本', 'NHK', 'ジオグラフィック', 'ロイター', '大手小町', 'スポニチアネックス', 'Bloomberg', 'ナショナルジオグラフィック', 'Reuters', 'reuters', 'カナロコ', 'アットエス', '西日本スポーツ', 'Annex', 'Sponichi', '沖縄タイムス', 'Infoseek', 'マイナビ', 'AFP']
-    excluded_char = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '０', '１', '２', '３', '４', '５', '６', '７', '８', '９', 'AERA', 'NEWS', 'news', '県', '府', '市', '町', '放送', '新聞', 'ニュース', '時事', '日刊', '新報', 'DIGITAL', '日報', 'TOKYOweb', 'ABEMA', 'MEDIANTALKS']
+def OKword(word, excluded_word, excluded_char):
+    #excluded_word = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '億', '独紙', 'RT', 'フォロー', 'いいね', 'お気に入り', 'まとめ', '日本', 'NHK', 'ジオグラフィック', 'ロイター', '大手小町', 'スポニチアネックス', 'Bloomberg', 'ナショナルジオグラフィック', 'Reuters', 'reuters', 'カナロコ', 'アットエス', '西日本スポーツ', 'Annex', 'Sponichi', '沖縄タイムス', 'Infoseek', 'マイナビ', 'AFP']
+    #excluded_char = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '０', '１', '２', '３', '４', '５', '６', '７', '８', '９', 'AERA', 'NEWS', 'news', '県', '府', '市', '町', '放送', '新聞', 'ニュース', '時事', '日刊', '新報', 'DIGITAL', '日報', 'TOKYOweb', 'ABEMA', 'MEDIANTALKS']
     
     if word in excluded_word:
         return False
@@ -514,6 +418,86 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudach
     return dict_word_count
 
 
+# マルチスレッド・コアでツイートの取得、クリーン、名詞抽出・カウント
+# マルチスレッドはリクエスト待ちでも速くならない
+# マルチコアはsudachipyでは無理
+def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
+    print('-------------- scrape start -----------------\n')
+    bearer_token = auth()
+    headers = create_headers(bearer_token)
+
+    # regex to clean tweets
+    regexes = [
+        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(" .*\.jp/.*$"),
+        re.compile('@\S* '),
+        re.compile('pic.twitter.*$'),
+        re.compile(' .*ニュース$'),
+        re.compile('[ 　]'),
+        re.compile('\n')
+    ]
+    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+
+    if algo == 'mecab':
+        tokenizer_obj = MeCab.Tagger("-Ochasen")
+    elif algo == 'sudachi':
+        lib_path = site.getsitepackages()
+        logger.info(lib_path)
+        try:
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+        except:
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
+                                                 resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
+
+        mode = tokenizer.Tokenizer.SplitMode.C
+
+    dict_word_count = {}
+    next_token_id = None
+    max_results = 100
+
+    tweets = []
+    tweets_info_tasks = []
+    tweets_info_list = []
+    #with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor: # multi thread
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor: # multi core
+        for i in range(max_tweets // max_results + 1):
+            if i == max_tweets // max_results:
+                max_results = max_tweets % max_results
+                if max_results < 10:
+                    break
+
+            logger.info('start scraping')
+            #url = create_url(keyword, next_token_id, max_results)
+            #result = connect_to_endpoint(url, headers)
+
+            tweets.append(executor.submit(scrape_next_tweets, max_results, keyword, headers, next_token_id))
+
+            if i > 0:
+                tweets_info, dict_word_count = tweets_info_tasks[-1].result()
+                #tweets_info = tweets_info_tasks[-1].result()
+                tweets_info_list.extend(tweets_info)
+
+            logger.info('start word count tweet')
+            tweets_info_tasks.append(executor.submit(word_count, tweets[-1].result(), regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
+
+            result = tweets[-1].result()
+            if 'next_token' in result['meta']:
+                next_token_id = result['meta']['next_token']
+            else:
+                break
+
+    tweets_info, dict_word_count = tweets_info_tasks[-1].result()
+    #tweets_info = tweets_info_tasks[-1].result()
+    tweets_info_list.extend(tweets_info)
+        #tweets_info_list = tweets_info_tasks[0].result()
+        #for i in range(1, len(tweets_info_tasks)):
+        #    tweets_info_list.extend(tweets_info_tasks[i].result())
+    #tweets_info_list = [x.result() for x in tweets_info_tasks]
+    logger.info('-------------- scrape finish -----------------\n')
+
+    return dict_word_count, tweets_info_list
+
+
 # word_count_rateを算出するため、日本語の全ツイートをランダムサンプリングする
 def scrapeAll(output_name, max_tweets, until):
     all_hiragana = "したとにのれんいうか"  # 出現頻度の高いひらがな
@@ -533,6 +517,31 @@ def scrapeAll(output_name, max_tweets, until):
         scrape(output_name, keyword, 10000, dt_since.strftime('%Y-%m-%d'), dt_until.strftime('%Y-%m-%d'))
         dt_until -= timedelta
 
+
+def word_count_old(result, regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count):
+    #result = tweets.result()
+    tweets_info = []
+    for j in range(len(result['data'])):
+        try:
+            created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000",
+                                                  '%Y-%m-%dT%H:%M:%S.%f%z')
+        except IndexError:
+            continue
+        created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+
+        tweet_text = result['data'][j]['text']
+        # clean tweet
+        # logger.info('clean tweet')
+        tweet_text = clean(tweet_text, regexes, sign_regex)
+
+        # update noun count dictionary
+        # logger.info('noun count')
+        dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+
+        tweets_info.append([created_at, result['data'][j]['text'], split_word])
+
+    return tweets_info, dict_word_count
+    #return tweets_info
 
 # load all word count from datastore
 def word_count_rate_datastore(dict_word_count, top_word_num=20, max_tweets=100, ignore_word_count=5):

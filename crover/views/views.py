@@ -57,14 +57,15 @@ def word_cluster():
         sess_info_at['cluster_to_words'] = cluster_to_words
         figures = make_word_cloud(cluster_to_words[0])
         sess_info_at['figures_dictword'] = figures
-        sess_info_at['figure_not_dictword'], sess_info_at['chart'] = 'None', 'None'
+        sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'None', 'None', 'None'
         sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
 
     else: # ナビゲーションバーの"ワードクラスター"をクリック
         sess_info_at = sess_info[session['searched_at']]
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
-                           chart=sess_info_at['chart'], posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
+                           chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
+                           posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
 
 
 @view.route('/analysis', methods=['GET', 'POST'])
@@ -88,6 +89,7 @@ def analysis():
                 sess_info_at['figure_not_dictword'] = figures[-1]
 
             sess_info_at['chart'] = 'None'
+            sess_info_at['figure_emotion_word'] = 'None'
             sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
 
         # zoom clustering
@@ -107,7 +109,8 @@ def analysis():
                 if len(clustered_words) == 1: # クラスターの単語が1つのとき
                     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
                                            figure_not_dictword=sess_info_at['figures_not_dictword'],
-                                           chart=sess_info_at['chart'], posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
+                                           chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
+                                           posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
                 part_word2vec = make_part_word2vec_dic(clustered_words, sess_info_at['top_word2vec'])
                 zoom_cluster_to_words = clustering(part_word2vec)
                 pre_cluster_to_words = copy.deepcopy(sess_info_at['cluster_to_words'][-1])
@@ -120,8 +123,9 @@ def analysis():
 
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
-            sess_info_at['figure_not_dictword'] = figures[-1]
+            sess_info_at['figure_emotion_word'] = figures[-1]
             sess_info_at['chart'] = 'None'
+            sess_info_at['emotion_word_figure'] = 'None'
             sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
 
         # emotion analysis
@@ -129,16 +133,18 @@ def analysis():
             cluster_idx = int(request.form['submit_button'][4:])
             words = list(sess_info_at['cluster_to_words'][-1][cluster_idx].keys())
             tweets = sess_info[session['searched_at']]['tweets']
-            chart, emotion_tweet = emotion_analyze_all(words, tweets)
+            chart, emotion_word_figure, emotion_tweet = emotion_analyze_all(words, tweets)
 
             sess_info_at['chart'] = chart
+            sess_info_at['figure_emotion_word'] = emotion_word_figure
             sess_info_at['posi'] = emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE']
             sess_info_at['neutral'] = emotion_tweet['NEUTRAL']
             sess_info_at['nega'] = emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
-                           chart=sess_info_at['chart'], posi_tweets=sess_info_at['posi'],
+                           chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
+                           posi_tweets=sess_info_at['posi'],
                            neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
 
 
