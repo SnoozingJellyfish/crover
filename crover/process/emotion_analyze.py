@@ -125,7 +125,7 @@ def make_emotion_wordcloud(emotion_word):
     font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"  # 通常使われる漢字を抽出したサブセット
 
     wordcloud = WordCloud(font_path=font_path, background_color="white",
-                          width=500, height=500, colormap='rainbow')
+                          width=500, height=500, colormap='hsv')
     logger.info('fit word cloud')
     wordcloud.fit_words(emotion_word)
 

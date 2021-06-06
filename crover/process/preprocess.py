@@ -79,6 +79,10 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     bearer_token = auth()
     headers = create_headers(bearer_token)
 
+    # 除外するツイートのフレーズリストを取得
+    with open('crover/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
+        excluded_tweet = f.read().split('\n')
+
     # regex to clean tweets
     regexes = [
         re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
@@ -107,6 +111,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     dict_word_count = {}
     next_token_id = None
     max_results = 100
+    exclude_flag = False
 
     for i in range(max_tweets // max_results + 1):
         if i == max_tweets // max_results:
@@ -128,6 +133,16 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
 
             tweet_text = result['data'][j]['text']
+
+            # 特定フレーズを含むツイートを除外
+            for w in excluded_tweet:
+                if w in tweet_text:
+                    exclude_flag = True
+                    break
+            if exclude_flag:
+                exclude_flag = False
+                continue
+
             # clean tweet
             #logger.info('clean tweet')
             tweet_text = clean(tweet_text, regexes, sign_regex)
