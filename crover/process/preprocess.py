@@ -112,6 +112,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     next_token_id = None
     max_results = 100
     exclude_flag = False
+    tweets_list = []
 
     for i in range(max_tweets // max_results + 1):
         if i == max_tweets // max_results:
@@ -124,7 +125,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         result = connect_to_endpoint(url, headers)
 
         logger.info('start word count tweet')
-        tweets_list = []
+
         for j in range(len(result['data'])):
             try:
                 created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')

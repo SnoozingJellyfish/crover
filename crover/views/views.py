@@ -33,6 +33,9 @@ def word_cluster():
 
     # ツイートを取得しワード数をカウントする
     if request.method == 'POST':
+        # ユーザーの直前のセッションの情報を削除
+        if 'searched_at' in session and session['searched_at'] in sess_info:
+            del sess_info[session['searched_at']]
         # セッションを区別するタイムスタンプを設定
         session['searched_at'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
         logger.info(session['searched_at'])
@@ -123,7 +126,7 @@ def analysis():
 
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
-            sess_info_at['figure_emotion_word'] = figures[-1]
+            sess_info_at['figure_not_dictword'] = figures[-1]
             sess_info_at['chart'] = 'None'
             sess_info_at['emotion_word_figure'] = 'None'
             sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
