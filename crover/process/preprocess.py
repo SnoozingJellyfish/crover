@@ -100,6 +100,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     elif algo == 'sudachi':
         lib_path = site.getsitepackages()
         logger.info(lib_path)
+        logger.info(os.listdir(lib_path[0]))
         try:
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
         except:
