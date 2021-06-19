@@ -6,6 +6,7 @@ import logging
 import pickle
 
 import matplotlib.pyplot as plt
+plt.switch_backend('Agg')
 import numpy as np
 from wordcloud import WordCloud
 

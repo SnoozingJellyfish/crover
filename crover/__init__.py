@@ -37,11 +37,12 @@ def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
 LOCAL_ENV = False
 
 if LOCAL_ENV:
-    with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
+    with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)
 
-    #with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
-    with open('C:/Users/直也/Documents/twitter_analysis/crover_application/crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
+    with open('crover/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
+    #with open('crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
+    #with open('crover/data/sudachi_word2vec_dict_300d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
 
 '''

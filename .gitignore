@@ -135,6 +135,7 @@ dmypy.json
 # data
 *sudachi.pickle
 *.kv
+*d.pickle
 
 # figure
 crover/figure/
@@ -150,3 +151,6 @@ crover/figure/
 # crover/config.py
 requirements_old.txt
 requirements_flex.txt
+requirements_pip.txt
+requirements_win10.txt
+package-list.txt

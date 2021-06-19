@@ -1,4 +1,4 @@
-runtime: python37 # or another supported version for standard environment
+runtime: python39 # or another supported version for standard environment
 #runtime: python # flex
 #runtime_config: # flex
 #    python_version: 3 # flex

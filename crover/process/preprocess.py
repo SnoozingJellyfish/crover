@@ -37,7 +37,7 @@ def preprocess_all(keyword, max_tweets, word_num):
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
 def auth():
-    tokens = [os.environ.get("TWITTER_BEARER_TOKEN"), os.environ.get("TWITTER_BEARER_TOKEN2")]
+    tokens = [os.environ.get("TWITTER_BEARER_TOKEN1"), os.environ.get("TWITTER_BEARER_TOKEN2")]
     return tokens[np.random.randint(0, len(tokens))]
 
 def create_url(keyword, next_token_id=None, max_results=10):
@@ -350,9 +350,6 @@ def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
 
 # 汎用性の高い単語を除外する
 def OKword(word, excluded_word, excluded_char):
-    #excluded_word = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '百', '千', '万', '億', '独紙', 'RT', 'フォロー', 'いいね', 'お気に入り', 'まとめ', '日本', 'NHK', 'ジオグラフィック', 'ロイター', '大手小町', 'スポニチアネックス', 'Bloomberg', 'ナショナルジオグラフィック', 'Reuters', 'reuters', 'カナロコ', 'アットエス', '西日本スポーツ', 'Annex', 'Sponichi', '沖縄タイムス', 'Infoseek', 'マイナビ', 'AFP']
-    #excluded_char = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '０', '１', '２', '３', '４', '５', '６', '７', '８', '９', 'AERA', 'NEWS', 'news', '県', '府', '市', '町', '放送', '新聞', 'ニュース', '時事', '日刊', '新報', 'DIGITAL', '日報', 'TOKYOweb', 'ABEMA', 'MEDIANTALKS']
-    
     if word in excluded_word:
         return False
 
