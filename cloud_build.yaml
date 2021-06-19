@@ -6,7 +6,7 @@ steps:
   - |
     cat << EOF > secret.yaml
     env_variables:
-      TWITTER_BEARER_TOKEN: $_TWITTER_BEARER_TOKEN
+      TWITTER_BEARER_TOKEN1: $_TWITTER_BEARER_TOKEN1
       TWITTER_BEARER_TOKEN2: $_TWITTER_BEARER_TOKEN2
       DB_USER: $_DB_USER
       DB_PASS: $_DB_PASS

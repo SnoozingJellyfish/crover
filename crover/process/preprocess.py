@@ -98,6 +98,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
+        logger.info('user site-packages: ' + site.getusersitepackages())
         if LOCAL_ENV:
             lib_path = site.getsitepackages()
             logger.info(lib_path)
