@@ -98,18 +98,13 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
-        lib_path = site.getsitepackages()
-        logger.info(lib_path)
-        logger.info(os.listdir(lib_path[0]))
-        try:
-            try:
-                tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
-            except:
-                tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                                     resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
-        except:
+        if LOCAL_ENV:
+            lib_path = site.getsitepackages()
+            logger.info(lib_path)
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+        else:
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                                 resource_dir=os.path.join('/layers/google.python.pip/pip/lib/python3.9/site-packages', 'sudachipy/resources')).create()
+                                                 resource_dir=os.path.join('/layers/google.python.pip/pip/lib/python3.9/site-packages/sudachipy/resources')).create()
 
         mode = tokenizer.Tokenizer.SplitMode.C # 最も長い分割ルール
 
