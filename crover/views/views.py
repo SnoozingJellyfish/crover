@@ -49,7 +49,8 @@ def word_cluster():
 
         keyword = request.form['keyword']
         max_tweets = int(request.form['tweet_num'])
-        word_num = int(request.form['word_num'])
+        #word_num = int(request.form['word_num'])
+        word_num = 100
         #datastore_upload(int(request.form['up_vec_num']))
 
         # ツイート取得、ワードカウント
@@ -76,6 +77,11 @@ def analysis():
     sess_info_at = sess_info[session['searched_at']]
 
     if request.method == 'POST':
+        figures = sess_info_at['figures_dictword']
+        for i in range(len(figures)):
+            if figures[i][-9:] == '_analyzed':
+                figures[i] = figures[i][:-9]
+
         # return to previous cluster
         if request.form['submit_button'] == 'return':
             if len(sess_info_at['cluster_to_words']) == 1:
@@ -134,6 +140,7 @@ def analysis():
         # emotion analysis
         elif request.form['submit_button'][:4] == 'emot':
             cluster_idx = int(request.form['submit_button'][4:])
+            sess_info_at['figures_dictword'][cluster_idx] += '_analyzed'
             words = list(sess_info_at['cluster_to_words'][-1][cluster_idx].keys())
             tweets = sess_info[session['searched_at']]['tweets']
             chart, emotion_word_figure, emotion_tweet = emotion_analyze_all(words, tweets)

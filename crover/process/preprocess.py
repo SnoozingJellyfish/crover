@@ -30,7 +30,12 @@ def preprocess_all(keyword, max_tweets, word_num):
         logger.info('finish loading dict_all_count')
     else:
         from crover import dict_all_count
-    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets)
+
+    if max_tweets > 1000:
+        ignore_word_count = 10
+    else:
+        ignore_word_count = 5
+    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets, ignore_word_count)
     return dict_word_count_rate, tweets_list
 
 
@@ -105,7 +110,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
         else:
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                                 resource_dir=os.path.join('/layers/google.python.pip/pip/lib/python3.9/site-packages/sudachipy/resources')).create()
+                                                 resource_dir=os.path.join(site.getusersitepackages(), 'sudachipy/resources')).create()
 
         mode = tokenizer.Tokenizer.SplitMode.C # 最も長い分割ルール
 
@@ -223,7 +228,7 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=10, word_length=20):
+def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=2):
     print('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
@@ -255,7 +260,7 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
 
     # 相対出現頻度が高いワードからword_length個抽出
     for w in dict_word_count_rate.keys():
-        if OKword(w, excluded_word, excluded_char) and len(w) < word_length:
+        if OKword(w, excluded_word, excluded_char) and len(w) < word_length and dict_word_count_rate[w] > thre_word_count_rate:
             extract_dict[w] = dict_word_count_rate[w]
             i += 1
             if i >= top_word_num:

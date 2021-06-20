@@ -1,18 +1,25 @@
 {% extends "layout.html" %}
 {% block body %}
 <form action ="{{ url_for('view.word_cluster') }}" method=post>
-    <div class="form-group">
-        <label for="InputWord">キーワード</label>
-        <input type="text" class="form-control" id="InputWord" name=keyword>
+    <div class="form-row justify-content-center">
+        <div class="form-group col-lg-4 col-12">
+            <label for="InputWord">キーワード</label>
+            <input type="text" class="form-control" id="InputWord" name=keyword>
+        </div>
+        <div class="form-group col-lg-1 col-12">
+            <label for="TweetNum">ツイート数</label>
+            <select class="form-control" id ="TweetNum" name=tweet_num size="1">
+                <option>100</option>
+                <option>500</option>
+                <option>1000</option>
+                <option>2000</option>
+            </select>
+        </div>
     </div>
-    <div class="form-group">
-        <label for="TweetNum">ツイート数</label>
-        <input type="number" class="form-control" id="TweetNum" name=tweet_num max=100000>
+    <div class="form-row justify-content-center">
+        <div class="form-group">
+            <button type="submit" class="form-control btn btn-primary justify-content-center">検索</button>
+        </div>
     </div>
-    <div class="form-group">
-        <label for="WordNum">ワード数</label>
-        <input type="number" class="form-control" id="WordNum" name=word_num max=1000>
-    </div>
-    <button type="submit" class="btn btn-primary">検索</button>
 </form>
 {% endblock %}
