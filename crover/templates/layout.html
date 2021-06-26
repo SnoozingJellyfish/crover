@@ -12,6 +12,41 @@
 <link href="https://fonts.googleapis.com/earlyaccess/mplus1p.css" rel="stylesheet" type="text/css">
 <link rel=stylesheet href="{{ url_for('static', filename='style.css') }}">
 
+<!-- background-color: #FF6347; -->
+<style type='text/css'>
+.img_thumbnail_analyze {
+  padding: 10px;
+  background-color: rgba(255,99,71,.5);
+  border-radius: 20px;
+  -webkit-border-radius: 20px;
+  -moz-border-radius: 20px;
+}
+.img-shadow {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.img-shadow-analyze {
+    box-shadow: 0 0 5px 10px rgba(255,99,71,0.5);
+}
+.border_radius {
+    border-radius: 20px;
+    -webkit-border-radius: 20px;
+    -moz-border-radius: 20px;
+}
+td {
+  width: 500px;
+}
+thead {
+      display: table;
+}
+tbody {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  height: 500px;
+  display: block;
+  table-layout:fixed;
+}
+</style>
+
 <body>
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-light bg-light">

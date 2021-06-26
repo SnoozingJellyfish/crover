@@ -4,6 +4,7 @@ import io
 import base64
 import logging
 import pickle
+from PIL import Image
 
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg')
@@ -19,11 +20,11 @@ def emotion_analyze_all(words, tweets):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
-    emotion_count, emotion_tweet, emotion_word = emotion_analyze(cluster_tweets)
+    emotion_count, emotion_tweet_list, emotion_word = emotion_analyze(cluster_tweets)
     logger.info('make pie chart')
     b64_chart = make_emotion_pie_chart(emotion_count)
     b64_figure = make_emotion_wordcloud(emotion_word)
-    return b64_chart, b64_figure, emotion_tweet
+    return b64_chart, b64_figure, emotion_tweet_list
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words, tweets):
@@ -101,8 +102,17 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
             if (i+1) % 1000 == 0:
                 df_cluster.to_csv(cluster_csv[:-4] + '_' + algo + '_analyzed.csv')
     '''
+    posi = np.array(emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE'])
+    neut = np.array(emotion_tweet['NEUTRAL'])
+    nega = np.array(emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE'])
+    max_tweet = np.max((len(posi), len(neut), len(nega)))
+    posi = np.hstack((posi, np.zeros(max_tweet - len(posi), dtype=str)))
+    neut = np.hstack((neut, np.zeros(max_tweet - len(neut), dtype=str)))
+    nega = np.hstack((nega, np.zeros(max_tweet - len(nega), dtype=str)))
+    emotion_tweet_array = np.vstack((posi, neut, nega))
+    emotion_tweet_list = list(emotion_tweet_array.T)
 
-    return emotion_count, emotion_tweet, emotion_word
+    return emotion_count, emotion_tweet_list, emotion_word
 
 
 def make_emotion_pie_chart(emotion_count):
@@ -124,9 +134,11 @@ def make_emotion_pie_chart(emotion_count):
 
 def make_emotion_wordcloud(emotion_word):
     font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"  # 通常使われる漢字を抽出したサブセット
-
-    wordcloud = WordCloud(font_path=font_path, background_color="white",
-                          width=500, height=500, colormap='hsv')
+    msk = np.array(Image.open("crover/figure/fukidashi2.png"))
+    #msk[msk != 3] = 255
+    #msk[msk < 255] = 100
+    wordcloud = WordCloud(font_path=font_path, background_color="white", width=500, height=500,
+                          colormap='Dark2', mask=msk, contour_width=20, contour_color='gray')
     logger.info('fit word cloud')
     wordcloud.fit_words(emotion_word)
 

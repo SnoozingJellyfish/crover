@@ -10,16 +10,11 @@
             <div class="col">
                 <div style="text-align: center">
                 {% if figure[-9:] == '_analyzed' %}
-                <style type='text/css'>
-                .img-thumbnail-analyze {
-                  padding: 10px;
-                  background-color: #FF6347;
-                  border-radius: 6px;
-                }
-                </style>
-                <img src={{figure[:-9]}} class="img-fluid img-thumbnail-analyze" width="400" height="400"><br>
+                <div class="imageshadow">
+                    <img src={{figure[:-9]}} class="img-fluid img-shadow-analyze border_radius" width="400" height="400"><br>
+                </div>
                 {% else %}
-                <img src={{figure}} class="img-fluid" width="400" height="400"><br>
+                <img src={{figure}} class="img-fluid img-shadow border_radius" width="400" height="400"><br>
                 {% endif %}
                 <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-primary">分ける</button>
                 <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-primary">感情分析</button>
@@ -36,60 +31,28 @@
         {% if chart != 'None' %}
         <div style="text-align: center">
             <img src={{chart}} class="img-fluid" width="250" height="200">
-            <img src={{figure_emotion_word}} class="img-fluid" width="200" height="200">
+            <img src={{figure_emotion_word}} class="img-fluid" width="300" height="200">
         </div>
-        <table border="0">
-            <tr>
-                <td valign="top">
-                    <table class="table" border="1" width="30%" align="left">
-                        <thead>
-                            <tr>
-                                <th>ポジティブ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for posi_tweet in posi_tweets %}
-                            <tr>
-                                <td>{{ posi_tweet }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </td>
-                <td valign="top">
-                    <table class="table" border="1" width="30%" align="left">
-                        <thead>
-                            <tr>
-                                <th>ニュートラル</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for neutral_tweet in neutral_tweets %}
-                            <tr>
-                                <td>{{ neutral_tweet }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </td>
-                <td valign="top">
-                    <table class="table" border="1" width="30%">
-                        <thead>
-                            <tr>
-                                <th>ネガティブ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for nega_tweet in nega_tweets %}
-                            <tr>
-                                <td>{{ nega_tweet }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
+        <div style="overflow-x: scroll;">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th class="table-danger text-center" style="width: 500px">ポジティブ</th>
+                    <th class="table-success text-center" style="width: 500px">ニュートラル</th>
+                    <th class="table-primary text-center" style="width: 500px">ネガティブ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in emotion_tweet %}
+                <tr>
+                    <td>{{ t[0] }}</td>
+                    <td>{{ t[1] }}</td>
+                    <td>{{ t[2] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
+        </div>
         {% endif %}
     </div>
 </form>

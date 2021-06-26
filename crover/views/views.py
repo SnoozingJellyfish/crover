@@ -17,7 +17,7 @@ from crover.process.emotion_analyze import emotion_analyze_all
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
 
-sess_info = {} # global variable containing recent session information
+sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
@@ -62,14 +62,15 @@ def word_cluster():
         figures = make_word_cloud(cluster_to_words[0])
         sess_info_at['figures_dictword'] = figures
         sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'None', 'None', 'None'
-        sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
+        sess_info_at['emotion_tweet'] = []
 
-    else: # ナビゲーションバーの"ワードクラスター"をクリック
+    else:  # ナビゲーションバーの"ワードクラスター"をクリック
         sess_info_at = sess_info[session['searched_at']]
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
+                           #posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega']
+                           emotion_tweet=sess_info_at['emotion_tweet'])
 
 
 @view.route('/analysis', methods=['GET', 'POST'])
@@ -99,7 +100,7 @@ def analysis():
 
             sess_info_at['chart'] = 'None'
             sess_info_at['figure_emotion_word'] = 'None'
-            sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
+            sess_info_at['emotion_tweet'] = []
 
         # zoom clustering
         elif request.form['submit_button'][:4] == 'zoom':
@@ -119,7 +120,8 @@ def analysis():
                     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
                                            figure_not_dictword=sess_info_at['figures_not_dictword'],
                                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                                           posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
+                                           emotion_tweet=sess_info_at['emotion_tweet'],
+                                           )
                 part_word2vec = make_part_word2vec_dic(clustered_words, sess_info_at['top_word2vec'])
                 zoom_cluster_to_words = clustering(part_word2vec)
                 pre_cluster_to_words = copy.deepcopy(sess_info_at['cluster_to_words'][-1])
@@ -135,7 +137,7 @@ def analysis():
             sess_info_at['figure_not_dictword'] = figures[-1]
             sess_info_at['chart'] = 'None'
             sess_info_at['emotion_word_figure'] = 'None'
-            sess_info_at['posi'], sess_info_at['neutral'], sess_info_at['nega'] = [], [], []
+            sess_info_at['emotion_tweet'] = []
 
         # emotion analysis
         elif request.form['submit_button'][:4] == 'emot':
@@ -147,15 +149,12 @@ def analysis():
 
             sess_info_at['chart'] = chart
             sess_info_at['figure_emotion_word'] = emotion_word_figure
-            sess_info_at['posi'] = emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE']
-            sess_info_at['neutral'] = emotion_tweet['NEUTRAL']
-            sess_info_at['nega'] = emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
+            sess_info_at['emotion_tweet'] = emotion_tweet
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           posi_tweets=sess_info_at['posi'],
-                           neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega'])
+                           emotion_tweet=sess_info_at['emotion_tweet'])
 
 
 @view.route('/tweet')
