@@ -134,9 +134,7 @@ def make_emotion_pie_chart(emotion_count):
 
 def make_emotion_wordcloud(emotion_word):
     font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"  # 通常使われる漢字を抽出したサブセット
-    msk = np.array(Image.open("crover/figure/fukidashi2.png"))
-    #msk[msk != 3] = 255
-    #msk[msk < 255] = 100
+    msk = np.array(Image.open("crover/figure/fukidashi.png"))
     wordcloud = WordCloud(font_path=font_path, background_color="white", width=500, height=500,
                           colormap='Dark2', mask=msk, contour_width=20, contour_color='gray')
     logger.info('fit word cloud')
