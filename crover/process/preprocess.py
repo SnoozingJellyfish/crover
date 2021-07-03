@@ -10,6 +10,10 @@ import site
 import concurrent.futures
 
 import numpy as np
+import matplotlib
+matplotlib.rcParams['timezone'] = 'Asia/Tokyo'
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 from google.cloud import datastore, storage
@@ -98,6 +102,8 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         re.compile('[ 　]'),
         re.compile('\n')
     ]
+    URL_regex = re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
+
     sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
 
     if algo == 'mecab':
@@ -119,6 +125,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     max_results = 100
     exclude_flag = False
     tweets_list = []
+    time_list = []
 
     for i in range(max_tweets // max_results + 1):
         if i == max_tweets // max_results:
@@ -138,6 +145,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             except IndexError:
                 continue
             created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+            time_list.append(created_at)
 
             tweet_text = result['data'][j]['text']
 
@@ -158,11 +166,19 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             #logger.info('noun count')
             dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
-            tweets_list.append([created_at, result['data'][j]['text'], split_word])
+            tweet_no_URL = URL_regex.sub('', result['data'][j]['text'])
+            tweets_list.append([created_at, tweet_no_URL, split_word])
         if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
         else:
             break
+
+    # ツイート日時のヒストグラムを作る
+    mpl_date = mdates.date2num(time_list)
+    fig, ax = plt.subplots(1, 1)
+    ax.hist(mpl_date)
+    ax.xaxis.set_major_locator(mdates.MinuteLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
     print('-------------- scrape finish -----------------\n')
 

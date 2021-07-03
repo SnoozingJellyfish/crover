@@ -2,8 +2,9 @@ import os
 import copy
 import logging
 from datetime import datetime
+import json
 
-from flask import request, redirect, url_for, render_template, flash, session, make_response
+from flask import request, redirect, url_for, render_template, flash, session, make_response, jsonify
 from flask import current_app as app
 from flask import Blueprint
 from google.cloud import storage
@@ -21,7 +22,7 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
-    return render_template('index.html', sess_info_at='first') # ナビゲーションバーなし
+    return render_template('index.html', sess_info_at='first')  # ナビゲーションバーなし
 
 @view.app_errorhandler(404)
 def non_existant_route(error):
@@ -60,17 +61,18 @@ def word_cluster():
         cluster_to_words = [{0: dict_word_count_rate}]
         sess_info_at['cluster_to_words'] = cluster_to_words
         figures = make_word_cloud(cluster_to_words[0])
+
         sess_info_at['figures_dictword'] = figures
         sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'None', 'None', 'None'
         sess_info_at['emotion_tweet'] = []
+        sess_info_at['emotion_idx'] = -1
 
     else:  # ナビゲーションバーの"ワードクラスター"をクリック
         sess_info_at = sess_info[session['searched_at']]
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           #posi_tweets=sess_info_at['posi'], neutral_tweets=sess_info_at['neutral'], nega_tweets=sess_info_at['nega']
-                           emotion_tweet=sess_info_at['emotion_tweet'])
+                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])
 
 
 @view.route('/analysis', methods=['GET', 'POST'])
@@ -79,9 +81,12 @@ def analysis():
 
     if request.method == 'POST':
         figures = sess_info_at['figures_dictword']
+        '''
         for i in range(len(figures)):
             if figures[i][-9:] == '_analyzed':
                 figures[i] = figures[i][:-9]
+        '''
+        sess_info_at['emotion_idx'] = -1
 
         # return to previous cluster
         if request.form['submit_button'] == 'return':
@@ -96,7 +101,7 @@ def analysis():
                 del sess_info_at['cluster_to_words'][-1]
                 figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
                 sess_info_at['figures_dictword'] = figures[:-1]
-                sess_info_at['figure_not_dictword'] = figures[-1]
+                #sess_info_at['figure_not_dictword'] = figures[-1]
 
             sess_info_at['chart'] = 'None'
             sess_info_at['figure_emotion_word'] = 'None'
@@ -116,11 +121,11 @@ def analysis():
             else:
                 cluster_idx = int(request.form['submit_button'][4:])
                 clustered_words = sess_info_at['cluster_to_words'][-1][cluster_idx]
-                if len(clustered_words) == 1: # クラスターの単語が1つのとき
+                if len(clustered_words) == 1:  # クラスターの単語が1つのとき
                     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
                                            figure_not_dictword=sess_info_at['figures_not_dictword'],
                                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                                           emotion_tweet=sess_info_at['emotion_tweet'],
+                                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx']
                                            )
                 part_word2vec = make_part_word2vec_dic(clustered_words, sess_info_at['top_word2vec'])
                 zoom_cluster_to_words = clustering(part_word2vec)
@@ -134,7 +139,7 @@ def analysis():
 
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
-            sess_info_at['figure_not_dictword'] = figures[-1]
+            #sess_info_at['figure_not_dictword'] = figures[-1]
             sess_info_at['chart'] = 'None'
             sess_info_at['emotion_word_figure'] = 'None'
             sess_info_at['emotion_tweet'] = []
@@ -142,7 +147,8 @@ def analysis():
         # emotion analysis
         elif request.form['submit_button'][:4] == 'emot':
             cluster_idx = int(request.form['submit_button'][4:])
-            sess_info_at['figures_dictword'][cluster_idx] += '_analyzed'
+            #sess_info_at['figures_dictword'][cluster_idx] += '_analyzed'
+            sess_info_at['emotion_idx'] = cluster_idx
             words = list(sess_info_at['cluster_to_words'][-1][cluster_idx].keys())
             tweets = sess_info[session['searched_at']]['tweets']
             chart, emotion_word_figure, emotion_tweet = emotion_analyze_all(words, tweets)
@@ -154,7 +160,15 @@ def analysis():
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           emotion_tweet=sess_info_at['emotion_tweet'])
+                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])
+
+
+# get session info
+@view.route('/info', methods=['GET', 'POST'])
+def get_info():
+    sess_info_at = sess_info[session['searched_at']]
+    #return jsonify([sess_info_at['figures_dictword'][0]])
+    return jsonify(sess_info_at['figures_dictword'])
 
 
 @view.route('/tweet')

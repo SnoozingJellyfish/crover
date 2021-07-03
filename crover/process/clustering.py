@@ -91,8 +91,10 @@ def make_word_cloud(cluster_to_words):
         buf = io.BytesIO()
         img = wordcloud.to_image()
         img.save(buf, 'PNG')
+        #img.save(buf, 'JPEG')
         logger.info('b64 encode')
         qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
         b64_figures.append("data:image/png;base64,{}".format(qr_b64str))
+        #b64_figures.append("data:image/jpg;base64,{}".format(qr_b64str))
 
     return b64_figures

@@ -1,23 +1,28 @@
 {% extends "layout.html" %}
 {% block body %}
+
+<!-- Vue.js container -->
+<!--<div id="app" class="m-5">
+    <hovercomp />
+</div>-->
+
 <form action ="{{ url_for('view.analysis') }}" method=post>
     <div class="container">
         <p>
-        <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button>
+        <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button><br>
         </p>
         <div class="row">
             {% for figure in figures %}
             <div class="col">
                 <div style="text-align: center">
-                {% if figure[-9:] == '_analyzed' %}
-                <div class="imageshadow">
-                    <img src={{figure[:-9]}} class="img-fluid img-shadow-analyze border_radius" width="400" height="400"><br>
-                </div>
-                {% else %}
-                <img src={{figure}} class="img-fluid img-shadow border_radius" width="400" height="400"><br>
-                {% endif %}
-                <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-primary">分ける</button>
-                <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-primary">感情分析</button>
+                    {% if emotion_idx == loop.index0 %}
+                        <img src={{figure}} class="img-fluid img-shadow-analyze border_radius" width="350" height="350"><br>
+                    {% else %}
+                        <img src={{figure}} class="img-fluid img-shadow border_radius" width="350" height="350"><br>
+                    {% endif %}
+                        </img>
+                    <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
+                    <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
                 </div>
             </div>
             {% endfor %}
@@ -56,4 +61,87 @@
         {% endif %}
     </div>
 </form>
+
+
+<!-- Vue.js script -->
+<!--
+<script>
+var f = eval({{figures|tojson}});
+console.log(f);
+
+//hovercomp object
+Vue.component('hovercomp', {
+    template: '#hovercomp-template',
+    data:function(){
+        return {
+            word_fig: f,
+            alert_msg:'分割前',
+        }
+    },
+    methods: {
+        split:function() {
+            let formData = new FormData();
+            formData.append("submit_button", "zoom0");
+            let self = this;
+            $.ajax({
+                type: 'POST',
+                url: '/analysis',
+                data: formData,
+                processData: false,
+                contentType: false,
+
+                success: function(data) {
+                    if (data == 'True') {
+                        self.getInfo();
+                    }
+                },
+
+                error: function(request, status, err) {
+                    self.alert_msg = 'メッセージ送信に問題が発生';
+                }
+            });
+        },
+        getInfo:function() {
+            let self = this;
+            $.ajax({
+                type: 'POST',
+                url: '/info',
+                processData: false,
+                contentType: false,
+
+                success: function(data) {
+                    console.log(data);
+                    self.word_fig = data;
+                },
+
+                error: function(request, status, err) {
+                    self.alert_msg = 'メッセージ送信に問題が発生';
+                }
+            });
+        },
+    },
+    computed:{
+        fig_size: function(){
+            let self = this;
+            console.log(self.word_fig.length);
+            var re = 0;
+            re = 600 / self.word_fig.length;
+            return re;
+        },
+        margin_size: function(){
+            let self = this;
+            var m_size = 0;
+            m_size = 40 / self.word_fig.length;
+            console.log(m_size);
+            return m_size;
+        }
+    }
+});
+
+// start Vue.
+new Vue({
+    el:'#app',
+});
+</script>
+-->
 {% endblock %}
