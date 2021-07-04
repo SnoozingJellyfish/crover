@@ -55,7 +55,7 @@ def word_cluster():
         #datastore_upload(int(request.form['up_vec_num']))
 
         # ツイート取得、ワードカウント
-        dict_word_count_rate, tweets_list = preprocess_all(keyword, max_tweets, word_num)
+        dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
         sess_info_at['tweets'] = tweets_list
         sess_info_at['word_counts'] = list(dict_word_count_rate.items())
         cluster_to_words = [{0: dict_word_count_rate}]
@@ -63,6 +63,7 @@ def word_cluster():
         figures = make_word_cloud(cluster_to_words[0])
 
         sess_info_at['figures_dictword'] = figures
+        sess_info_at['figure_time_hist'] = time_hist
         sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'None', 'None', 'None'
         sess_info_at['emotion_tweet'] = []
         sess_info_at['emotion_idx'] = -1
@@ -71,6 +72,7 @@ def word_cluster():
         sess_info_at = sess_info[session['searched_at']]
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
+                           figure_time_hist=sess_info_at['figure_time_hist'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
                            emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])
 
@@ -123,6 +125,7 @@ def analysis():
                 clustered_words = sess_info_at['cluster_to_words'][-1][cluster_idx]
                 if len(clustered_words) == 1:  # クラスターの単語が1つのとき
                     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
+                                           figure_time_hist=sess_info_at['figure_time_hist'],
                                            figure_not_dictword=sess_info_at['figures_not_dictword'],
                                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
                                            emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx']
@@ -158,6 +161,7 @@ def analysis():
             sess_info_at['emotion_tweet'] = emotion_tweet
 
     return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
+                           figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
                            emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])

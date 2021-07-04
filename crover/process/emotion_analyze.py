@@ -66,6 +66,8 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
             else:
                 for emo in result_dic['emotion'].keys():
                     for w in result_dic['emotion'][emo]:
+                        if w[-1] == 'S':  # pymlaskのバグ
+                            w = w[:-4]
                         if w in emotion_word.keys():
                             emotion_word[w] += 1
                         else:
@@ -137,7 +139,9 @@ def make_emotion_wordcloud(emotion_word):
     font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"  # 通常使われる漢字を抽出したサブセット
     msk = np.array(Image.open("crover/figure/fukidashi.png"))
     wordcloud = WordCloud(font_path=font_path, background_color="white", width=500, height=500,
-                          colormap='Dark2', mask=msk, contour_width=20, contour_color='gray')
+                          colormap='Dark2'
+                          #, mask=msk, contour_width=20, contour_color='gray'
+                          )
     logger.info('fit word cloud')
     wordcloud.fit_words(emotion_word)
 

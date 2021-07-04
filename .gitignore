@@ -151,3 +151,6 @@ requirements_flex.txt
 requirements_pip.txt
 requirements_win10.txt
 package-list.txt
+
+
+tmp/

@@ -1,5 +1,7 @@
 import os
 import re
+import io
+import base64
 import datetime as dt
 import pickle
 import csv
@@ -14,6 +16,7 @@ import matplotlib
 matplotlib.rcParams['timezone'] = 'Asia/Tokyo'
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+plt.rcParams["font.size"] = 18
 from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 from google.cloud import datastore, storage
@@ -27,7 +30,7 @@ logger = logging.getLogger(__name__)
 def preprocess_all(keyword, max_tweets, word_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
-    dict_word_count, tweets_list = scrape_token(keyword, max_tweets)
+    dict_word_count, tweets_list, b64_time_hist = scrape_token(keyword, max_tweets)
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
@@ -40,7 +43,7 @@ def preprocess_all(keyword, max_tweets, word_num):
     else:
         ignore_word_count = 5
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets, ignore_word_count)
-    return dict_word_count_rate, tweets_list
+    return dict_word_count_rate, tweets_list, b64_time_hist
 
 
 # To set your enviornment variables in your terminal run the following line:
@@ -174,15 +177,11 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             break
 
     # ツイート日時のヒストグラムを作る
-    mpl_date = mdates.date2num(time_list)
-    fig, ax = plt.subplots(1, 1)
-    ax.hist(mpl_date)
-    ax.xaxis.set_major_locator(mdates.MinuteLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    b64_time_hist = make_time_hist(time_list)
 
     print('-------------- scrape finish -----------------\n')
 
-    return dict_word_count, tweets_list
+    return dict_word_count, tweets_list, b64_time_hist
 
 
 def scrape_next_tweets(max_results, keyword, headers, next_token_id):
@@ -241,6 +240,52 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
     return dict_word_count, str(split_word)
 
+# ツイート日時のヒストグラムを作る
+def make_time_hist(time_list):
+    mpl_date = mdates.date2num(time_list)
+    fig, ax = plt.subplots(1, 1, figsize=(6.0, 6.0))
+    ax.hist(mpl_date, rwidth=0.95, color='dodgerblue')
+    ax.yaxis.set_label_coords(0, 1.05)
+    td = time_list[0] - time_list[-1]
+    if td.days > 2:  # 3day~
+        ax.xaxis.set_major_locator(mdates.DayLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+    elif td.days > 0:  # 1~2 days
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:00'))
+    elif td.seconds // (3600 * 12) > 0:  # 12~24 hours
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
+    elif td.seconds // (3600 * 6) > 0:  # 6~12 hours
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
+    elif td.seconds // (3600 * 2) > 0:  # 2~6 hours
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
+    elif td.seconds // (3600 * 1) > 0:  # 1~2 hours
+        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=30))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    elif td.seconds // 1800 > 0:  # 30~60 minutes
+        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=10))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    elif td.seconds // 600 > 0:  # 10~30 minutes
+        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=5))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    elif td.seconds // 300 > 0:  # 5~10 minutes
+        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=2))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+    else:  # ~5 minutes
+        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+
+    ax.set_ylabel("tweets", fontsize=24, rotation=0)
+    plt.subplots_adjust(left=0.15, right=0.9, bottom=0.1, top=0.85)
+    buf = io.BytesIO()
+    plt.savefig(buf)
+    qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
+    b64_time_hist = "data:image/png;base64,{}".format(qr_b64str)
+
+    return b64_time_hist
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）

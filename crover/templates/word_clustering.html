@@ -20,7 +20,7 @@
                     {% else %}
                         <img src={{figure}} class="img-fluid img-shadow border_radius" width="350" height="350"><br>
                     {% endif %}
-                        </img>
+
                     <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
                     <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
                 </div>
@@ -32,12 +32,33 @@
                 <img src={{figure_not_dictword}} class="img-fluid" width="400" height="400">
             </div>
             {% endif %}
+
+            {% if figures | length == 1 %}
+            <div class="col">
+                <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius" width="350" height="350">
+            </div>
+            {% endif %}
         </div>
-        {% if chart != 'None' %}
+
+        {% if figures | length != 1 %}
         <div style="text-align: center">
-            <img src={{chart}} class="img-fluid" width="250" height="200">
-            <img src={{figure_emotion_word}} class="img-fluid" width="300" height="200">
+            <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+            {% if chart != 'None' %}
+            <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="200">
+            <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+            {% endif %}
         </div>
+        {% else %}
+            {% if chart != 'None' %}
+            <div style="text-align: center">
+                <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="200">
+                <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+            </div>
+            {% endif %}
+        {% endif %}
+
+
+        {% if chart != 'None' %}
         <div style="overflow-x: scroll;">
         <table class="table table-striped">
             <thead>
@@ -68,7 +89,6 @@
 <script>
 var f = eval({{figures|tojson}});
 console.log(f);
-
 //hovercomp object
 Vue.component('hovercomp', {
     template: '#hovercomp-template',
@@ -89,13 +109,11 @@ Vue.component('hovercomp', {
                 data: formData,
                 processData: false,
                 contentType: false,
-
                 success: function(data) {
                     if (data == 'True') {
                         self.getInfo();
                     }
                 },
-
                 error: function(request, status, err) {
                     self.alert_msg = 'メッセージ送信に問題が発生';
                 }
@@ -108,12 +126,10 @@ Vue.component('hovercomp', {
                 url: '/info',
                 processData: false,
                 contentType: false,
-
                 success: function(data) {
                     console.log(data);
                     self.word_fig = data;
                 },
-
                 error: function(request, status, err) {
                     self.alert_msg = 'メッセージ送信に問題が発生';
                 }
@@ -137,7 +153,6 @@ Vue.component('hovercomp', {
         }
     }
 });
-
 // start Vue.
 new Vue({
     el:'#app',
