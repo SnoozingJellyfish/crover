@@ -26,7 +26,7 @@ if LOCAL_ENV:
     from crover import dict_all_count, word2vec
     plt.rcParams['font.family'] = 'Hiragino Sans GB'
 else:
-    plt.rcParams['font.family'] = 'IPAGothic'
+    plt.rcParams['font.family'] = 'IPAPGothic'
 
 logger = logging.getLogger(__name__)
 
