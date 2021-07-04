@@ -3,10 +3,10 @@
 <form action ="{{ url_for('view.word_cluster') }}" method=post>
     <div class="form-row justify-content-center">
         <div class="form-group col-lg-4 col-12">
-            <input type="text" class="form-control" id="InputWord" name=keyword placeholder="キーワード">
+            <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード">
         </div>
         <div class="form-group col-lg-1 col-8">
-            <select class="form-control" id ="TweetNum" name=tweet_num>
+            <select class="form-control form_radius" id ="TweetNum" name=tweet_num>
                 <option>100</option>
                 <option>500</option>
                 <option>1000</option>
@@ -19,7 +19,7 @@
     </div>
     <div class="form-row justify-content-center">
         <div class="form-group col-1">
-            <button type="submit" class="form-control btn btn-primary">検索</button>
+            <button type="submit" class="form-control btn btn-primary form_radius">検索</button>
         </div>
     </div>
 </form>

@@ -41,6 +41,11 @@
     -webkit-border-radius: 20px;
     -moz-border-radius: 20px;
 }
+.form_radius {
+    border-radius: 5px;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+}
 td {
   width: 500px;
 }
@@ -87,6 +92,19 @@ span {
                     </li>
                 </ul>
             </div>
+
+            <!-- 検索フォーム -->
+            <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
+                <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}}>
+                <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
+                    <option>100</option>
+                    <option>500</option>
+                    <option>1000</option>
+                    <option>2000</option>
+                </select>
+                <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
+                <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius">検索</button>
+            </form>
             {% endif %}
         </nav>
 

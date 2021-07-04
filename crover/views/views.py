@@ -52,6 +52,7 @@ def word_cluster():
         sess_info_at = sess_info[session['searched_at']]
 
         keyword = request.form['keyword']
+        sess_info_at['keyword'] = keyword
         max_tweets = int(request.form['tweet_num'])
         #word_num = int(request.form['word_num'])
         word_num = 100
@@ -71,6 +72,7 @@ def word_cluster():
         sess_info_at['emotion_tweet'] = []
         sess_info_at['emotion_idx'] = -1
 
+        '''
         # フォントを全て読み込み
         fonts = set([f.name for f in matplotlib.font_manager.fontManager.ttflist])
         # 描画領域のサイズ調整
@@ -86,12 +88,13 @@ def word_cluster():
         qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
         b64_font = "data:image/png;base64,{}".format(qr_b64str)
         sess_info_at['figures_dictword'] =[b64_font]
-
+        '''
 
     else:  # ナビゲーションバーの"ワードクラスター"をクリック
         sess_info_at = sess_info[session['searched_at']]
 
-    return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
+    return render_template('word_clustering.html', keyword=sess_info_at['keyword'],
+                           figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
                            emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])
@@ -144,7 +147,8 @@ def analysis():
                 cluster_idx = int(request.form['submit_button'][4:])
                 clustered_words = sess_info_at['cluster_to_words'][-1][cluster_idx]
                 if len(clustered_words) == 1:  # クラスターの単語が1つのとき
-                    return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
+                    return render_template('word_clustering.html', keyword=sess_info_at['keyword'],
+                                           figures=sess_info_at['figures_dictword'],
                                            figure_time_hist=sess_info_at['figure_time_hist'],
                                            figure_not_dictword=sess_info_at['figures_not_dictword'],
                                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
@@ -180,7 +184,7 @@ def analysis():
             sess_info_at['figure_emotion_word'] = emotion_word_figure
             sess_info_at['emotion_tweet'] = emotion_tweet
 
-    return render_template('word_clustering.html', figures=sess_info_at['figures_dictword'],
+    return render_template('word_clustering.html', keyword=sess_info_at['keyword'], figures=sess_info_at['figures_dictword'],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
