@@ -247,7 +247,11 @@ def make_time_hist(time_list):
     ax.hist(mpl_date, rwidth=0.95, color='dodgerblue')
     ax.yaxis.set_label_coords(0, 1.05)
     td = time_list[0] - time_list[-1]
-    if td.days > 2:  # 3day~
+
+    if td.days > 5:  # 3day~
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=2))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
+    elif td.days > 2:  # 3day~5day
         ax.xaxis.set_major_locator(mdates.DayLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
     elif td.days > 0:  # 1~2 days

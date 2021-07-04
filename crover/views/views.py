@@ -1,9 +1,12 @@
+import io
+import base64
 import os
 import copy
 import logging
 from datetime import datetime
-import json
 
+import matplotlib
+import matplotlib.pyplot as plt
 from flask import request, redirect, url_for, render_template, flash, session, make_response, jsonify
 from flask import current_app as app
 from flask import Blueprint
@@ -67,6 +70,23 @@ def word_cluster():
         sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'None', 'None', 'None'
         sess_info_at['emotion_tweet'] = []
         sess_info_at['emotion_idx'] = -1
+
+        # フォントを全て読み込み
+        fonts = set([f.name for f in matplotlib.font_manager.fontManager.ttflist])
+        # 描画領域のサイズ調整
+        plt.figure(figsize=(10, len(fonts) / 4))
+        # フォントの表示
+        for i, font in enumerate(fonts):
+            plt.text(0, i, f"日本語：{font}", fontname=font)
+        # 見やすいように軸を消す
+        plt.ylim(0, len(fonts))
+        plt.axis("off")
+        buf = io.BytesIO()
+        plt.savefig(buf)
+        qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
+        b64_font = "data:image/png;base64,{}".format(qr_b64str)
+        sess_info_at['figures_dictword'] =[b64_font]
+
 
     else:  # ナビゲーションバーの"ワードクラスター"をクリック
         sess_info_at = sess_info[session['searched_at']]
