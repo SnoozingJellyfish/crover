@@ -24,6 +24,9 @@ from google.cloud import datastore, storage
 from crover import LOCAL_ENV, download_from_cloud
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
+    plt.rcParams['font.family'] = 'Hiragino Sans GB'
+else:
+    plt.rcParams['font.family'] = 'IPAGothic'
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +285,7 @@ def make_time_hist(time_list):
         ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=1))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
-    ax.set_ylabel("tweets", fontsize=24, rotation=0)
+    ax.set_ylabel("ツイート", fontsize=24, rotation=0)
     plt.subplots_adjust(left=0.15, right=0.9, bottom=0.1, top=0.85)
     buf = io.BytesIO()
     plt.savefig(buf)
