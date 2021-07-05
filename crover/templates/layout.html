@@ -6,8 +6,8 @@
 </head>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
-<!--<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>-->
+<!--<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>-->
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 <!--<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>-->
@@ -20,6 +20,12 @@
   $(function () {
   $('[data-toggle="tooltip"]').tooltip()
 })
+</script>
+
+<script type="text/javascript">
+    function spinner() {
+        document.getElementsByClassName("loader")[0].style.display = "block";
+    }
 </script>
 
 <style type='text/css'>
@@ -46,6 +52,43 @@
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
 }
+
+.loader {
+  display: none;
+  top: 0%;
+  left: 0%;
+  width: 100vw;
+  height: 100vh;
+  background-color:#000000;
+  opacity:0.3;
+  position: absolute;
+  /* transform: translate(-50%, -50%); */
+  cursor: wait;
+  z-index: 999;
+}
+
+.loading {
+  margin: 200px auto;
+  border: 4px solid #ccc;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border-top-color: #00d172;
+  border-left-color: #00d172;
+  animation: spin 1s infinite ease-in;
+  cursor: wait;
+  z-index: 9999;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 td {
   width: 500px;
 }
@@ -70,53 +113,76 @@ span {
 }
 </style>
 
+
 <body>
-    <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="/">crover</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-            </button>
 
-            {% if sess_info_at != 'first' %}
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class ="nav navbar-nav navbar-right">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view.word_cluster') }}">ワードクラスター</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view.tweet') }}">ツイート</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view.word_count') }}">ワードカウント</a>
-                    </li>
-                </ul>
-            </div>
+<div class="loader">
+    <div class="loading"></div>
+</div>
 
-            <!-- 検索フォーム -->
-            <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
-                <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}}>
-                <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
-                    <option>100</option>
-                    <option>500</option>
-                    <option>1000</option>
-                    <option>2000</option>
-                </select>
-                <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
-                <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius">検索</button>
-            </form>
-            {% endif %}
-        </nav>
+<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/">crover</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+        </button>
 
-        {% for message in get_flashed_messages() %}
-        <div class="alert alert-info" role="alert">
-            {{ message }}
+        {% if sess_info_at != 'first' %}
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class ="nav navbar-nav navbar-right">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('view.word_cluster') }}">ワードクラスター</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('view.tweet') }}">ツイート</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('view.word_count') }}">ワードカウント</a>
+                </li>
+            </ul>
         </div>
-        {% endfor %}
 
-        <div class="blog-body">
-            {% block body %}{% endblock %}
-        </div>
+        <!-- 検索フォーム -->
+        <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
+            <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}}>
+            <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
+                {% if tweet_num == 500 %}
+                <option>100</option>
+                <option selected>500</option>
+                <option>1000</option>
+                <option>2000</option>
+                {% elif tweet_num == 1000 %}
+                <option>100</option>
+                <option>500</option>
+                <option selected>1000</option>
+                <option>2000</option>
+                {% elif tweet_num == 2000 %}
+                <option>100</option>
+                <option>500</option>
+                <option>1000</option>
+                <option selected>2000</option>
+                {% else %}
+                <option>100</option>
+                <option>500</option>
+                <option>1000</option>
+                <option>2000</option>
+                {% endif %}
+            </select>
+            <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
+            <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius" onclick="spinner()">検索</button>
+        </form>
+        {% endif %}
+    </nav>
+
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-info" role="alert">
+        {{ message }}
     </div>
+    {% endfor %}
+
+    <div class="blog-body">
+        {% block body %}{% endblock %}
+    </div>
+</div>
 </body>
 </html>
