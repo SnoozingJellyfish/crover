@@ -49,7 +49,7 @@ def tweet_collect(words, tweets):
 
 
 # 感情分析する
-def emotion_analyze(cluster_tweets, algo='mlask'):
+def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
     emotion_count = {'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
     emotion_tweet = {'POSITIVE': [], 'mostly_POSITIVE': [], 'NEUTRAL': [], 'mostly_NEGATIVE': [], 'NEGATIVE': []}
     emotion_word = {}
@@ -75,6 +75,9 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
 
                 emotion_count[result_dic['orientation']] += 1
                 emotion_tweet[result_dic['orientation']].append(tweet[1])
+
+        emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
+        extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
 
     elif algo == 'oseti':
         emotion_analyzer = oseti.Analyzer()
@@ -114,7 +117,7 @@ def emotion_analyze(cluster_tweets, algo='mlask'):
     emotion_tweet_array = np.vstack((posi, neut, nega))
     emotion_tweet_list = list(emotion_tweet_array.T)
 
-    return emotion_count, emotion_tweet_list, emotion_word
+    return emotion_count, emotion_tweet_list, extract_emotion_word
 
 
 def make_emotion_pie_chart(emotion_count):
@@ -137,7 +140,6 @@ def make_emotion_pie_chart(emotion_count):
 
 def make_emotion_wordcloud(emotion_word):
     font_path = "./crover/data/font/NotoSansJP-Regular_subset.otf"  # 通常使われる漢字を抽出したサブセット
-    msk = np.array(Image.open("crover/figure/fukidashi.png"))
     wordcloud = WordCloud(font_path=font_path, background_color="white", width=500, height=500,
                           colormap='Dark2'
                           #, mask=msk, contour_width=20, contour_color='gray'

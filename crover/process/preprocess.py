@@ -131,6 +131,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     max_results = 100
     exclude_flag = False
     tweets_list = []
+    past_tweets = []
     time_list = []
 
     for i in range(max_tweets // max_results + 1):
@@ -151,9 +152,16 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             except IndexError:
                 continue
             created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
-            time_list.append(created_at)
 
             tweet_text = result['data'][j]['text']
+
+            tweet_no_URL = URL_regex.sub('', tweet_text)
+            if tweet_no_URL in past_tweets:
+                continue
+            else:
+                past_tweets.append(tweet_no_URL)
+
+            time_list.append(created_at)
 
             # 特定フレーズを含むツイートを除外
             for w in excluded_tweet:
@@ -172,7 +180,6 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
             #logger.info('noun count')
             dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
-            tweet_no_URL = URL_regex.sub('', result['data'][j]['text'])
             tweets_list.append([created_at, tweet_no_URL, split_word])
         if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
@@ -286,7 +293,13 @@ def make_time_hist(time_list):
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
     ax.set_ylabel("ツイート", fontsize=24, rotation=0)
+    ax.grid(which="major", axis="y", alpha=1)
+    ax.set_axisbelow(True)
     plt.subplots_adjust(left=0.15, right=0.9, bottom=0.1, top=0.85)
+    plt.gca().spines['right'].set_visible(False)
+    plt.gca().spines['left'].set_visible(False)
+    plt.gca().spines['top'].set_visible(False)
+    ax.tick_params(bottom=False, left=False, right=False, top=False)
     buf = io.BytesIO()
     plt.savefig(buf)
     qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
