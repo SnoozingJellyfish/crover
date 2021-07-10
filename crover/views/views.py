@@ -241,6 +241,7 @@ def datastore_upload_wv(split, up_vec_num):
 
     storage_client = storage.Client()
     bucket_name = os.environ.get('BUCKET_NAME')
+    first = True
 
     for i in range(split, 50):
         logger.info('start loading word2vec dict')
@@ -254,8 +255,10 @@ def datastore_upload_wv(split, up_vec_num):
         j = 0
         for w in upload_dict.keys():
             j += 1
-            if j < up_vec_num:
+            if first and j < up_vec_num:
                 continue
+            else:
+                first = False
 
             if type(w) == str and w[0] != '_' and w != '':
                 entity = datastore.Entity(client.key(upload_folder_name, w))
