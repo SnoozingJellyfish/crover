@@ -122,7 +122,11 @@ span {
 
 <div class="container">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="/">crover</a>
+        {% if sess_info_at != 'first' %}
+        <a class="navbar-brand" href="/">
+            <img src="../figure/crover_logo_Helvetica_w_trans.png" width="100">
+        </a>
+        {% endif %}
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
         </button>
