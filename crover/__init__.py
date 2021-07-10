@@ -44,6 +44,7 @@ if LOCAL_ENV:
     with open('crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
 
+
 '''
 else:
     # Cloud SQL
