@@ -58,7 +58,8 @@ def word_cluster():
         sess_info_at['tweet_num'] = max_tweets
         #word_num = int(request.form['word_num'])
         word_num = 100
-        datastore_upload_wv(int(request.form['keyword']))
+        split_num = request.form['keyword'].split(',')
+        datastore_upload_wv(int(split_num[0]), int(split_num[1]))
 
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
@@ -233,7 +234,7 @@ def datastore_upload(up_vec_num=0):
 
 
 # datastore upload word2vec
-def datastore_upload_wv(up_vec_num=0):
+def datastore_upload_wv(split, up_vec_num):
     from google.cloud import datastore
     # from crover import word2vec
     client = datastore.Client()
@@ -241,7 +242,7 @@ def datastore_upload_wv(up_vec_num=0):
     storage_client = storage.Client()
     bucket_name = os.environ.get('BUCKET_NAME')
 
-    for i in range(up_vec_num, 50):
+    for i in range(split, 50):
         logger.info('start loading word2vec dict')
         upload_dict = download_from_cloud(storage_client, bucket_name,
                                           'sudachi_word2vec_dict_300d_50split/sudachi_word2vec_dict_300d_50-' + str(i+1) + '.pickle')
@@ -252,16 +253,20 @@ def datastore_upload_wv(up_vec_num=0):
         entities = []
         j = 0
         for w in upload_dict.keys():
+            j += 1
+            if j < up_vec_num:
+                continue
+
             if type(w) == str and w[0] != '_' and w != '':
-                j += 1
                 entity = datastore.Entity(client.key(upload_folder_name, w))
                 entity.update({'vec': list(upload_dict[w].astype(np.float64))})
                 entities.append(entity)
 
-            if (j + 1) % 500 == 0:
+            if (j + 1) % 400 == 0 and len(entities) > 0:
                 logger.info('split:' + str(i) + ',' + str(j+1))
                 client.put_multi(entities)
                 entities = []
 
         if len(entities) > 0:
+            logger.info('split:' + str(i) + ',' + str(j + 1))
             client.put_multi(entities)
