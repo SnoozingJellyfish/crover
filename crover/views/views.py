@@ -249,19 +249,17 @@ def datastore_upload_wv(up_vec_num=0):
         print('num of word2vec keys:', len(upload_dict.keys()))
         upload_folder_name = "sudachi_word2vec_300d"
 
-        j = 0
         entities = []
-
         for w in upload_dict.keys():
             if type(w) == str and w[0] != '_' and w != '':
-                j += 1
                 entity = datastore.Entity(client.key(upload_folder_name, w))
                 entity.update({'vec': list(upload_dict[w].astype(np.float64))})
                 entities.append(entity)
 
-            if (j+1) % 500 == 0:
-                logger.info(j+1)
+            if (len(entities) + 1) % 500 == 0:
+                logger.info('split:' + str(i) + ',' + str(len(entities)+1))
                 client.put_multi(entities)
                 entities = []
 
-        client.put_multi(entities)
+        if len(entities) > 0:
+            client.put_multi(entities)
