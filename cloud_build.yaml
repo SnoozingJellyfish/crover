@@ -13,6 +13,7 @@ steps:
       DB_NAME: $_DB_NAME
       DB_HOST: $_DB_HOST
       CLOUD_SQL_CONNECTION_NAME: $_CLOUD_SQL_CONNECTION_NAME
+      BUCKET_NAME: $_BUCKET_NAME
     EOF
 - name: "gcr.io/cloud-builders/gcloud"
   args: ["app", "deploy", "--stop-previous-version"]

@@ -5,6 +5,7 @@ import copy
 import logging
 from datetime import datetime
 
+import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from flask import request, redirect, url_for, render_template, flash, session, make_response, jsonify
@@ -57,7 +58,7 @@ def word_cluster():
         sess_info_at['tweet_num'] = max_tweets
         #word_num = int(request.form['word_num'])
         word_num = 100
-        #datastore_upload(int(request.form['up_vec_num']))
+        datastore_upload_wv(int(request.form['keyword']))
 
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
@@ -202,15 +203,16 @@ def datastore_upload(up_vec_num=0):
 
     storage_client = storage.Client()
     bucket_name = os.environ.get('BUCKET_NAME')
+
     logger.info('start loading dict_all_count')
     dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
-    logger.info('start loading mlask dict')
-    mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
+    #logger.info('start loading mlask dict')
+    #mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
     logger.info('finish loading')
     upload_dict = dict_all_count
     print('num of dict_all_count:', len(upload_dict.keys()))
-    #upload_folder_name = "mecab_word2vec_100d"
-    upload_folder_name = "sudachi_all_word_count"
+    upload_folder_name = "sudachi_word2vec_300d"
+    #upload_folder_name = "sudachi_all_word_count"
     i = 0
     entities = []
 
@@ -228,3 +230,38 @@ def datastore_upload(up_vec_num=0):
             entities = []
 
     client.put_multi(entities)
+
+
+# datastore upload word2vec
+def datastore_upload_wv(up_vec_num=0):
+    from google.cloud import datastore
+    # from crover import word2vec
+    client = datastore.Client()
+
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
+
+    for i in range(up_vec_num, 50):
+        logger.info('start loading word2vec dict')
+        upload_dict = download_from_cloud(storage_client, bucket_name,
+                                          'sudachi_word2vec_dict_300d_50split/sudachi_word2vec_dict_300d_50-' + str(i+1) + '.pickle')
+        logger.info('finish loading')
+        print('num of word2vec keys:', len(upload_dict.keys()))
+        upload_folder_name = "sudachi_word2vec_300d"
+
+        j = 0
+        entities = []
+
+        for w in upload_dict.keys():
+            if type(w) == str and w[0] != '_' and w != '':
+                j += 1
+                entity = datastore.Entity(client.key(upload_folder_name, w))
+                entity.update({'vec': list(upload_dict[w].astype(np.float64))})
+                entities.append(entity)
+
+            if (j+1) % 500 == 0:
+                logger.info(j+1)
+                client.put_multi(entities)
+                entities = []
+
+        client.put_multi(entities)
