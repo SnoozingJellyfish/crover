@@ -265,7 +265,7 @@ def datastore_upload_wv(split, up_vec_num):
                 entity.update({'vec': list(upload_dict[w].astype(np.float64))})
                 entities.append(entity)
 
-            if (j + 1) % 400 == 0 and len(entities) > 0:
+            if (j + 1) % 500 == 0 and len(entities) > 0:
                 logger.info('split:' + str(i) + ',' + str(j+1))
                 client.put_multi(entities)
                 entities = []
