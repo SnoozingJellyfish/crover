@@ -146,10 +146,7 @@ dmypy.json
 
 # config
 # crover/config.py
-requirements_old.txt
-#requirements.txt
-requirements_pip.txt
-requirements_win10.txt
+requirements_*
 package-list.txt
 
 
