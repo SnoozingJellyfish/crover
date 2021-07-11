@@ -123,7 +123,7 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
 def make_emotion_pie_chart(emotion_count):
     x = np.array([emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE'], emotion_count['NEUTRAL'], emotion_count['NEGATIVE'] + emotion_count['mostly_NEGATIVE']])
     label = ['positive', 'neutral', 'negative']
-    colors = ["lightcoral", 'yellowgreen', 'cornflowerblue']
+    colors = ["#EE8B98", '#9CE7B0', '#75B2F7']
     font_color = ["firebrick", 'darkgreen', 'darkblue']
     plt.figure(figsize=(8, 8))
     #patches, texts = plt.pie(x, labels=label, counterclock=True, startangle=90, colors=colors)
