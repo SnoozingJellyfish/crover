@@ -58,8 +58,8 @@ def word_cluster():
         sess_info_at['tweet_num'] = max_tweets
         #word_num = int(request.form['word_num'])
         word_num = 100
-        #split_num = request.form['keyword'].split(',')
-        #datastore_upload_wv(int(split_num[0]), int(split_num[1]))
+        split_num = request.form['keyword'].split(',')
+        datastore_upload_wv(int(split_num[0]), int(split_num[1]))
 
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
