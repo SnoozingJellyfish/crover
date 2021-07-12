@@ -1,14 +1,14 @@
-#runtime: python39 # or another supported version for standard environment
-runtime: python # flex
-runtime_config: # flex
-    python_version: 3 # flex
-env: flex
+runtime: python39 # or another supported version for standard environment
+#runtime: python # flex
+#runtime_config: # flex
+#    python_version: 3 # flex
+#env: flex
 entrypoint: gunicorn -b :$PORT main:app --timeout 30000
 
-#instance_class: F4
-resources: # flex
-  cpu: 1 # flex
-  memory_gb: 1 # flex
+instance_class: F4
+#resources: # flex
+#  cpu: 1 # flex
+#  memory_gb: 1 # flex
 
 env_variables:
   #BUCKET_NAME: "word2vec_id"
@@ -16,18 +16,18 @@ env_variables:
   WORD2VEC: "mecab_word2vec_dict_100d_9split/mecab_word2vec_dict_100d_9-"
   MLASK_EMOTION_DICTIONARY: "mlask_emotion_dictionary.pickle"
 
-readiness_check:
-  app_start_timeout_sec: 1200
+#readiness_check:
+#  app_start_timeout_sec: 1200
 
 # Lock instances to 1
 #manual_scaling:
 #    instances: 1
 automatic_scaling:
-  min_num_instances: 1 # flex
-  max_num_instances: 2
-  #min_instances: 1 # standard
-  #max_instances: 2
-  #max_idle_instances: 1
+  #min_num_instances: 1 # flex
+  #max_num_instances: 2
+  min_instances: 1 # standard
+  max_instances: 2
+  max_idle_instances: 1
 
 # secret token
 includes:
