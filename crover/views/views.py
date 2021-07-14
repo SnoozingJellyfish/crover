@@ -3,7 +3,7 @@ import base64
 import os
 import copy
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import matplotlib
@@ -38,6 +38,9 @@ def word_cluster():
 
     # ツイートを取得しワード数をカウントする
     if request.method == 'POST':
+        session.permanent = True
+        app.permanent_session_lifetime = timedelta(minutes=5)
+
         # ユーザーの直前のセッションの情報を削除
         if 'searched_at' in session and session['searched_at'] in sess_info:
             del sess_info[session['searched_at']]
@@ -58,8 +61,6 @@ def word_cluster():
         sess_info_at['tweet_num'] = max_tweets
         #word_num = int(request.form['word_num'])
         word_num = 100
-        split_num = request.form['keyword'].split(',')
-        datastore_upload_wv(int(split_num[0]), int(split_num[1]))
 
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
