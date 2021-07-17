@@ -1,23 +1,15 @@
-import io
-import base64
-import os
 import copy
 import logging
 from datetime import datetime, timedelta
 
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from flask import request, redirect, url_for, render_template, flash, session, make_response, jsonify
+from flask import request, redirect, url_for, render_template, session, jsonify
 from flask import current_app as app
 from flask import Blueprint
-from google.cloud import storage
 
-from crover import LOCAL_ENV, download_from_cloud, upload_to_cloud
+from crover import LOCAL_ENV
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
-#from crover.models.tweet import Tweet, WordCount, ClusterTweet
 
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
@@ -59,7 +51,6 @@ def word_cluster():
         sess_info_at['keyword'] = keyword
         max_tweets = int(request.form['tweet_num'])
         sess_info_at['tweet_num'] = max_tweets
-        #word_num = int(request.form['word_num'])
         word_num = 100
 
         # ツイート取得、ワードカウント
@@ -91,12 +82,6 @@ def analysis():
     sess_info_at = sess_info[session['searched_at']]
 
     if request.method == 'POST':
-        figures = sess_info_at['figures_dictword']
-        '''
-        for i in range(len(figures)):
-            if figures[i][-9:] == '_analyzed':
-                figures[i] = figures[i][:-9]
-        '''
         sess_info_at['emotion_idx'] = -1
 
         # return to previous cluster
@@ -112,7 +97,6 @@ def analysis():
                 del sess_info_at['cluster_to_words'][-1]
                 figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
                 sess_info_at['figures_dictword'] = figures[:-1]
-                #sess_info_at['figure_not_dictword'] = figures[-1]
 
             sess_info_at['chart'] = 'None'
             sess_info_at['figure_emotion_word'] = 'None'
@@ -152,7 +136,6 @@ def analysis():
 
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
-            #sess_info_at['figure_not_dictword'] = figures[-1]
             sess_info_at['chart'] = 'None'
             sess_info_at['emotion_word_figure'] = 'None'
             sess_info_at['emotion_tweet'] = []
@@ -160,7 +143,6 @@ def analysis():
         # emotion analysis
         elif request.form['submit_button'][:4] == 'emot':
             cluster_idx = int(request.form['submit_button'][4:])
-            #sess_info_at['figures_dictword'][cluster_idx] += '_analyzed'
             sess_info_at['emotion_idx'] = cluster_idx
             words = list(sess_info_at['cluster_to_words'][-1][cluster_idx].keys())
             tweets = sess_info[session['searched_at']]['tweets']
@@ -182,7 +164,6 @@ def analysis():
 @view.route('/info', methods=['GET', 'POST'])
 def get_info():
     sess_info_at = sess_info[session['searched_at']]
-    #return jsonify([sess_info_at['figures_dictword'][0]])
     return jsonify(sess_info_at['figures_dictword'])
 
 
@@ -195,82 +176,3 @@ def tweet():
 def word_count():
     word_counts = sess_info[session['searched_at']]['word_counts']
     return render_template('word_counts.html', word_counts=word_counts)
-
-
-# datastore upload
-def datastore_upload(up_vec_num=0):
-    from google.cloud import datastore
-    #from crover import word2vec
-    client = datastore.Client()
-
-    storage_client = storage.Client()
-    bucket_name = os.environ.get('BUCKET_NAME')
-
-    logger.info('start loading dict_all_count')
-    dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
-    #logger.info('start loading mlask dict')
-    #mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
-    logger.info('finish loading')
-    upload_dict = dict_all_count
-    print('num of dict_all_count:', len(upload_dict.keys()))
-    upload_folder_name = "sudachi_word2vec_300d"
-    #upload_folder_name = "sudachi_all_word_count"
-    i = 0
-    entities = []
-
-    #for w in word2vec.keys():
-    for w in upload_dict.keys():
-        i += 1
-        if i > up_vec_num and type(w) == str and w[0] != '_' and w != '':
-            entity = datastore.Entity(client.key(upload_folder_name, w))
-            #entity.update({'vec': list(upload_dict[w].astype(np.float64))})
-            entity.update({'count': upload_dict[w]})
-            entities.append(entity)
-        if i > up_vec_num and i % 400 == 0:
-            logger.info(i)
-            client.put_multi(entities)
-            entities = []
-
-    client.put_multi(entities)
-
-
-# datastore upload word2vec
-def datastore_upload_wv(split, up_vec_num):
-    from google.cloud import datastore
-    # from crover import word2vec
-    client = datastore.Client()
-
-    storage_client = storage.Client()
-    bucket_name = os.environ.get('BUCKET_NAME')
-    first = True
-
-    for i in range(split, 50):
-        logger.info('start loading word2vec dict')
-        upload_dict = download_from_cloud(storage_client, bucket_name,
-                                          'sudachi_word2vec_dict_300d_50split/sudachi_word2vec_dict_300d_50-' + str(i+1) + '.pickle')
-        logger.info('finish loading')
-        print('num of word2vec keys:', len(upload_dict.keys()))
-        upload_folder_name = "sudachi_word2vec_300d"
-
-        entities = []
-        j = 0
-        for w in upload_dict.keys():
-            j += 1
-            if first and j < up_vec_num:
-                continue
-            else:
-                first = False
-
-            if type(w) == str and w[0] != '_' and w != '':
-                entity = datastore.Entity(client.key(upload_folder_name, w))
-                entity.update({'vec': list(upload_dict[w].astype(np.float64))})
-                entities.append(entity)
-
-            if (j + 1) % 500 == 0 and len(entities) > 0:
-                logger.info('split:' + str(i) + ',' + str(j+1))
-                client.put_multi(entities)
-                entities = []
-
-        if len(entities) > 0:
-            logger.info('split:' + str(i) + ',' + str(j + 1))
-            client.put_multi(entities)

@@ -4,7 +4,6 @@ import io
 import base64
 import logging
 import pickle
-from PIL import Image
 
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg')

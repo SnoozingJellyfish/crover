@@ -2,7 +2,7 @@
 {% block body %}
 
 <div style="text-align: center">
-    <br>
+    <br><br>
     <img src="../figure/crover_logo_Helvetica_w_trans.png" width="350"><br><br>
     <label>
         <font size="4">キーワードと一緒につぶやかれている言葉を見つける</font>
@@ -11,10 +11,10 @@
 
 <form action ="{{ url_for('view.word_cluster') }}" method=post>
     <div class="form-row justify-content-center">
-        <div class="form-group col-lg-4 col-12">
+        <div class="form-group col-lg-4 col-md-5 col-sm-7 col-12">
             <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」,]+" required>
         </div>
-        <div class="form-group col-lg-1 col-8">
+        <div class="form-group col-xl-1 col-md-2 col-sm-3 col-8">
             <select class="form-control form_radius" id ="TweetNum" name=tweet_num>
                 <option>100</option>
                 <option>500</option>
@@ -22,12 +22,12 @@
                 <option>2000</option>
             </select>
         </div>
-        <div class="form-group col-lg-1 col-4">
+        <div class="form-group col-lg-1 col-sm-2 col-4" style="text-align: center">
             <label for="TweetNum" class="col-form-label">ツイート</label>
         </div>
     </div>
     <div class="form-row justify-content-center">
-        <div class="form-group col-1">
+        <div class="form-group col-lg-1 col-sm-2 col-12">
             <button type="submit" class="form-control btn btn-primary form_radius" onclick="spinner()">検索</button>
         </div>
     </div>

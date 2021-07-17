@@ -4,7 +4,7 @@ import base64
 import logging
 
 from wordcloud import WordCloud
-from scipy.cluster.hierarchy import linkage,dendrogram, fcluster, cut_tree
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster, cut_tree
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)

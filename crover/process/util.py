@@ -1,43 +1,99 @@
+import os
 import pickle
-from tqdm import tqdm
-import pandas as pd
+from io import BytesIO
+import logging
 import numpy as np
-import gensim.models.keyedvectors as word2vec_for_txt
-import gensim
-import matplotlib.pyplot as plt
+from google.cloud import storage
 
-def df_concat(csv1, csv2, output_csv):
-    df1 = pd.read_csv(csv1, index_col=0)
-    df2 = pd.read_csv(csv2, index_col=0)
-    df_concat_tweets = pd.concat([df1, df2])
-    df_concat_tweets.reset_index(drop=True).to_csv(output_csv)
+logger = logging.getLogger(__name__)
 
 
-def RTcount(tweet_csv):
-    df_tweet = pd.read_csv(tweet_csv, index_col=0)
+def download_from_cloud(storage_client, bucket_name, filename):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    bytedata = blob.download_as_bytes()
+    return pickle.load(BytesIO(bytedata))
 
-    for i in tqdm(range(len(df_tweet))):
-        if df_tweet['tweet'][i].to_numpy()[0] in df_tweet['tweet'][i+1:].to_numpy():
-            print('RT', i, df_tweet['tweet'][i].to_numpy()[0])
+def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    blob.upload_from_string(bytedata)
 
 
-def histVisualize(TFIDFcsv):
-    df_TFIDF_count = pd.read_csv(TFIDFcsv, names=['word', 'count', 'TFIDF'])
-    tfidf = df_TFIDF_count['TFIDF'].to_numpy()
-    tfidf = [160 - float(s) for s in tfidf[1:] if float(s) > 2.1]
-    plt.hist(tfidf, bins=int(np.max(tfidf)), cumulative=True)
-    plt.savefig(TFIDFcsv[:-4] + '_hist.jpg')
+# datastore upload
+def datastore_upload(up_vec_num=0):
+    from google.cloud import datastore
+    #from crover import word2vec
+    client = datastore.Client()
 
-def extractTFIDF(TFIDFcsv, num):
-    df_TFIDF_count = pd.read_csv(TFIDFcsv, index_col=0).reset_index(drop=True)
-    df_TFIDF_count[:num].to_csv(TFIDFcsv[:-4] + str(num) + '.csv')
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
 
-def pickle_dump(word2vec_dic, algo='mecab'):
-    if algo == 'mecab':
-        model = word2vec_for_txt.Word2VecKeyedVectors.load_word2vec_format(word2vec_dic)
-    elif algo == 'sudachi':
-        model = gensim.models.KeyedVectors.load(word2vec_dic)
-        vocab = model.keys()
+    logger.info('start loading dict_all_count')
+    dict_all_count = download_from_cloud(storage_client, bucket_name, os.environ.get('DICT_ALL_COUNT'))
+    #logger.info('start loading mlask dict')
+    #mlask_emotion_dictionary = download_from_cloud(storage_client, bucket_name, os.environ.get('MLASK_EMOTION_DICTIONARY'))
+    logger.info('finish loading')
+    upload_dict = dict_all_count
+    print('num of dict_all_count:', len(upload_dict.keys()))
+    upload_folder_name = "sudachi_word2vec_300d"
+    #upload_folder_name = "sudachi_all_word_count"
+    i = 0
+    entities = []
 
-    with open(word2vec_dic[:-4] + '.pickle', mode='wb') as f:
-        pickle.dump(model, f)
+    #for w in word2vec.keys():
+    for w in upload_dict.keys():
+        i += 1
+        if i > up_vec_num and type(w) == str and w[0] != '_' and w != '':
+            entity = datastore.Entity(client.key(upload_folder_name, w))
+            #entity.update({'vec': list(upload_dict[w].astype(np.float64))})
+            entity.update({'count': upload_dict[w]})
+            entities.append(entity)
+        if i > up_vec_num and i % 400 == 0:
+            logger.info(i)
+            client.put_multi(entities)
+            entities = []
+
+    client.put_multi(entities)
+
+
+# datastore upload word2vec
+def datastore_upload_wv(split, up_vec_num):
+    from google.cloud import datastore
+    # from crover import word2vec
+    client = datastore.Client()
+
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
+    first = True
+
+    for i in range(split, 50):
+        logger.info('start loading word2vec dict')
+        upload_dict = download_from_cloud(storage_client, bucket_name,
+                                          'sudachi_word2vec_dict_300d_50split/sudachi_word2vec_dict_300d_50-' + str(i+1) + '.pickle')
+        logger.info('finish loading')
+        print('num of word2vec keys:', len(upload_dict.keys()))
+        upload_folder_name = "sudachi_word2vec_300d"
+
+        entities = []
+        j = 0
+        for w in upload_dict.keys():
+            j += 1
+            if first and j < up_vec_num:
+                continue
+            else:
+                first = False
+
+            if type(w) == str and w[0] != '_' and w != '':
+                entity = datastore.Entity(client.key(upload_folder_name, w))
+                entity.update({'vec': list(upload_dict[w].astype(np.float64))})
+                entities.append(entity)
+
+            if (j + 1) % 500 == 0 and len(entities) > 0:
+                logger.info('split:' + str(i) + ',' + str(j+1))
+                client.put_multi(entities)
+                entities = []
+
+        if len(entities) > 0:
+            logger.info('split:' + str(i) + ',' + str(j + 1))
+            client.put_multi(entities)

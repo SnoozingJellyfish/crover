@@ -21,7 +21,8 @@ from sudachipy import tokenizer
 from sudachipy import dictionary as suda_dict
 from google.cloud import datastore, storage
 
-from crover import LOCAL_ENV, download_from_cloud
+from crover import LOCAL_ENV
+from crover.process.util import download_from_cloud
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
     plt.rcParams['font.family'] = 'Hiragino Sans GB'
@@ -115,16 +116,17 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
+        '''
         logger.info('user site-packages: ' + site.getusersitepackages())
         if LOCAL_ENV:
-            lib_path = site.getsitepackages()
-            logger.info(lib_path)
-            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
+                                                resource_dir=os.path.join(site.getsitepackages()[0], 'sudachipy/resources')).create()
         else:
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
                                                  resource_dir=os.path.join(site.getusersitepackages(), 'sudachipy/resources')).create()
-
-        mode = tokenizer.Tokenizer.SplitMode.C # 最も長い分割ルール
+        '''
+        tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
+        mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
 
     dict_word_count = {}
     next_token_id = None
@@ -192,13 +194,6 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape finish -----------------\n')
 
     return dict_word_count, tweets_list, b64_time_hist
-
-
-def scrape_next_tweets(max_results, keyword, headers, next_token_id):
-    url = create_url(keyword, next_token_id, max_results)
-    tweets_result = connect_to_endpoint(url, headers)
-
-    return tweets_result
 
 
 # 正規表現でツイート中の不要文字を除去する
@@ -352,7 +347,7 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
+def make_top_word2vec_dic(dict_word_count_rate):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
@@ -361,28 +356,18 @@ def make_top_word2vec_dic(dict_word_count_rate, algo='mecab'):
     for word in dict_word_count_rate.keys():
         logger.info(word)
 
-        if algo == 'mecab':
-            if word in all_word_list:
-                dict_top_word2vec['word'].append(word)
-                dict_top_word2vec['vec'].append(word2vec[word])
-                dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
-            else:
-                dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
-
-        elif algo == 'sudachi':
-            if word in model:
-                if OKword(word, excluded_word, excluded_char):
-                    dict_top_word2vec['word'].append(word)
-                    dict_top_word2vec['vec'].append(model[word])
-                    dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
-            else:
-                dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
+        if word in all_word_list:
+            dict_top_word2vec['word'].append(word)
+            dict_top_word2vec['vec'].append(word2vec[word])
+            dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
+        else:
+            dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
     print('-------------- making dict_top_word2vec finish -----------------\n')
     return dict_top_word2vec
 
 
-def make_top_word2vec_dic_datastore(dict_word_count_rate, algo='mecab'):
+def make_top_word2vec_dic_datastore(dict_word_count_rate):
     print('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
@@ -446,7 +431,6 @@ def OKword(word, excluded_word, excluded_char):
             return False
 
     return True
-
 
 
 
@@ -518,6 +502,11 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudach
 
     return dict_word_count
 
+
+def scrape_next_tweets(max_results, keyword, headers, next_token_id):
+    url = create_url(keyword, next_token_id, max_results)
+    tweets_result = connect_to_endpoint(url, headers)
+    return tweets_result
 
 # マルチスレッド・コアでツイートの取得、クリーン、名詞抽出・カウント
 # マルチスレッドはリクエスト待ちでも速くならない
