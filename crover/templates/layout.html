@@ -206,22 +206,18 @@ p {
             <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}}>
             <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
                 {% if tweet_num == 500 %}
-                <option>100</option>
                 <option selected>500</option>
                 <option>1000</option>
                 <option>2000</option>
                 {% elif tweet_num == 1000 %}
-                <option>100</option>
                 <option>500</option>
                 <option selected>1000</option>
                 <option>2000</option>
                 {% elif tweet_num == 2000 %}
-                <option>100</option>
                 <option>500</option>
                 <option>1000</option>
                 <option selected>2000</option>
                 {% else %}
-                <option>100</option>
                 <option>500</option>
                 <option>1000</option>
                 <option>2000</option>
