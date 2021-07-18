@@ -1,3 +1,8 @@
+"""
+Copyright (c) 2021 Naoya Furuhashi
+This software is released under the MIT License, see LICENSE.
+"""
+
 import copy
 import logging
 from datetime import datetime, timedelta
@@ -18,11 +23,20 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
-    return render_template('index.html', sess_info_at='first')  # ナビゲーションバーなし
+    return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
 @view.app_errorhandler(404)
 def non_existant_route(error):
     return redirect(url_for('view.home'))
+
+@view.route('/about')
+def about():
+    global sess_info
+    if 'searched_at' in session and session['searched_at'] in sess_info:
+        already_sess = 'true'
+    else:
+        already_sess = 'false'
+    return render_template('about.html', about_page='true', already_sess=already_sess)
 
 @view.route('/word_cluster', methods=['GET', 'POST'])
 def word_cluster():
@@ -67,14 +81,15 @@ def word_cluster():
         sess_info_at['emotion_tweet'] = []
         sess_info_at['emotion_idx'] = -1
 
-    else:  # ナビゲーションバーの"ワードクラスター"をクリック
+    else:  # ナビゲーションバーの"Analysis"をクリック
         sess_info_at = sess_info[session['searched_at']]
 
     return render_template('word_clustering.html', keyword=sess_info_at['keyword'], tweet_num=sess_info_at['tweet_num'],
                            figures=sess_info_at['figures_dictword'], figure_not_dictword=sess_info_at['figure_not_dictword'],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])
+                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'],
+                           about_page='False')
 
 
 @view.route('/analysis', methods=['GET', 'POST'])
@@ -122,8 +137,8 @@ def analysis():
                                            figure_time_hist=sess_info_at['figure_time_hist'],
                                            figure_not_dictword=sess_info_at['figures_not_dictword'],
                                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx']
-                                           )
+                                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'],
+                                           about_page='False')
                 part_word2vec = make_part_word2vec_dic(clustered_words, sess_info_at['top_word2vec'])
                 zoom_cluster_to_words = clustering(part_word2vec)
                 pre_cluster_to_words = copy.deepcopy(sess_info_at['cluster_to_words'][-1])
@@ -157,7 +172,8 @@ def analysis():
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'])
+                           emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'],
+                           about_page='False')
 
 
 # get session info

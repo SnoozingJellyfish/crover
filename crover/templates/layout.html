@@ -1,3 +1,8 @@
+<!--
+Copyright (c) 2021 Naoya Furuhashi
+This software is released under the MIT License, see LICENSE.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -93,7 +98,7 @@ td {
   width: 500px;
 }
 thead {
-      display: table;
+  display: table;
 }
 tbody {
   overflow-x: hidden;
@@ -111,6 +116,24 @@ span {
   -webkit-transform: translate(-50%, -50%); /* 追記 */
   transform: translate(-50%, -50%); /* 追記 */
 }
+
+p {
+  margin: 0 0;
+  padding: 1.4em;
+  background: #C6EAFE;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(60deg, #ffffff, #C6EAFE, #ffffff, #C6EAFE);  /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(190deg, #ffffff, #ffffff, #F5E6FD, #C1B8FE); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+  background-attachment: fixed;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.content_text {
+    color: rgb(100,100,100);
+    font-size: 1.3em;
+}
+
 </style>
 
 
@@ -120,32 +143,62 @@ span {
     <div class="loading"></div>
 </div>
 
+
+{% if about_page == 'true' %}
+<div style="text-align: center">
+    <p class="content_text">
+        <br><br>
+        <font size="6px">言葉の海に潜ってみよう</font>
+        <br><br>
+        世界がネットワークで繋がり、指先一つでいつでもどんな情報にもアクセスできるようになった<br>
+        毎日、有名人の意見や気の利いたつぶやきが瞬時に世界中に広がり共有される<br>
+        一方で、網目から零れ落ちるように情報の海に沈んでいく無数の言葉がある<br>
+        限りなく開かれた空間の中に淀みが生まれ、視界不良になっていく<br>
+        隣の人は何の話をしている？<br>
+        あの話題について、みんな本当はどう思っているんだろう？<br>
+        多様性は画面の向こう側で論じられるテーマではなく、すぐそこにある<br>
+        もっと深く、もっと広く、混沌とした言葉の海に潜り、<br>
+        分断を渡っていく（cross over）ための地図を作っています<br><br>
+        アプリケーションのソースコードは
+        <a href="https://github.com/SnoozingJellyfish/crover">https://github.com/SnoozingJellyfish/crover</a><br>
+        お問い合わせは
+        <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a>
+        <br><br>
+
+    </p>
+</div>
+{% endif %}
+
+
 <div class="container">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        {% if sess_info_at != 'first' %}
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand" href="/">
+            {% if home_page == 'true' %}
+            <img src="../figure/transparent_background.png" width="100">
+            {% else %}
             <img src="../figure/crover_logo_Helvetica_w_trans.png" width="100">
+            {% endif %}
         </a>
-        {% endif %}
+
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
         </button>
 
-        {% if sess_info_at != 'first' %}
+
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class ="nav navbar-nav navbar-right">
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view.word_cluster') }}">ワードクラスター</a>
+                    <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
                 </li>
+                {% if already_sess == 'true' %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view.tweet') }}">ツイート</a>
+                    <a class="nav-link" href="{{ url_for('view.word_cluster') }}">Analysis</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view.word_count') }}">ワードカウント</a>
-                </li>
+                {% endif %}
             </ul>
         </div>
 
+        {% if home_page != 'true' %}
         <!-- 検索フォーム -->
         <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
             <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}}>

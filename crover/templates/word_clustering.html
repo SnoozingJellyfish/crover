@@ -1,3 +1,8 @@
+<!--
+Copyright (c) 2021 Naoya Furuhashi
+This software is released under the MIT License, see LICENSE.
+-->
+
 {% extends "layout.html" %}
 {% block body %}
 
@@ -8,9 +13,10 @@
 
 <form action ="{{ url_for('view.analysis') }}" method=post>
     <div class="container">
-        <p>
+        <br><br><br>
+
         <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button><br>
-        </p>
+        <br>
         <div class="row">
             {% for figure in figures %}
             <div class="col">
