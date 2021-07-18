@@ -36,3 +36,8 @@ includes:
 # for internal IP address using cloud SQL
 #vpc_access_connector:
 #  name: "projects/crover-twitter/locations/us-central1/connectors/crover-twitter-connector"
+
+handlers:
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
