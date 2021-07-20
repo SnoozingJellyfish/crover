@@ -151,6 +151,7 @@ def analysis():
 
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
+            sess_info_at['figure_not_dictword'] = figures[-1]
             sess_info_at['chart'] = 'None'
             sess_info_at['emotion_word_figure'] = 'None'
             sess_info_at['emotion_tweet'] = []
