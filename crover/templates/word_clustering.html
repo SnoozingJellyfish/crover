@@ -29,19 +29,22 @@ This software is released under the MIT License, see LICENSE.
 
                     <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
                     <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
+                    <br><br>
                 </div>
             </div>
             {% endfor %}
 
-            {% if figure_not_dictword != 'None' %}
+            {% if figure_not_dictword != 'none' %}
             <div class="col-md col-12">
                 <img src={{figure_not_dictword}} class="img-fluid" width="400" height="400">
             </div>
             {% endif %}
 
             {% if figures | length == 1 %}
-            <div class="col">
-                <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius" width="350" height="350">
+            <div class="col-md col-12">
+                <div style="text-align: center">
+                    <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius" width="350" height="350">
+                </div>
             </div>
             {% endif %}
         </div>
@@ -49,22 +52,24 @@ This software is released under the MIT License, see LICENSE.
         {% if figures | length != 1 %}
         <div style="text-align: center">
             <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
-            {% if chart != 'None' %}
+            {% if chart != 'none' %}
             <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="200">
             <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
             {% endif %}
         </div>
         {% else %}
-            {% if chart != 'None' %}
+            {% if chart != 'none' %}
             <div style="text-align: center">
-                <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="200">
-                <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+                <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+                {% if figure_emotion_word != 'none' %}
+                    <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+                {% endif %}
             </div>
             {% endif %}
         {% endif %}
 
 
-        {% if chart != 'None' %}
+        {% if chart != 'none' %}
         <div style="overflow-x: scroll;">
         <table class="table table-striped">
             <thead>
@@ -77,9 +82,9 @@ This software is released under the MIT License, see LICENSE.
             <tbody>
                 {% for t in emotion_tweet %}
                 <tr>
-                    <td>{{ t[0] }}</td>
-                    <td>{{ t[1] }}</td>
-                    <td>{{ t[2] }}</td>
+                    <td style="width: 500px">{{ t[0] }}</td>
+                    <td style="width: 500px">{{ t[1] }}</td>
+                    <td style="width: 500px">{{ t[2] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

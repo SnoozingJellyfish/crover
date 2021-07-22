@@ -1,8 +1,3 @@
-<!--
-Copyright (c) 2021 Naoya Furuhashi
-This software is released under the MIT License, see LICENSE.
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,16 +8,17 @@ This software is released under the MIT License, see LICENSE.
 </head>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-<!--<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>-->
 <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
 <!--<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>-->
 <link href="https://fonts.googleapis.com/earlyaccess/mplus1p.css" rel="stylesheet" type="text/css">
 <link rel=stylesheet href="{{ url_for('static', filename='style.css') }}">
 <!-- Add icon library -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <!--<script src="https://kit.fontawesome.com/yourcode.js" crossorigin="anonymous"></script>-->
+
 <script>
   $(function () {
   $('[data-toggle="tooltip"]').tooltip()
@@ -109,7 +105,7 @@ tbody {
   display: block;
   table-layout:fixed;
 }
-span {
+span_old {
   position: absolute;
   color:white;
   top: 90%; /* 追記 */
@@ -166,9 +162,10 @@ p {
         お問い合わせ、開発参加は
         <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a>
         まで
-        <br><br>
+        <br><br><br>
         <font size="6px">License</font>
-        GPL v3
+        <br><br>
+        GPL v3<br>
         関連ワードを分割する際に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
         <br>
     </p>
@@ -177,22 +174,22 @@ p {
 
 
 <div class="container">
-    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar fixed-top navbar-expand-md navbar-light bg-light">
         <a class="navbar-brand" href="/">
+
             {% if home_page == 'true' %}
             <img src="../figure/transparent_background.png" width="100">
             {% else %}
             <img src="../figure/crover_logo_Helvetica_w_trans.png" width="100">
             {% endif %}
-        </a>
 
+        </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
+            <span class="navbar-toggler-icon"></span>
         </button>
 
-
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class ="nav navbar-nav navbar-right">
+            <ul class ="navbar-nav mr-auto">
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
                 </li>
@@ -202,46 +199,41 @@ p {
                 </li>
                 {% endif %}
             </ul>
-        </div>
 
-        {% if home_page != 'true' %}
-        <!-- 検索フォーム -->
-        <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
-            <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}} pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required>
-            <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
-                {% if tweet_num == 500 %}
-                <option selected>500</option>
-                <option>1000</option>
-                <option>2000</option>
-                {% elif tweet_num == 1000 %}
-                <option>500</option>
-                <option selected>1000</option>
-                <option>2000</option>
-                {% elif tweet_num == 2000 %}
-                <option>500</option>
-                <option>1000</option>
-                <option selected>2000</option>
-                {% else %}
-                <option>500</option>
-                <option>1000</option>
-                <option>2000</option>
-                {% endif %}
-            </select>
-            <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
-            <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius" onclick="spinner()">検索</button>
-        </form>
-        {% endif %}
+            {% if home_page != 'true' %}
+            <!-- 検索フォーム -->
+            <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
+                <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="検索ワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required value={{keyword}} >
+                <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
+                    {% if tweet_num == 500 %}
+                    <option selected>500</option>
+                    <option>1000</option>
+                    <option>2000</option>
+                    {% elif tweet_num == 1000 %}
+                    <option>500</option>
+                    <option selected>1000</option>
+                    <option>2000</option>
+                    {% elif tweet_num == 2000 %}
+                    <option>500</option>
+                    <option>1000</option>
+                    <option selected>2000</option>
+                    {% else %}
+                    <option>500</option>
+                    <option>1000</option>
+                    <option>2000</option>
+                    {% endif %}
+                </select>
+                <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
+
+                <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius" onclick="spinner()">検索</button>
+
+            </form>
+            {% endif %}
+        </div>
     </nav>
 
-    {% for message in get_flashed_messages() %}
-    <div class="alert alert-info" role="alert">
-        {{ message }}
-    </div>
-    {% endfor %}
+    {% block body %}{% endblock %}
 
-    <div class="blog-body">
-        {% block body %}{% endblock %}
-    </div>
 </div>
 </body>
 </html>

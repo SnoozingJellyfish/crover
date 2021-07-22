@@ -89,6 +89,8 @@ def make_word_cloud(cluster_to_words):
         wordcloud = WordCloud(font_path=font_path, background_color="white",
                               width=500, height=500, colormap=colormaps[i])
         logger.info('fit word cloud')
+        if len(cluster_to_words[i]) == 0:
+            cluster_to_words[i] = {'ベクトル未割り当てワードなし': 1}
         wordcloud.fit_words(cluster_to_words[i])
 
         logger.info('save word cloud')

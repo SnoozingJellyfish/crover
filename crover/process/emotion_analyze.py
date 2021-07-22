@@ -27,7 +27,10 @@ def emotion_analyze_all(words, tweets):
     emotion_count, emotion_tweet_list, emotion_word = emotion_analyze(cluster_tweets)
     logger.info('make pie chart')
     b64_chart = make_emotion_pie_chart(emotion_count)
-    b64_figure = make_emotion_wordcloud(emotion_word)
+    if len(emotion_word) == 0:
+        b64_figure = 'none'
+    else:
+        b64_figure = make_emotion_wordcloud(emotion_word)
     return b64_chart, b64_figure, emotion_tweet_list
 
 # クラスタリングされた単語を含むツイートを取得する
@@ -126,10 +129,11 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
 
 def make_emotion_pie_chart(emotion_count):
     x = np.array([emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE'], emotion_count['NEUTRAL'], emotion_count['NEGATIVE'] + emotion_count['mostly_NEGATIVE']])
-    label = ['positive', 'neutral', 'negative']
+    label = ['ポジティブ', 'ニュートラル', 'ネガティブ']
     colors = ["#EE8B98", '#9CE7B0', '#75B2F7']
     font_color = ["firebrick", 'darkgreen', 'darkblue']
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(10, 10))
+    #plt.subplots_adjust(left=0.3, right=0.7)
     #patches, texts = plt.pie(x, labels=label, counterclock=True, startangle=90, colors=colors)
     patches, texts = plt.pie(x, counterclock=True, startangle=90, colors=colors)
     for i in range(len(texts)):

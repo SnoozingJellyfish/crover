@@ -68,10 +68,6 @@ def word_cluster():
         sess_info_at['tweet_num'] = max_tweets
         word_num = 100
 
-        # datastoreにwvをアップ
-        #split, upnum = keyword.split(',')
-        #datastore_upload_wv(int(split), int(upnum))
-
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
         sess_info_at['tweets'] = tweets_list
@@ -82,7 +78,7 @@ def word_cluster():
 
         sess_info_at['figures_dictword'] = figures
         sess_info_at['figure_time_hist'] = time_hist
-        sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'None', 'None', 'None'
+        sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'none', 'none', 'none'
         sess_info_at['emotion_tweet'] = []
         sess_info_at['emotion_idx'] = -1
 
@@ -112,14 +108,14 @@ def analysis():
                 del sess_info_at['cluster_to_words'][-1]
                 figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
                 sess_info_at['figures_dictword'] = figures
-                sess_info_at['figure_not_dictword'] = 'None'
+                sess_info_at['figure_not_dictword'] = 'none'
             else:
                 del sess_info_at['cluster_to_words'][-1]
                 figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
                 sess_info_at['figures_dictword'] = figures[:-1]
 
-            sess_info_at['chart'] = 'None'
-            sess_info_at['figure_emotion_word'] = 'None'
+            sess_info_at['chart'] = 'none'
+            sess_info_at['figure_emotion_word'] = 'none'
             sess_info_at['emotion_tweet'] = []
 
         # zoom clustering
@@ -140,7 +136,7 @@ def analysis():
                     return render_template('word_clustering.html', keyword=sess_info_at['keyword'], tweet_num=sess_info_at['tweet_num'],
                                            figures=sess_info_at['figures_dictword'],
                                            figure_time_hist=sess_info_at['figure_time_hist'],
-                                           figure_not_dictword=sess_info_at['figures_not_dictword'],
+                                           figure_not_dictword=sess_info_at['figure_not_dictword'],
                                            chart=sess_info_at['chart'], figure_emotion_word=sess_info_at['figure_emotion_word'],
                                            emotion_tweet=sess_info_at['emotion_tweet'], emotion_idx=sess_info_at['emotion_idx'],
                                            about_page='False')
@@ -157,8 +153,8 @@ def analysis():
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
             #sess_info_at['figure_not_dictword'] = figures[-1]  # debug
-            sess_info_at['chart'] = 'None'
-            sess_info_at['emotion_word_figure'] = 'None'
+            sess_info_at['chart'] = 'none'
+            sess_info_at['emotion_word_figure'] = 'none'
             sess_info_at['emotion_tweet'] = []
 
         # emotion analysis
