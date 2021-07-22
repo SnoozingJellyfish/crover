@@ -15,6 +15,7 @@ from crover import LOCAL_ENV
 from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
+from crover.process.util import datastore_upload_wv
 
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
@@ -66,6 +67,10 @@ def word_cluster():
         max_tweets = int(request.form['tweet_num'])
         sess_info_at['tweet_num'] = max_tweets
         word_num = 100
+
+        # datastoreにwvをアップ
+        split, upnum = keyword.split(',')
+        datastore_upload_wv(int(split), int(upnum))
 
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)

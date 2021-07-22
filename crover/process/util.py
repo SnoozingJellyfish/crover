@@ -72,13 +72,13 @@ def datastore_upload_wv(split, up_vec_num):
     bucket_name = os.environ.get('BUCKET_NAME')
     first = True
 
-    for i in range(split, 50):
+    for i in range(split, 9):
         logger.info('start loading word2vec dict')
         upload_dict = download_from_cloud(storage_client, bucket_name,
-                                          'sudachi_word2vec_dict_300d_50split/sudachi_word2vec_dict_300d_50-' + str(i+1) + '.pickle')
+                                          'mecab_word2vec_dict_100d_9split/mecab_word2vec_dict_100d_9-' + str(i+1) + '.pickle')
         logger.info('finish loading')
         print('num of word2vec keys:', len(upload_dict.keys()))
-        upload_folder_name = "sudachi_word2vec_300d"
+        upload_folder_name = "mecab_word2vec_100d"
 
         entities = []
         j = 0
@@ -94,7 +94,7 @@ def datastore_upload_wv(split, up_vec_num):
                 entity.update({'vec': list(upload_dict[w].astype(np.float64))})
                 entities.append(entity)
 
-            if (j + 1) % 500 == 0 and len(entities) > 0:
+            if (len(entities) + 1) % 500 == 0:
                 logger.info('split:' + str(i) + ',' + str(j+1))
                 client.put_multi(entities)
                 entities = []
