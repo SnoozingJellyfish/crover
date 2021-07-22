@@ -69,8 +69,8 @@ def word_cluster():
         word_num = 100
 
         # datastoreにwvをアップ
-        split, upnum = keyword.split(',')
-        datastore_upload_wv(int(split), int(upnum))
+        #split, upnum = keyword.split(',')
+        #datastore_upload_wv(int(split), int(upnum))
 
         # ツイート取得、ワードカウント
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
@@ -156,7 +156,7 @@ def analysis():
 
             figures = make_word_cloud(sess_info_at['cluster_to_words'][-1])
             sess_info_at['figures_dictword'] = figures[:-1]
-            sess_info_at['figure_not_dictword'] = figures[-1]
+            #sess_info_at['figure_not_dictword'] = figures[-1]  # debug
             sess_info_at['chart'] = 'None'
             sess_info_at['emotion_word_figure'] = 'None'
             sess_info_at['emotion_tweet'] = []

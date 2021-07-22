@@ -19,7 +19,7 @@ This software is released under the MIT License, see LICENSE.
         <br>
         <div class="row">
             {% for figure in figures %}
-            <div class="col">
+            <div class="col-md col-12">
                 <div style="text-align: center">
                     {% if emotion_idx == loop.index0 %}
                         <img src={{figure}} class="img-fluid img-shadow-analyze border_radius" width="350" height="350"><br>
@@ -34,7 +34,7 @@ This software is released under the MIT License, see LICENSE.
             {% endfor %}
 
             {% if figure_not_dictword != 'None' %}
-            <div class="col">
+            <div class="col-md col-12">
                 <img src={{figure_not_dictword}} class="img-fluid" width="400" height="400">
             </div>
             {% endif %}

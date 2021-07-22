@@ -58,7 +58,9 @@ def preprocess_all(keyword, max_tweets, word_num):
 # To set your enviornment variables in your terminal run the following line:
 # export 'BEARER_TOKEN'='<your_bearer_token>'
 def auth():
-    tokens = [os.environ.get("TWITTER_BEARER_TOKEN1"), os.environ.get("TWITTER_BEARER_TOKEN2")]
+    tokens = [os.environ.get("TWITTER_BEARER_TOKEN1"),
+              os.environ.get("TWITTER_BEARER_TOKEN2"),
+              os.environ.get("TWITTER_BEARER_TOKEN3")]
     return tokens[np.random.randint(0, len(tokens))]
 
 def create_url(keyword, next_token_id=None, max_results=10):
@@ -132,6 +134,9 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         '''
         tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
         mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
+
+    keyword = keyword.replace(' ', ' OR ')
+    keyword = keyword.replace('　', ' OR ')
 
     dict_word_count = {}
     next_token_id = None

@@ -158,7 +158,7 @@ p {
         限りなく開かれた空間の中に淀みが生まれ、視界不良になっていく<br>
         隣の人は何の話をしている？<br>
         あの話題について、みんな本当はどう思っているんだろう？<br>
-        多様性は画面の向こう側で論じられるテーマではなく、すぐそこにある<br>
+        多様性はすぐそこにある<br>
         もっと深く、もっと広く、混沌とした言葉の海に潜り、<br>
         分断を渡っていく（cross over）ための地図を作っています<br><br>
         アプリケーションのソースコードは
@@ -167,7 +167,9 @@ p {
         <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a>
         まで
         <br><br>
-
+        <font size="6px">License</font>
+        関連ワードを分割する際に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
+        <br>
     </p>
 </div>
 {% endif %}
@@ -204,7 +206,7 @@ p {
         {% if home_page != 'true' %}
         <!-- 検索フォーム -->
         <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
-            <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}}>
+            <input type="text" class="form-control form_radius" id="InputWord" name=keyword placeholder="キーワード" value={{keyword}} pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required>
             <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
                 {% if tweet_num == 500 %}
                 <option selected>500</option>
