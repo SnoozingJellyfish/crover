@@ -19,7 +19,7 @@ https://crover-word-ocean.uc.r.appspot.com/
 
 
 # License
-MIT
+GPL v3
 
 # Author
 Naoya Furuhashi  
