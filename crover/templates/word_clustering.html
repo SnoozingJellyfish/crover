@@ -11,12 +11,12 @@ This software is released under the MIT License, see LICENSE.
     <hovercomp />
 </div>-->
 
-<form action ="{{ url_for('view.analysis') }}" method=post>
+<form action="{{ url_for('view.analysis') }}" method=post>
     <div class="container">
         <br><br><br>
 
-        <button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button><br>
-        <br>
+        <!--<button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button><br>
+        <br>-->
         <div class="row">
             {% for figure in figures %}
             <div class="col-md col-12">
@@ -27,8 +27,8 @@ This software is released under the MIT License, see LICENSE.
                         <img src={{figure}} class="img-fluid img-shadow border_radius" width="350" height="350"><br>
                     {% endif %}
 
-                    <button type="submit" name="submit_button" value=zoom{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
-                    <button type="submit" name="submit_button" value=emot{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
+                    <button type="submit" name="submit_button" value=split{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
+                    <button type="submit" name="submit_button" value=emoti{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
                     <br><br>
                 </div>
             </div>
@@ -44,6 +44,7 @@ This software is released under the MIT License, see LICENSE.
             <div class="col-md col-12">
                 <div style="text-align: center">
                     <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius" width="350" height="350">
+                    <br><br>
                 </div>
             </div>
             {% endif %}

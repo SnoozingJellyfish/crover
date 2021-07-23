@@ -23,7 +23,6 @@ if LOCAL_ENV:
         dict_all_count = pickle.load(f)
 
     with open('crover/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
-    #with open('crover/data/sudachi_word2vec_dict_300d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
 
 

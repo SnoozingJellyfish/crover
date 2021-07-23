@@ -387,7 +387,6 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate):
     for word in dict_word_count_rate.keys():
         logger.info(word)
         keys.append(client.key('mecab_word2vec_100d', word))
-        #keys.append(client.key('sudachi_word2vec_300d', word))
 
     logger.info('entities')
     entities = client.get_multi(keys) # 複数ワードのword2vecをクラウドからダウンロード

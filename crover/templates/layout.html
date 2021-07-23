@@ -195,15 +195,15 @@ p {
                 </li>
                 {% if already_sess == 'true' %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view.word_cluster') }}">Analysis</a>
+                    <a class="nav-link" href="{{ url_for('view.word_clustring', depth=depth) }}">Analysis</a>
                 </li>
                 {% endif %}
             </ul>
 
             {% if home_page != 'true' %}
             <!-- 検索フォーム -->
-            <form class="form-inline" action ="{{ url_for('view.word_cluster') }}" method=post>
-                <input type="text" class="form-control ml-2 form_radius" id="InputWord" name=keyword placeholder="検索ワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required value={{keyword}} >
+            <form class="form-inline" action ="{{ url_for('view.collect_tweets') }}" method=post>
+                <input type="text" class="form-control ml-2 form_radius" id="InputWord" name=keyword placeholder="キーワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required value={{keyword}} >
                 <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
                     {% if tweet_num == 500 %}
                     <option selected>500</option>
