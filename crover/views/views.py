@@ -154,7 +154,7 @@ def analysis():
         sess_info_at['emotion_tweet'] = emotion_tweet
         sess_info_at['emotion_elem'] = emotion_elem
 
-        return redirect(url_for('view.emotion'))
+        return redirect(url_for('view.emotion', depth=sess_info_at['depth']))
 
 
 
@@ -162,6 +162,10 @@ def analysis():
 def word_clustring(depth):
     sess_info_at = sess_info[session['searched_at']]
     sess_info_at['depth'] = depth
+
+    # クラスタリングしてからナビバーから検索した後、「戻る」ボタンで戻った時
+    if depth >= len(sess_info_at['figures_dictword']):
+        return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
     return render_template('word_clustering.html',
                            keyword=sess_info_at['keyword'],
@@ -178,14 +182,19 @@ def word_clustring(depth):
                            about_page='false')
 
 
-@view.route('/emotion')
-def emotion():
+@view.route('/emotion/<int:depth>')
+def emotion(depth):
     sess_info_at = sess_info[session['searched_at']]
+    sess_info_at['depth'] = depth
+
+    # クラスタリングしてからナビバーから検索した後、「戻る」ボタンで戻った時
+    if depth >= len(sess_info_at['figures_dictword']):
+        return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
     return render_template('word_clustering.html',
                            keyword=sess_info_at['keyword'],
                            tweet_num=sess_info_at['tweet_num'],
-                           figures=sess_info_at['figures_dictword'][sess_info_at['depth']],
+                           figures=sess_info_at['figures_dictword'][depth],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
                            #chart=sess_info_at['chart'],
