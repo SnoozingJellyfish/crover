@@ -19,6 +19,12 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <!--<script src="https://kit.fontawesome.com/yourcode.js" crossorigin="anonymous"></script>-->
 
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>-->
+<script src="https://unpkg.com/vue-chartjs/dist/vue-chartjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js" type="text/javascript"></script>
+
+
 <script>
   $(function () {
   $('[data-toggle="tooltip"]').tooltip()
@@ -92,9 +98,26 @@
   }
 }
 
-td {
-  width: 500px;
+.btn-positive {
+    background: #EE8B98; //ボタンの背景色
 }
+.btn-positive:hover, .btn-positive:focus,
+.btn-positive:active, .btn-positive:active:focus, .btn-positive:active:hover, .btn-positive:active.focus,
+.btn-positive.active, .btn-positive.active:focus, .btn-positive.active:hover, .btn-positive.active.focus,
+.open > .dropdown-toggle.btn-positive,
+.open > .dropdown-toggle.btn-positive:hover,
+.open > .dropdown-toggle.btn-positive:focus,
+.open > .dropdown-toggle.btn-positive.focus,
+.btn-positive.disabled:hover, .btn-positive[disabled]:hover, fieldset[disabled] .btn-positive:hover,
+.btn-positive.disabled:focus, .btn-positive[disabled]:focus, fieldset[disabled] .btn-positive:focus,
+.btn-positive.disabled.focus, .btn-positive[disabled].focus, fieldset[disabled] .btn-positive.focus {
+    background: #EE8B98; //ボタンの上にポインタを持ってきたり、クリックしたりした時の背景色
+    //color: 好きな色; //ボタンの上にポインタを持ってきたり、クリックしたりした時のテキストの色
+}
+
+/* td { */
+/*  width: 500px; */
+/* } */
 thead {
   display: table;
 }
@@ -148,25 +171,26 @@ p {
         <br><br>
         <font size="6px">言葉の海に潜ってみよう</font>
         <br><br>
-        世界がネットワークで繋がり、指先一つでいつでもどんな情報にもアクセスできるようになった<br>
-        毎日、有名人の意見や気の利いたつぶやきが瞬時に世界中に広がり共有される<br>
-        一方で、網目から零れ落ちるように情報の海に沈んでいく無数の言葉がある<br>
-        限りなく開かれた空間の中に淀みが生まれ、視界不良になっていく<br>
+        世界がネットワークでつながって<br>
+        指先一つでどんな情報にもアクセスできるようになった<br>
+        毎日誰かの気の利いたつぶやきを目にするようになった<br>
+        でもその一方で、<br>
+        網目から零れ落ちるように無数の言葉が情報の海に沈んでいっている<br>
+        限りなく開かれた空間の中に淀みが生まれ、<br>
+        知らぬ間に周りが見えなくなっていく<br>
         隣の人は何の話をしている？<br>
-        あの話題について、みんな本当はどう思っているんだろう？<br>
-        多様性はすぐそこにある<br>
-        もっと深く、もっと広く、混沌とした言葉の海に潜り、<br>
-        分断を渡っていく（cross over）ための地図を作っています<br><br>
-        アプリケーションのソースコードは
-        <a href="https://github.com/SnoozingJellyfish/crover">https://github.com/SnoozingJellyfish/crover</a><br>
-        お問い合わせ、開発参加は
-        <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a>
-        まで
-        <br><br><br>
+        あの話題について、みんなどう思っているんだろう？<br>
+        多様性は見えていないだけですぐそこにある<br>
+        分断を渡る地図を手に言葉の海に潜ってみよう<br>
+        <br>
+        <font size="6px">お問い合わせ・開発参加</font>
+        <br>
+        <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a><br>
+        <a href="https://github.com/SnoozingJellyfish/crover">アプリソースコード（GitHub）</a><br>
+        <br>
         <font size="6px">License</font>
-        <br><br>
-        GPL v3<br>
-        関連ワードを分割する際に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
+        <br>
+        関連ワードの分割に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
         <br>
     </p>
 </div>
@@ -176,13 +200,11 @@ p {
 <div class="container">
     <nav class="navbar fixed-top navbar-expand-md navbar-light bg-light">
         <a class="navbar-brand" href="/">
-
             {% if home_page == 'true' %}
             <img src="../figure/transparent_background.png" width="100">
             {% else %}
             <img src="../figure/crover_logo_Helvetica_w_trans.png" width="100">
             {% endif %}
-
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

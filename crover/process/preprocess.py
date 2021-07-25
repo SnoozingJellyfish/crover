@@ -297,10 +297,10 @@ def make_time_hist(time_list):
         ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=1))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
-    ax.set_ylabel("ツイート", fontsize=24, rotation=0)
+    #ax.set_ylabel("ツイート", fontsize=24, rotation=0)
     ax.grid(which="major", axis="y", alpha=1)
     ax.set_axisbelow(True)
-    plt.subplots_adjust(left=0.15, right=0.9, bottom=0.1, top=0.85)
+    plt.subplots_adjust(left=0.15, right=0.9, bottom=0.1, top=0.95)
     plt.gca().spines['right'].set_visible(False)
     plt.gca().spines['left'].set_visible(False)
     plt.gca().spines['top'].set_visible(False)

@@ -8,101 +8,210 @@ This software is released under the MIT License, see LICENSE.
 
 <!-- Vue.js container -->
 <!--<div id="app" class="m-5">
-    <hovercomp />
+    <emotion_comp />
 </div>-->
+<br><br><br>
+<div style="text-align: center">
+<label>
+    <font size="4" color="#404040">「{{ keyword }}」と一緒にツイートされている言葉</font>
+</label>
+</div>
 
 <form action="{{ url_for('view.analysis') }}" method=post>
     <div class="container">
-        <br><br><br>
-
-        <!--<button type="submit" name="submit_button" value="return" class="btn btn-primary">戻る</button><br>
-        <br>-->
+        <!-- 関連ワードクラウドのクラスター画像表示 -->
         <div class="row">
             {% for figure in figures %}
-            <div class="col-md col-12">
-                <div style="text-align: center">
-                    {% if emotion_idx == loop.index0 %}
-                        <img src={{figure}} class="img-fluid img-shadow-analyze border_radius" width="350" height="350"><br>
-                    {% else %}
-                        <img src={{figure}} class="img-fluid img-shadow border_radius" width="350" height="350"><br>
-                    {% endif %}
+                <div class="col-md col-12">
+                    <div style="text-align: center">
+                        {% if emotion_idx == loop.index0 %}
+                            <img src={{figure}} class="img-fluid img-shadow-analyze border_radius" width="350" height="350"><br>
+                        {% else %}
+                            <img src={{figure}} class="img-fluid img-shadow border_radius" width="350" height="350"><br>
+                        {% endif %}
 
-                    <button type="submit" name="submit_button" value=split{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
-                    <button type="submit" name="submit_button" value=emoti{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
-                    <br><br>
+                        <button type="submit" name="submit_button" value=split{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="分ける"><i class="fa fa-pause fa"></i></button>
+                        <button type="submit" name="submit_button" value=emoti{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
+                        <br><br>
+                    </div>
                 </div>
-            </div>
             {% endfor %}
 
             {% if figure_not_dictword != 'none' %}
-            <div class="col-md col-12">
-                <img src={{figure_not_dictword}} class="img-fluid" width="400" height="400">
-            </div>
+                <div class="col-md col-12">
+                    <img src={{figure_not_dictword}} class="img-fluid" width="400" height="400">
+                </div>
             {% endif %}
 
-            {% if figures | length == 1 %}
+        </div>
+        <br>
+
+        <div class="row">
+            <!-- 時系列ツイート分布 -->
             <div class="col-md col-12">
                 <div style="text-align: center">
-                    <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius" width="350" height="350">
-                    <br><br>
+                    <label>
+                        <font size="4" color="#404040">ツイート数</font>
+                    </label>
+                    <br>
+                    <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius mb-3" width="250" height="250">
                 </div>
             </div>
-            {% endif %}
-        </div>
-
-        {% if figures | length != 1 %}
-        <div style="text-align: center">
-            <img src={{figure_time_hist}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
-            {% if chart != 'none' %}
-            <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="200">
-            <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
-            {% endif %}
-        </div>
-        {% else %}
-            {% if chart != 'none' %}
-            <div style="text-align: center">
-                <img src={{chart}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+            <br><br>
+            {% if emotion_tweet != 'none' %}
+                <!-- 感情ワードクラウド -->
                 {% if figure_emotion_word != 'none' %}
-                    <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius m-3" width="250" height="250">
+                    <div class="col-md col-12">
+                        <div style="text-align: center">
+                            <label>
+                                <font size="4" color="#404040">感情ワード</font>
+                            </label>
+                            <br>
+                            <img src={{figure_emotion_word}} class="img-fluid img-shadow border_radius mb-3" width="250" height="250">
+                        </div>
+                    </div>
+                    <br><br>
                 {% endif %}
-            </div>
+
+                <!-- ツイート感情分析割合 -->
+                <div class="col-md col-12">
+                    <div style="text-align: center">
+                        <label>
+                            <font size="4" color="#404040">ツイート割合</font>
+                        </label>
+                        <br>
+                        <canvas id="graph-area" class="mb-3" height="250" width="250"></canvas>
+                    </div>
+                </div>
+                <br><br>
             {% endif %}
-        {% endif %}
+        </div>
 
+        <!-- ポジ・ニュートラル・ネガツイート分類表示 -->
+        {% if emotion_tweet != 'none' %}
+        <ul class="nav nav-pills nav-justified" id="myTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active btn-danger" id="positive-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">ポジティブ</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link btn-success" id="neutral-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">ニュートラル</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link btn-primary" id="negative-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="false">ネガティブ</a>
+          </li>
+        </ul>
 
-        {% if chart != 'none' %}
-        <div style="overflow-x: scroll;">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th class="table-danger text-center" style="width: 500px">ポジティブ</th>
-                    <th class="table-success text-center" style="width: 500px">ニュートラル</th>
-                    <th class="table-primary text-center" style="width: 500px">ネガティブ</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for t in emotion_tweet %}
-                <tr>
-                    <td style="width: 500px">{{ t[0] }}</td>
-                    <td style="width: 500px">{{ t[1] }}</td>
-                    <td style="width: 500px">{{ t[2] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="tab-content" id="myTabContent">
+          <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="positive-tab">
+              <table class="table table-striped">
+                  <tbody>
+                      {% for t in emotion_tweet[0] %}
+                      <tr>
+                          <td>{{ t }}</td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+          <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="neutral-tab">
+              <table class="table table-striped">
+                  <tbody>
+                      {% for t in emotion_tweet[1] %}
+                      <tr>
+                          <td>{{ t }}</td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+          <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="negative-tab">
+              <table class="table table-striped">
+                  <tbody>
+                      {% for t in emotion_tweet[2] %}
+                      <tr>
+                          <td>{{ t }}</td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
         </div>
         {% endif %}
     </div>
 </form>
 
 
+
+<script type="text/javascript">
+
+var emo = eval({{emotion_elem|tojson}});
+console.log(emo);
+
+// ▼グラフの中身
+var pieData = [
+  {
+     value: emo[2],            // 値
+     color:"#75B2F7",       // 色
+     highlight: "#0888F8",  // マウスが載った際の色
+     label: "ネガティブ（％）"        // ラベル
+  },
+  {
+     value: emo[1],
+     color: "#9CE7B0",
+     highlight: "#6CD173",
+     label: "ニュートラル（％）"
+  },
+  {
+     value: emo[0],
+     color: "#EE8B98",
+     highlight: "#FD5858",
+     label: "ポジティブ（％）"
+  }
+];
+
+// ▼上記のグラフを描画するための記述
+window.onload = function(){
+  var ctx = document.getElementById("graph-area").getContext("2d");
+  window.myPie = new Chart(ctx).Pie(pieData);
+};
+
+</script>
 <!-- Vue.js script -->
 <!--
 <script>
-var f = eval({{figures|tojson}});
-console.log(f);
-//hovercomp object
-Vue.component('hovercomp', {
+var emo = eval({{emotion_elem|tojson}});
+console.log(emo);
+
+import { Doughnut } from 'vue-chartjs'
+
+export default ({
+  extends: Doughnut,
+  data() {
+    return {
+      datas: {
+        // 凡例とツールチップに表示するラベル
+        labels: ['Positive', 'Neutral', 'Negative'],
+        // 表示するデータ
+        datasets: [
+          {
+            data: emo,
+            backgroundColor: ['#f87979', '#aa4c8f', '#38b48b']
+          }
+        ]
+      },
+      options: {
+        responsive: true
+      }
+    }
+  },
+  mounted() {
+    this.renderChart(this.datas, this.options)
+  }
+})
+
+
+//emotion_comp object
+Vue.component('emotion_comp', {
     template: '#hovercomp-template',
     data:function(){
         return {
@@ -165,10 +274,12 @@ Vue.component('hovercomp', {
         }
     }
 });
+
 // start Vue.
 new Vue({
     el:'#app',
 });
 </script>
 -->
+
 {% endblock %}

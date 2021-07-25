@@ -80,9 +80,10 @@ def collect_tweets():
     sess_info_at['figures_dictword'] = [figures]
     sess_info_at['figure_time_hist'] = time_hist
     sess_info_at['figure_not_dictword'], sess_info_at['chart'], sess_info_at['figure_emotion_word'] = 'none', 'none', 'none'
-    sess_info_at['emotion_tweet'] = []
+    sess_info_at['emotion_tweet'] = 'none'
     sess_info_at['emotion_idx'] = -1
     sess_info_at['depth'] = 0
+    sess_info_at['emotion_elem'] = [1, 1, 1]
 
     return redirect(url_for('view.word_clustring', depth=0))
 
@@ -134,9 +135,11 @@ def analysis():
         else:
             sess_info_at['figures_dictword'][depth+1] = figures
         sess_info_at['chart'] = 'none'
-        sess_info_at['emotion_word_figure'] = 'none'
+        sess_info_at['figure_emotion_word'] = 'none'
         sess_info_at['emotion_tweet'] = []
         sess_info_at['depth'] += 1
+
+        return redirect(url_for('view.word_clustring', depth=sess_info_at['depth']))
 
     # emotion analysis
     elif request.form['submit_button'][:5] == 'emoti':
@@ -144,13 +147,15 @@ def analysis():
         sess_info_at['emotion_idx'] = cluster_idx
         words = list(sess_info_at['cluster_to_words'][depth][cluster_idx].keys())
         tweets = sess_info[session['searched_at']]['tweets']
-        chart, emotion_word_figure, emotion_tweet = emotion_analyze_all(words, tweets)
+        emotion_elem, emotion_word_figure, emotion_tweet = emotion_analyze_all(words, tweets)
 
-        sess_info_at['chart'] = chart
+        #sess_info_at['chart'] = chart
         sess_info_at['figure_emotion_word'] = emotion_word_figure
         sess_info_at['emotion_tweet'] = emotion_tweet
+        sess_info_at['emotion_elem'] = emotion_elem
 
-    return redirect(url_for('view.word_clustring', depth=sess_info_at['depth']))
+        return redirect(url_for('view.emotion'))
+
 
 
 @view.route('/word_clustring/<int:depth>')
@@ -164,10 +169,30 @@ def word_clustring(depth):
                            figures=sess_info_at['figures_dictword'][depth],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
-                           chart=sess_info_at['chart'],
+                           #chart='none',
+                           figure_emotion_word='none',
+                           emotion_tweet='none',
+                           emotion_idx=-1,
+                           emotion_elem=[1, 1, 1],
+                           depth=sess_info_at['depth'],
+                           about_page='false')
+
+
+@view.route('/emotion')
+def emotion():
+    sess_info_at = sess_info[session['searched_at']]
+
+    return render_template('word_clustering.html',
+                           keyword=sess_info_at['keyword'],
+                           tweet_num=sess_info_at['tweet_num'],
+                           figures=sess_info_at['figures_dictword'][sess_info_at['depth']],
+                           figure_time_hist=sess_info_at['figure_time_hist'],
+                           figure_not_dictword=sess_info_at['figure_not_dictword'],
+                           #chart=sess_info_at['chart'],
                            figure_emotion_word=sess_info_at['figure_emotion_word'],
                            emotion_tweet=sess_info_at['emotion_tweet'],
                            emotion_idx=sess_info_at['emotion_idx'],
+                           emotion_elem=sess_info_at['emotion_elem'],
                            depth=sess_info_at['depth'],
                            about_page='false')
 
@@ -177,14 +202,3 @@ def word_clustring(depth):
 def get_info():
     sess_info_at = sess_info[session['searched_at']]
     return jsonify(sess_info_at['figures_dictword'])
-
-
-@view.route('/tweet')
-def tweet():
-    tweets = sess_info[session['searched_at']]['tweets']
-    return render_template('tweets.html', tweets=tweets)
-
-@view.route('/word_count', methods=['GET'])
-def word_count():
-    word_counts = sess_info[session['searched_at']]['word_counts']
-    return render_template('word_counts.html', word_counts=word_counts)

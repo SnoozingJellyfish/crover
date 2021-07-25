@@ -24,14 +24,15 @@ def emotion_analyze_all(words, tweets):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
-    emotion_count, emotion_tweet_list, emotion_word = emotion_analyze(cluster_tweets)
+    emotion_elem, emotion_tweet_list, emotion_word = emotion_analyze(cluster_tweets)
     logger.info('make pie chart')
-    b64_chart = make_emotion_pie_chart(emotion_count)
+    #b64_chart = make_emotion_pie_chart(emotion_count)
     if len(emotion_word) == 0:
         b64_figure = 'none'
     else:
         b64_figure = make_emotion_wordcloud(emotion_word)
-    return b64_chart, b64_figure, emotion_tweet_list
+
+    return emotion_elem, b64_figure, emotion_tweet_list
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words, tweets):
@@ -114,17 +115,16 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
             if (i+1) % 1000 == 0:
                 df_cluster.to_csv(cluster_csv[:-4] + '_' + algo + '_analyzed.csv')
     '''
-    posi = np.array(emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE'])
-    neut = np.array(emotion_tweet['NEUTRAL'])
-    nega = np.array(emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE'])
-    max_tweet = np.max((len(posi), len(neut), len(nega)))
-    posi = np.hstack((posi, np.zeros(max_tweet - len(posi), dtype=str)))
-    neut = np.hstack((neut, np.zeros(max_tweet - len(neut), dtype=str)))
-    nega = np.hstack((nega, np.zeros(max_tweet - len(nega), dtype=str)))
-    emotion_tweet_array = np.vstack((posi, neut, nega))
-    emotion_tweet_list = list(emotion_tweet_array.T)
+    emotion_tweet_list = [emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE'],
+                          emotion_tweet['NEUTRAL'],
+                          emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
+                         ]
 
-    return emotion_count, emotion_tweet_list, extract_emotion_word
+    emotion_elem = [(emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // len(cluster_tweets),
+                    emotion_count['NEUTRAL'] * 100 // len(cluster_tweets),
+                    100 - (emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // len(cluster_tweets) - emotion_count['NEUTRAL'] * 100 // len(cluster_tweets)]
+
+    return emotion_elem, emotion_tweet_list, extract_emotion_word
 
 
 def make_emotion_pie_chart(emotion_count):
