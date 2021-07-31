@@ -1,7 +1,3 @@
-"""
-Copyright (c) 2021 Naoya Furuhashi
-This software is released under the MIT License, see LICENSE.
-"""
 
 import os
 import re
@@ -135,8 +131,9 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
         tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
         mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
 
-    keyword = keyword.replace(' ', ' OR ')
-    keyword = keyword.replace('　', ' OR ')
+    # 先頭と末尾のスペースを除去し、間のスペースをORに変換する
+    keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)
+    keyword = re.sub('[ 　]+', ' OR ', keyword)
 
     dict_word_count = {}
     next_token_id = None

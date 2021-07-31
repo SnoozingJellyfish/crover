@@ -1,7 +1,3 @@
-"""
-Copyright (c) 2021 Naoya Furuhashi
-This software is released under the MIT License, see LICENSE.
-"""
 
 import pickle
 from io import BytesIO

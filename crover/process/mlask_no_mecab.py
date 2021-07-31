@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import unicode_literals
-"""
-Copyright (c) 2021 Naoya Furuhashi
-This software is released under the MIT License, see LICENSE.
-"""
 
 
 """

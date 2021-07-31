@@ -15,13 +15,12 @@ https://crover-word-ocean.uc.r.appspot.com/
    を用いて分かち書き（単語・品詞分類）します。それらの単語は頻出順に大きくWordCloudとして表示されます。
 3. WordCloudの下の「感情分析」ボタンを押すと、[pymlask](https://github.com/ikegami-yukino/pymlask)
 によって、ルールベースでそれらの単語を含むツイートをポジティブ・ニュートラル・ネガティブの３つに分類します。
-4. WordCloudの下の「分ける」ボタンを押すと、単語に割り当てられたベクトル（word2vec）に基づいて階層的クラスタリングが行われ、WordCloudが分割されます。
+4. WordCloudの下の「意味で分ける」ボタンを押すと、単語に割り当てられたベクトル（word2vec: <a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA</a>）に基づいて階層的クラスタリングが行われ、WordCloudが分割されます。
 
 
 # License
 GPL v3
 
 # Author
-Naoya Furuhashi  
 https://twitter.com/snooze_jelly
 
