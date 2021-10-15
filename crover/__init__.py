@@ -23,7 +23,7 @@ if LOCAL_ENV:
 
 
 def create_app():
-    app = Flask(__name__, static_folder='figure')
+    app = Flask(__name__)
     app.config['DEBUG'] = LOCAL_ENV
     app.config['SECRET_KEY'] = 'session_key_' + str(np.random.randint(100000, 999999))
 
@@ -32,3 +32,6 @@ def create_app():
     from crover.views import views
 
     return app
+
+
+

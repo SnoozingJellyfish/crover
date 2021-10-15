@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>crover</title>
     <link rel="crover logo icon" href="favicon.ico">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" type= "text/css">
 </head>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
@@ -14,7 +15,7 @@
 
 <!--<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>-->
 <link href="https://fonts.googleapis.com/earlyaccess/mplus1p.css" rel="stylesheet" type="text/css">
-<link rel=stylesheet href="{{ url_for('static', filename='style.css') }}">
+
 <!-- Add icon library -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <!--<script src="https://kit.fontawesome.com/yourcode.js" crossorigin="anonymous"></script>-->
@@ -37,127 +38,6 @@
     }
 </script>
 
-<style type='text/css'>
-.img_thumbnail_analyze {
-  padding: 10px;
-  background-color: rgba(255,99,71,.5); /* #FF6347 */
-  border-radius: 20px;
-  -webkit-border-radius: 20px;
-  -moz-border-radius: 20px;
-}
-.img-shadow {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-.img-shadow-analyze {
-    box-shadow: 0 0 5px 10px rgba(255,99,71,0.5);
-}
-.border_radius {
-    border-radius: 20px;
-    -webkit-border-radius: 20px;
-    -moz-border-radius: 20px;
-}
-.form_radius {
-    border-radius: 5px;
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-}
-
-.loader {
-  display: none;
-  top: 0%;
-  left: 0%;
-  width: 100vw;
-  height: 100vh;
-  background-color: #404040;
-  opacity:0.5 ;
-  position: absolute;
-  /* transform: translate(-50%, -50%); */
-  cursor: wait;
-  z-index: 999;
-}
-
-.loading {
-  margin: 200px auto;
-  border: 4px solid #ccc;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border-top-color: #00d172;
-  border-left-color: #00d172;
-  animation: spin 1s infinite ease-in;
-  cursor: wait;
-  z-index: 9999;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.btn-positive {
-    background: #EE8B98; //ボタンの背景色
-}
-.btn-positive:hover, .btn-positive:focus,
-.btn-positive:active, .btn-positive:active:focus, .btn-positive:active:hover, .btn-positive:active.focus,
-.btn-positive.active, .btn-positive.active:focus, .btn-positive.active:hover, .btn-positive.active.focus,
-.open > .dropdown-toggle.btn-positive,
-.open > .dropdown-toggle.btn-positive:hover,
-.open > .dropdown-toggle.btn-positive:focus,
-.open > .dropdown-toggle.btn-positive.focus,
-.btn-positive.disabled:hover, .btn-positive[disabled]:hover, fieldset[disabled] .btn-positive:hover,
-.btn-positive.disabled:focus, .btn-positive[disabled]:focus, fieldset[disabled] .btn-positive:focus,
-.btn-positive.disabled.focus, .btn-positive[disabled].focus, fieldset[disabled] .btn-positive.focus {
-    background: #EE8B98; //ボタンの上にポインタを持ってきたり、クリックしたりした時の背景色
-    //color: 好きな色; //ボタンの上にポインタを持ってきたり、クリックしたりした時のテキストの色
-}
-
-/* td { */
-/*  width: 500px; */
-/* } */
-thead {
-  display: table;
-}
-tbody {
-  overflow-x: hidden;
-  overflow-y: scroll;
-  height: 500px;
-  display: block;
-  table-layout:fixed;
-}
-span_old {
-  position: absolute;
-  color:white;
-  top: 90%; /* 追記 */
-  left: 50%; /* 追記 */
-  -ms-transform: translate(-50%, -50%); /* 追記 */
-  -webkit-transform: translate(-50%, -50%); /* 追記 */
-  transform: translate(-50%, -50%); /* 追記 */
-}
-
-p {
-  margin: 0 0;
-  padding: 1.4em;
-  background: #C6EAFE;  /* fallback for old browsers */
-  background: -webkit-linear-gradient(60deg, #ffffff, #C6EAFE, #ffffff, #C6EAFE);  /* Chrome 10-25, Safari 5.1-6 */
-  background: linear-gradient(190deg, #ffffff, #ffffff, #F5E6FD, #C1B8FE); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-  background-attachment: fixed;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-}
-
-.content_text {
-    color: rgb(100,100,100);
-    font-size: 1.3em;
-}
-
-</style>
-
-
 <body>
 
 <div class="loader">
@@ -167,21 +47,22 @@ p {
 
 {% if about_page == 'true' %}
 <div style="text-align: center">
-    <p class="content_text">
+    <p class="content_text" id="about">
         <br><br>
         <font size="6px">言葉の海に潜ってみよう</font>
         <br><br>
         世界がネットワークで繋がって<br>
         指先一つでどんな情報にもアクセスできるようになった<br>
         毎日誰かの気の利いたつぶやきを目にするようになった<br>
-        でもその一方で、<br>
+        でもその一方で<br>
         網目から零れ落ちるように無数の言葉が情報の海に沈んでいく<br>
-        限りなく開かれた空間の中に淀みが生まれ、<br>
+        限りなく開かれた空間の中に淀みが生まれ<br>
         知らぬ間に周りが見えなくなる<br>
         隣の人は何の話をしている？<br>
         あの話題について、みんなどう思っているんだろう？<br>
-        多様性は見えていないだけですぐそこにある<br>
-        分断を渡る地図を手に言葉の海に潜ってみよう<br>
+        多様性は見えていないだけで、すぐそこにある<br>
+        分断を渡る地図を手に<br>
+        言葉の海に潜ってみよう<br>
         <br>
         <font size="6px">お問い合わせ・開発参加</font>
         <br>
@@ -191,7 +72,7 @@ p {
         <font size="6px">License</font>
         <br>
         関連ワードの分割に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
-        <br>
+
     </p>
 </div>
 {% endif %}
@@ -201,9 +82,9 @@ p {
     <nav class="navbar fixed-top navbar-expand-md navbar-light bg-light">
         <a class="navbar-brand" href="/">
             {% if home_page == 'true' %}
-            <img src="../figure/transparent_background.png" width="100">
+            <img src="../static/figure/transparent_background.png" width="100">
             {% else %}
-            <img src="../figure/crover_logo_Helvetica_w_trans.png" width="100">
+            <img src="../static/figure/crover_logo_Helvetica_w_trans.png" width="100">
             {% endif %}
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">

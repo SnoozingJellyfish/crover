@@ -1,4 +1,4 @@
-
+import os
 import copy
 import logging
 from datetime import datetime, timedelta
@@ -18,13 +18,16 @@ logger = logging.getLogger(__name__)
 
 sess_info = {}  # global variable containing recent session information
 
+
 @view.route('/')
 def home():
     return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
+'''
 @view.app_errorhandler(404)
 def non_existant_route(error):
     return redirect(url_for('view.home'))
+'''
 
 @view.route('/about')
 def about():
