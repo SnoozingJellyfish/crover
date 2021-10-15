@@ -61,7 +61,7 @@ def auth():
 
 def create_url(keyword, next_token_id=None, max_results=10):
     #query = "from:twitterdev -is:retweet"
-    query = keyword + " -is:retweet lang:ja"
+    query = keyword + " -is:retweet -is:reply lang:ja"
     tweet_fields = "tweet.fields=author_id,created_at"
     mrf = "max_results={}".format(max_results)
     if next_token_id:
