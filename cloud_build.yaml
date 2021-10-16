@@ -1,5 +1,5 @@
 steps:
-- name: "gcr.io/cloud-builders/gcloud"
+- name: "ubuntu"
   args: ["curl", "--proto", "'=https'", "--tlsv1.2", "-sSf", "https://sh.rustup.rs", "|", "sh"]
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
