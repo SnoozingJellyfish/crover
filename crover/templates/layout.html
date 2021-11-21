@@ -6,6 +6,9 @@
     <title>crover</title>
     <link rel="crover logo icon" href="favicon.ico">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" type= "text/css">
+
+    <!-- Vue -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
 </head>
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
@@ -13,7 +16,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
-<!--<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>-->
+
+
 <link href="https://fonts.googleapis.com/earlyaccess/mplus1p.css" rel="stylesheet" type="text/css">
 
 <!-- Add icon library -->
@@ -43,10 +47,6 @@
         document.addEventListener('touchmove', noScroll, { passive: false });
         // スクロール禁止(PC)
         document.addEventListener('mousewheel', noScroll, { passive: false });
-        // スクロール禁止を解除(SP)
-        //document.removeEventListener('touchmove', noScroll, { passive: false });
-        // スクロール禁止を解除(PC)
-        //document.removeEventListener('mousewheel', noScroll, { passive: false });
     }
 </script>
 

@@ -1,11 +1,6 @@
-
 {% extends "layout.html" %}
 {% block body %}
 
-<!-- Vue.js container -->
-<!--<div id="app" class="m-5">
-    <emotion_comp />
-</div>-->
 <br><br><br>
 <div style="text-align: center">
 <label>
@@ -27,14 +22,19 @@
                         {% endif %}
 
                         <!-- 分割ボタン -->
-                        <button type="submit" name="submit_button" value=split{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="意味で分ける"><i class="fa fa-pause fa"></i></button>
+                        <button type="submit" name="submit_button" value=split{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="意味で分ける">
+                            <i class="fa fa-pause fa"></i>
+                        </button>
                         <!-- 感情分析ボタン -->
-                        <button type="submit" name="submit_button" value=emoti{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析"><i class="fa fa-meh-o fa"></i></button>
+                        <button type="submit" name="submit_button" value=emoti{{loop.index0}} class="btn btn-info rounded-circle mt-3 ml-1 mr-1" data-toggle="tooltip" data-placement="bottom" title="感情分析">
+                            <i class="fa fa-meh-o fa"></i>
+                        </button>
                         <br><br>
                     </div>
                 </div>
             {% endfor %}
 
+            <!-- word2vecに登録されていない単語を表示（デバッグ用） -->
             {% if figure_not_dictword != 'none' %}
                 <div class="col-md col-12">
                     <img src={{figure_not_dictword}} class="img-fluid" width="400" height="400">
@@ -56,10 +56,10 @@
                 </div>
             </div>
             <br><br>
-            {% if emotion_tweet != 'none' %}
+            {% if posi_tweet != 'none' %}
                 <!-- 感情ワードクラウド -->
                 {% if figure_emotion_word != 'none' %}
-                    <div class="col-md col-12">
+                    <div class="col-md col-12" id="emotion_word">
                         <div style="text-align: center">
                             <label>
                                 <font size="4" color="#404040">感情ワード</font>
@@ -86,53 +86,21 @@
         </div>
 
         <!-- ポジ・ニュートラル・ネガツイート分類表示 -->
-        {% if emotion_tweet != 'none' %}
+        {% if posi_tweet != 'none' %}
         <ul class="nav nav-pills nav-justified" id="myTab" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link active btn-danger" id="positive-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">ポジティブ</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link btn-success" id="neutral-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">ニュートラル</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link btn-primary" id="negative-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="false">ネガティブ</a>
-          </li>
+            <li class="nav-item">
+                <a class="nav-link active btn-danger" id="positive-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true">ポジティブ</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link btn-success" id="neutral-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile" aria-selected="false">ニュートラル</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link btn-primary" id="negative-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact" aria-selected="false">ネガティブ</a>
+            </li>
         </ul>
 
-        <div class="tab-content" id="myTabContent">
-          <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="positive-tab">
-              <table class="table table-striped">
-                  <tbody>
-                      {% for t in emotion_tweet[0] %}
-                      <tr>
-                          <td>{{ t }}</td>
-                      </tr>
-                      {% endfor %}
-                  </tbody>
-              </table>
-          </div>
-          <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="neutral-tab">
-              <table class="table table-striped">
-                  <tbody>
-                      {% for t in emotion_tweet[1] %}
-                      <tr>
-                          <td>{{ t }}</td>
-                      </tr>
-                      {% endfor %}
-                  </tbody>
-              </table>
-          </div>
-          <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="negative-tab">
-              <table class="table table-striped">
-                  <tbody>
-                      {% for t in emotion_tweet[2] %}
-                      <tr>
-                          <td>{{ t }}</td>
-                      </tr>
-                      {% endfor %}
-                  </tbody>
-              </table>
-          </div>
+        <div id="app">
+            <emotion-tweets></emotion-tweets>
         </div>
         {% endif %}
     </div>
@@ -144,7 +112,7 @@
 var emo = eval({{emotion_elem|tojson}});
 console.log(emo);
 
-// ▼グラフの中身
+// グラフの中身
 var pieData = [
   {
      value: emo[2],            // 値
@@ -166,13 +134,82 @@ var pieData = [
   }
 ];
 
-// ▼上記のグラフを描画するための記述
+// 上記のグラフを描画するための記述
 window.onload = function(){
   var ctx = document.getElementById("graph-area").getContext("2d");
   window.myPie = new Chart(ctx).Pie(pieData);
 };
 
+// 感情分析したツイート
+var posi_tweet_init = eval({{ posi_tweet|tojson }});
+var neut_tweet_init = eval({{ neut_tweet|tojson }});
+var nega_tweet_init = eval({{ nega_tweet|tojson }});
 </script>
+
+{% raw %}
+<script type="text/x-template" id="emotion-tweets">
+    <div class="tab-content" id="myTabContent">
+        <!-- ポジティブツイート -->
+        <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="positive-tab">
+            <table class="table table-striped">
+                <tbody>
+                    <template v-for="t in tweets.positive.tweet">
+                        <tr>
+                            <td>{{ t }}</td>
+                        </tr>
+                    </template>
+
+                    <template v-if="tweets.positive.load_continue=='true'">
+                        <div style="color:blue; cursor: pointer;" v-on:click="load('positive')">
+                            <center>続きを見る</center>
+                        </div>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <!-- ニュートラルツイート -->
+        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="neutral-tab">
+            <table class="table table-striped">
+                <tbody>
+                    <template v-for="t in tweets.neutral.tweet">
+                        <tr>
+                            <td>{{ t }}</td>
+                        </tr>
+                    </template>
+
+                    <template v-if="tweets.neutral.load_continue=='true'">
+                        <div style="color:blue; cursor: pointer;" v-on:click="load('neutral')">
+                            <center>続きを見る</center>
+                        </div>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <!-- ネガティブツイート -->
+        <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="negative-tab">
+            <table class="table table-striped">
+                <tbody>
+                    <template v-for="t in tweets.negative.tweet">
+                        <tr>
+                            <td>{{ t }}</td>
+                        </tr>
+                    </template>
+
+                    <template v-if="tweets.negative.load_continue=='true'">
+                        <div style="color:blue; cursor: pointer;" v-on:click="load('negative')">
+                            <center>続きを見る</center>
+                        </div>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</script>
+{% endraw %}
+
+<script src="{{ url_for('static', filename='load_tweet.js') }}"></script>
+
+
 <!-- Vue.js script -->
 <!--
 <script>

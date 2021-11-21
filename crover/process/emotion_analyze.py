@@ -20,7 +20,7 @@ def emotion_analyze_all(words, tweets):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
-    emotion_elem, emotion_tweet_list, emotion_word = emotion_analyze(cluster_tweets)
+    emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets)
     logger.info('make pie chart')
     #b64_chart = make_emotion_pie_chart(emotion_count)
     if len(emotion_word) == 0:
@@ -28,7 +28,7 @@ def emotion_analyze_all(words, tweets):
     else:
         b64_figure = make_emotion_wordcloud(emotion_word)
 
-    return emotion_elem, b64_figure, emotion_tweet_list
+    return emotion_elem, b64_figure, emotion_tweet_dict
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words, tweets):
@@ -111,16 +111,16 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
             if (i+1) % 1000 == 0:
                 df_cluster.to_csv(cluster_csv[:-4] + '_' + algo + '_analyzed.csv')
     '''
-    emotion_tweet_list = [emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE'],
-                          emotion_tweet['NEUTRAL'],
-                          emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
-                         ]
+    emotion_tweet_dict = {'positive': emotion_tweet['POSITIVE'] + emotion_tweet['mostly_POSITIVE'],
+                          'neutral': emotion_tweet['NEUTRAL'],
+                          'negative': emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
+                          }
 
     emotion_elem = [(emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // len(cluster_tweets),
                     emotion_count['NEUTRAL'] * 100 // len(cluster_tweets),
                     100 - (emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // len(cluster_tweets) - emotion_count['NEUTRAL'] * 100 // len(cluster_tweets)]
 
-    return emotion_elem, emotion_tweet_list, extract_emotion_word
+    return emotion_elem, emotion_tweet_dict, extract_emotion_word
 
 
 def make_emotion_pie_chart(emotion_count):

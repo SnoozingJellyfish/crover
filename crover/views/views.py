@@ -16,6 +16,9 @@ from crover.process.util import datastore_upload_wv
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
 
+ONCE_TWEET_NUM = 10  # クライアントに一度に渡すツイート数
+WORD_CLOUD_NUM = 100  # ワードクラウドで表示する単語数
+
 sess_info = {}  # global variable containing recent session information
 
 
@@ -23,11 +26,11 @@ sess_info = {}  # global variable containing recent session information
 def home():
     return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
-'''
+
 @view.app_errorhandler(404)
 def non_existant_route(error):
     return redirect(url_for('view.home'))
-'''
+
 
 @view.route('/about')
 def about():
@@ -51,11 +54,13 @@ def collect_tweets():
     # ユーザーの直前のセッションの情報を削除
     if 'searched_at' in session and session['searched_at'] in sess_info:
         del sess_info[session['searched_at']]
+
     # セッションを区別するタイムスタンプを設定
     session['searched_at'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
     logger.info(session['searched_at'])
     searched_at_list = list(sess_info.keys())
     logger.info('count of remembered session: ' + str(len(searched_at_list)))
+
     # 記憶する直近のセッションを10個以内にする
     if len(searched_at_list) > 10:
         del sess_info[sorted(searched_at_list)[0]]
@@ -66,10 +71,9 @@ def collect_tweets():
     sess_info_at['keyword'] = keyword
     max_tweets = int(request.form['tweet_num'])
     sess_info_at['tweet_num'] = max_tweets
-    word_num = 100
 
     # ツイート取得、ワードカウント
-    dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, word_num)
+    dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, WORD_CLOUD_NUM)
     sess_info_at['tweets'] = tweets_list
     sess_info_at['word_counts'] = list(dict_word_count_rate.items())
     cluster_to_words = [{0: dict_word_count_rate}]
@@ -109,6 +113,8 @@ def analysis():
             sess_info_at['top_word2vec'] = top_word2vec
             sess_info_at['cluster_to_words'].append(clustering(top_word2vec))
             # sess_info_at['figure_not_dictword'] = make_word_cloud([top_word2vec['not_dict_word']])[0]  # debug
+
+        # クラスターが複数
         else:
             cluster_idx = int(request.form['submit_button'][5:])
             clustered_words = sess_info_at['cluster_to_words'][depth][cluster_idx]
@@ -148,7 +154,6 @@ def analysis():
         tweets = sess_info[session['searched_at']]['tweets']
         emotion_elem, emotion_word_figure, emotion_tweet = emotion_analyze_all(words, tweets)
 
-        #sess_info_at['chart'] = chart
         sess_info_at['figure_emotion_word'] = emotion_word_figure
         sess_info_at['emotion_tweet'] = emotion_tweet
         sess_info_at['emotion_elem'] = emotion_elem
@@ -166,15 +171,17 @@ def word_clustring(depth):
     if depth >= len(sess_info_at['figures_dictword']):
         return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
-    return render_template('word_clustering.html',
+    #return render_template('word_clustering.html',
+    return render_template('word_clustering_autoload.html',
                            keyword=sess_info_at['keyword'],
                            tweet_num=sess_info_at['tweet_num'],
                            figures=sess_info_at['figures_dictword'][depth],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
-                           #chart='none',
                            figure_emotion_word='none',
-                           emotion_tweet='none',
+                           posi_tweet='none',
+                           neut_tweet='none',
+                           nega_tweet='none',
                            emotion_idx=-1,
                            emotion_elem=[1, 1, 1],
                            depth=sess_info_at['depth'],
@@ -190,15 +197,29 @@ def emotion(depth):
     if depth >= len(sess_info_at['figures_dictword']):
         return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
+    # クライアントに渡す先頭のツイートを抽出
+    tweet = {}
+    for emotion in ['positive', 'neutral', 'negative']:
+        tweet[emotion] = {}
+        retention_tweet = sess_info_at['emotion_tweet'][emotion]
+
+        if ONCE_TWEET_NUM < len(retention_tweet):
+            tweet[emotion]['tweet'] = retention_tweet[:ONCE_TWEET_NUM]
+            tweet[emotion]['load_continue'] = 'true'
+        else:
+            tweet[emotion]['tweet'] = retention_tweet
+            tweet[emotion]['load_continue'] = 'false'
+
     return render_template('word_clustering.html',
                            keyword=sess_info_at['keyword'],
                            tweet_num=sess_info_at['tweet_num'],
                            figures=sess_info_at['figures_dictword'][depth],
                            figure_time_hist=sess_info_at['figure_time_hist'],
                            figure_not_dictword=sess_info_at['figure_not_dictword'],
-                           #chart=sess_info_at['chart'],
                            figure_emotion_word=sess_info_at['figure_emotion_word'],
-                           emotion_tweet=sess_info_at['emotion_tweet'],
+                           posi_tweet=tweet['positive'],
+                           neut_tweet=tweet['neutral'],
+                           nega_tweet=tweet['negative'],
                            emotion_idx=sess_info_at['emotion_idx'],
                            emotion_elem=sess_info_at['emotion_elem'],
                            depth=sess_info_at['depth'],
@@ -210,3 +231,18 @@ def emotion(depth):
 def get_info():
     sess_info_at = sess_info[session['searched_at']]
     return jsonify(sess_info_at['figures_dictword'])
+
+# クライアントに感情分析後の続きのツイートを渡す
+@view.route('/ajax_load_tweet/<emotion>/<int:tweet_start_cnt>')
+def load_tweet(emotion, tweet_start_cnt):
+    add_data = {}
+    sess_info_at = sess_info[session['searched_at']]
+    retention_tweet = sess_info_at['emotion_tweet'][emotion]
+    if tweet_start_cnt + ONCE_TWEET_NUM < len(retention_tweet):
+        add_data['tweet'] = retention_tweet[tweet_start_cnt: tweet_start_cnt + ONCE_TWEET_NUM]
+        add_data['load_continue'] = 'true'
+    else:
+        add_data['tweet'] = retention_tweet[tweet_start_cnt:]
+        add_data['load_continue'] = 'false'
+
+    return jsonify(add_data)

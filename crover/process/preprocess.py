@@ -32,7 +32,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
-def preprocess_all(keyword, max_tweets, word_num):
+def preprocess_all(keyword, max_tweets, word_cloud_num):
     print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
     dict_word_count, tweets_list, b64_time_hist = scrape_token(keyword, max_tweets)
@@ -47,7 +47,7 @@ def preprocess_all(keyword, max_tweets, word_num):
         ignore_word_count = 10
     else:
         ignore_word_count = 5
-    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num, max_tweets, ignore_word_count)
+    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_cloud_num, max_tweets, ignore_word_count)
     return dict_word_count_rate, tweets_list, b64_time_hist
 
 
@@ -137,7 +137,7 @@ def scrape_token(keyword, max_tweets, algo='sudachi'):
 
     dict_word_count = {}
     next_token_id = None
-    max_results = 100
+    max_results = 100  # 1度のリクエストで取得するツイート数
     exclude_flag = False
     tweets_list = []
     past_tweets = []
