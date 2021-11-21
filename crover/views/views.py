@@ -171,8 +171,7 @@ def word_clustring(depth):
     if depth >= len(sess_info_at['figures_dictword']):
         return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
-    #return render_template('word_clustering.html',
-    return render_template('word_clustering_autoload.html',
+    return render_template('word_clustering.html',
                            keyword=sess_info_at['keyword'],
                            tweet_num=sess_info_at['tweet_num'],
                            figures=sess_info_at['figures_dictword'][depth],
