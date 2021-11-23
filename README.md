@@ -1,4 +1,4 @@
-<img src="crover/figure/crover_logo_Helvetica_w_trans.png" width=50%>
+<img src="crover/static/figure/crover_logo.jpeg" width=50%>
 キーワードを入力し、それと同時にTwitterでつぶやかれている言葉のクラスタリングと、それらが含まれるツイートの感情分析を行うwebアプリケーション
 
 # Environment
