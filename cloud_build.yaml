@@ -19,3 +19,7 @@ steps:
 - name: "gcr.io/cloud-builders/gcloud"
   args: ["app", "deploy", "--stop-previous-version"]
   timeout: "1600s"
+
+- name: python
+  entrypoint: python
+  args: ["-m", "unidic", "download"]
