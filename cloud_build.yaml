@@ -4,7 +4,7 @@ steps:
   args:
   - "-c"
   - |
-    apt-get -q -y install mecab libmecab-dev file
+    apt-get -y install mecab libmecab-dev file
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
