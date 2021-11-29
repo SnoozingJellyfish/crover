@@ -10,6 +10,7 @@ steps:
     echo yes | mecab-unidic-neologd/bin/install-mecab-unidic-neologd -n
     ls /etc/mecabrc
     sudo cp /etc/mecabrc /usr/local/etc/
+    ls /usr/local/etc
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
