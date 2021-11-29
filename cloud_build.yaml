@@ -6,12 +6,8 @@ steps:
   - |
     apt update
     apt -y install mecab libmecab-dev file
-- name: "gcr.io/cloud-builders/gcloud"
-  entrypoint: bash
-  args:
-  - "-c"
-  - |
-    apt -y install mecab libmecab-dev file
+    git clone --depth 1 https://github.com/neologd/mecab-unidic-neologd.git
+    echo yes | mecab-unidic-neologd/bin/install-mecab-unidic-neologd -n
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
