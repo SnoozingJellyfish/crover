@@ -4,13 +4,14 @@ steps:
   args:
   - "-c"
   - |
-    apt-get update
+    apt update
+    apt -y install mecab libmecab-dev file
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: bash
   args:
   - "-c"
   - |
-    apt-get -y install mecab libmecab-dev file
+    apt -y install mecab libmecab-dev file
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
