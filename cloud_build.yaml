@@ -11,6 +11,7 @@ steps:
     ls /etc/mecabrc
     sudo cp /etc/mecabrc /usr/local/etc/
     ls /usr/local/etc
+    export MECABRC='/etc/mecabrc'
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
