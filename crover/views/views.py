@@ -31,7 +31,6 @@ def home():
     sample_txt = '鬼滅の刃もいいけれど、約束のネバーランドもね'
     logger.info(tagger2.parse(sample_txt))
 
-
     return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
 
