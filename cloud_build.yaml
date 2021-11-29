@@ -8,6 +8,7 @@ steps:
     apt -y install mecab libmecab-dev file unzip sudo
     git clone --depth 1 https://github.com/neologd/mecab-unidic-neologd.git
     echo yes | mecab-unidic-neologd/bin/install-mecab-unidic-neologd -n
+    cp /etc/mecabrc /usr/local/etc/
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
