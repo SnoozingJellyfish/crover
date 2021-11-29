@@ -14,12 +14,7 @@ from flask import Flask
 
 LOCAL_ENV = False
 
-# mecab test
-import MeCab
-dicdir = '-d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-unidic-neologd'
-tagger2 = MeCab.Tagger(dicdir)
-sample_txt = '鬼滅の刃もいいけれど、約束のネバーランドもね'
-logger.info(tagger2.parse(sample_txt))
+
 
 if LOCAL_ENV:
     with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:

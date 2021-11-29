@@ -24,6 +24,13 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
+    # mecab test
+    import MeCab
+    dicdir = '-d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-unidic-neologd'
+    tagger2 = MeCab.Tagger(dicdir)
+    sample_txt = '鬼滅の刃もいいけれど、約束のネバーランドもね'
+    logger.info(tagger2.parse(sample_txt))
+    
     return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
 
