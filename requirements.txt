@@ -46,6 +46,3 @@ typing-extensions==3.10.0.0
 urllib3==1.26.5
 Werkzeug==2.0.1
 wordcloud==1.8.1
-
-fugashi
-fugashi[unidic]
