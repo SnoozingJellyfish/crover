@@ -26,7 +26,7 @@ sess_info = {}  # global variable containing recent session information
 def home():
     # mecab test
     import MeCab
-    dicdir = '-r /dev/null -d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-unidic-neologd'
+    dicdir = '-r /etc/mecabrc -d /usr/lib/x86_64-linux-gnu/mecab/dic/mecab-unidic-neologd'
     tagger2 = MeCab.Tagger(dicdir)
     sample_txt = '鬼滅の刃もいいけれど、約束のネバーランドもね'
     logger.info(tagger2.parse(sample_txt))

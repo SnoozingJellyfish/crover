@@ -9,7 +9,6 @@ steps:
     git clone --depth 1 https://github.com/neologd/mecab-unidic-neologd.git
     echo yes | mecab-unidic-neologd/bin/install-mecab-unidic-neologd -n
     ls /etc/mecabrc
-    ln -s /etc/mecabrc /usr/local/etc/mecabrc
 - name: "gcr.io/cloud-builders/gcloud"
   entrypoint: /bin/sh
   args:
