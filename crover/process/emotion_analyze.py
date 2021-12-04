@@ -91,38 +91,23 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
 
     elif algo == 'asari':
         sonar = asari.api.Sonar()
-        print(sonar.ping(text="休みでうれしい"))
 
         for tweet in cluster_tweets:
             result_dic = sonar.ping(tweet[1])
             posi_conf = result_dic.classes[1].confidence
             if posi_conf > 0.75:
-                emotion_count['NEGATIVE'] += 1
-                emotion_tweet['NEGATIVE'].append(str(posi_conf) + tweet[1])
-            elif posi_conf > 0.25:
                 emotion_count['POSITIVE'] += 1
                 emotion_tweet['POSITIVE'].append(str(posi_conf) + tweet[1])
-            else:
+            elif posi_conf > 0.25:
                 emotion_count['NEUTRAL'] += 1
-                emotion_tweet['NEUTRAL'].append(tweet[1])
-            if result_dic['emotion'] == None:
-                emotion_count['NEUTRAL'] += 1
-                emotion_tweet['NEUTRAL'].append(tweet[1])
+                emotion_tweet['NEUTRAL'].append(str(posi_conf) + tweet[1])
             else:
-                for emo in result_dic['emotion'].keys():
-                    for w in result_dic['emotion'][emo]:
-                        if w[-1] == 'S':  # pymlaskのバグ
-                            w = w[:-4]
-                        if w in emotion_word.keys():
-                            emotion_word[w] += 1
-                        else:
-                            emotion_word[w] = 1
+                emotion_count['NEGATIVE'] += 1
+                emotion_tweet['NEGATIVE'].append(str(posi_conf) + tweet[1])
 
-                emotion_count[result_dic['orientation']] += 1
-                emotion_tweet[result_dic['orientation']].append(tweet[1])
-
-        emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
-        extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
+        #emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
+        #extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
+        extract_emotion_word = {'asariテスト': 1}
 
 
     '''
