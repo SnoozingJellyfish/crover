@@ -29,7 +29,7 @@ def home():
     sonar = Sonar()
     res = sonar.ping(text="もう年末が近づいて気が急く")
     logger.info(res)
-    
+
 
     return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
