@@ -5,7 +5,7 @@ runtime: python38 # or another supported version for standard environment
 #env: flex
 entrypoint: gunicorn -b :$PORT main:app --timeout 30000
 
-instance_class: F2
+instance_class: F4
 #resources: # flex
 #  cpu: 1 # flex
 #  memory_gb: 1 # flex
