@@ -93,7 +93,7 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
     elif algo == 'asari':
         for tweet in cluster_tweets:
             result_dic = sonar.ping(tweet[1])
-            posi_conf = result_dic.classes[1].confidence
+            posi_conf = result_dic['classes'][1]['confidence']
             if posi_conf > 0.75:
                 emotion_count['POSITIVE'] += 1
                 emotion_tweet['POSITIVE'].append(str(posi_conf) + tweet[1])
