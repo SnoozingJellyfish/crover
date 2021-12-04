@@ -13,6 +13,7 @@ from wordcloud import WordCloud
 
 from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
+import asari
 
 logger = logging.getLogger(__name__)
 
@@ -91,10 +92,30 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
     elif algo == 'asari':
         # エラーで実行できない
 
-        #sonar = asari.api.Sonar()
-        sonar = Sonar()
-        print(type(df_cluster['tweet'][0]))
+        sonar = asari.api.Sonar()
         print(sonar.ping(text="休みでうれしい"))
+
+        for tweet in cluster_tweets:
+            result_dic = emotion_analyzer.analyze(tweet[1], tweet[2])
+            if result_dic['emotion'] == None:
+                emotion_count['NEUTRAL'] += 1
+                emotion_tweet['NEUTRAL'].append(tweet[1])
+            else:
+                for emo in result_dic['emotion'].keys():
+                    for w in result_dic['emotion'][emo]:
+                        if w[-1] == 'S':  # pymlaskのバグ
+                            w = w[:-4]
+                        if w in emotion_word.keys():
+                            emotion_word[w] += 1
+                        else:
+                            emotion_word[w] = 1
+
+                emotion_count[result_dic['orientation']] += 1
+                emotion_tweet[result_dic['orientation']].append(tweet[1])
+
+        emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
+        extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
+
 
     '''
     # BERTでは多くがポジティブに判定される
