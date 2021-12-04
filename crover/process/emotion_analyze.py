@@ -22,7 +22,7 @@ def emotion_analyze_all(words, tweets):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
-    emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets)
+    emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo='asari')
     logger.info('make pie chart')
     #b64_chart = make_emotion_pie_chart(emotion_count)
     if len(emotion_word) == 0:
