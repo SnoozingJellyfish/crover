@@ -13,8 +13,8 @@ from wordcloud import WordCloud
 
 from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
-import asari
-sonar = asari.api.Sonar()
+from asari.api import Sonar
+sonar = Sonar()
 
 logger = logging.getLogger(__name__)
 
