@@ -90,13 +90,21 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
             df_cluster.loc[i, 'orientation'] = np.mean(emotion_analyzer.analyze(df_cluster['tweet'][i]))
 
     elif algo == 'asari':
-        # エラーで実行できない
-
         sonar = asari.api.Sonar()
         print(sonar.ping(text="休みでうれしい"))
 
         for tweet in cluster_tweets:
-            result_dic = emotion_analyzer.analyze(tweet[1], tweet[2])
+            result_dic = sonar.ping(tweet[1])
+            posi_conf = result_dic.classes[1].confidence
+            if posi_conf > 0.75:
+                emotion_count['NEGATIVE'] += 1
+                emotion_tweet['NEGATIVE'].append(str(posi_conf) + tweet[1])
+            elif posi_conf > 0.25:
+                emotion_count['POSITIVE'] += 1
+                emotion_tweet['POSITIVE'].append(str(posi_conf) + tweet[1])
+            else:
+                emotion_count['NEUTRAL'] += 1
+                emotion_tweet['NEUTRAL'].append(tweet[1])
             if result_dic['emotion'] == None:
                 emotion_count['NEUTRAL'] += 1
                 emotion_tweet['NEUTRAL'].append(tweet[1])
