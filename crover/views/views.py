@@ -24,15 +24,6 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
-    '''
-    # test asari
-    from asari.api import Sonar
-    sonar = Sonar()
-    res = sonar.ping(text="もう年末が近づいて気が急く")
-    logger.info(res)
-    '''
-
-
     return render_template('index.html', home_page='true')  # ナビゲーションバーなし
 
 
@@ -43,12 +34,6 @@ def non_existant_route(error):
 
 @view.route('/about')
 def about():
-    # test asari
-    from asari.api import Sonar
-    sonar = Sonar()
-    res = sonar.ping(text="もう年末が近づいて気が急く")
-    logger.info(res)
-
     global sess_info
     if 'searched_at' in session and session['searched_at'] in sess_info:
         already_sess = 'true'

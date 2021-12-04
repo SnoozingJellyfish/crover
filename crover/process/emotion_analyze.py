@@ -14,6 +14,7 @@ from wordcloud import WordCloud
 from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 import asari
+sonar = asari.api.Sonar()
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +91,6 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
             df_cluster.loc[i, 'orientation'] = np.mean(emotion_analyzer.analyze(df_cluster['tweet'][i]))
 
     elif algo == 'asari':
-        sonar = asari.api.Sonar()
-
         for tweet in cluster_tweets:
             result_dic = sonar.ping(tweet[1])
             posi_conf = result_dic.classes[1].confidence
