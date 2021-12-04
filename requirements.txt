@@ -47,6 +47,6 @@ urllib3==1.26.5
 Werkzeug==2.0.1
 wordcloud==1.8.1
 
-scikit-learn
+scikit-learn==0.23.2
 Janome==0.3.7
 asari==0.0.4
