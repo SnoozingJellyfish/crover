@@ -24,7 +24,7 @@ def emotion_analyze_all(words, tweets):
     logger.info('emotion analyze')
     emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo='asari')
     logger.info('make pie chart')
-    #b64_chart = make_emotion_pie_chart(emotion_count)
+
     if len(emotion_word) == 0:
         b64_figure = 'none'
     else:
@@ -55,7 +55,7 @@ def tweet_collect(words, tweets):
 
 
 # 感情分析する
-def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
+def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90, nega_conf_th=0.25):
     emotion_count = {'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
     emotion_tweet = {'POSITIVE': [], 'mostly_POSITIVE': [], 'NEUTRAL': [], 'mostly_NEGATIVE': [], 'NEGATIVE': []}
     emotion_word = {}
@@ -91,22 +91,58 @@ def emotion_analyze(cluster_tweets, algo='mlask', max_word=50):
             df_cluster.loc[i, 'orientation'] = np.mean(emotion_analyzer.analyze(df_cluster['tweet'][i]))
 
     elif algo == 'asari':
+        with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
+            mlask_emotion_dictionary = pickle.load(f)
+        emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
+
         for tweet in cluster_tweets:
-            result_dic = sonar.ping(tweet[1])
-            posi_conf = result_dic['classes'][1]['confidence']
-            if posi_conf > 0.75:
-                emotion_count['POSITIVE'] += 1
-                emotion_tweet['POSITIVE'].append(str(posi_conf) + tweet[1])
-            elif posi_conf > 0.25:
+            # 感情ワードの抽出
+            result_dic = emotion_analyzer.analyze(tweet[1], tweet[2])
+            if result_dic['emotion']:
+                for emo in result_dic['emotion'].keys():
+                    for w in result_dic['emotion'][emo]:
+                        if w[-1] == 'S':  # pymlaskのバグ
+                            w = w[:-4]
+                        if w in emotion_word.keys():
+                            emotion_word[w] += 1
+                        else:
+                            emotion_word[w] = 1
+
+            tweet_text = tweet[1]
+            # ハッシュタグ以下は感情分析しない
+            hash_tag_idx = tweet_text.find('#')
+            if hash_tag_idx >= 1:
+                tweet_text = tweet_text[:hash_tag_idx]
+            elif hash_tag_idx == 0:
                 emotion_count['NEUTRAL'] += 1
-                emotion_tweet['NEUTRAL'].append(str(posi_conf) + tweet[1])
+                emotion_tweet['NEUTRAL'].append(tweet[1])
+                continue
+
+            # @以下は感情分析しない
+            at_idx = tweet_text.find('@')
+            if at_idx >= 1:
+                tweet_text = tweet_text[:at_idx]
+            elif at_idx == 0:
+                emotion_count['NEUTRAL'] += 1
+                emotion_tweet['NEUTRAL'].append(tweet[1])
+                continue
+
+            # asariで感情分析
+            result_dic = sonar.ping(tweet_text)
+            posi_conf = result_dic['classes'][1]['confidence']
+            if posi_conf > posi_conf_th:
+                emotion_count['POSITIVE'] += 1
+                emotion_tweet['POSITIVE'].append(tweet[1])
+            elif posi_conf > nega_conf_th:
+                emotion_count['NEUTRAL'] += 1
+                emotion_tweet['NEUTRAL'].append(tweet[1])
             else:
                 emotion_count['NEGATIVE'] += 1
-                emotion_tweet['NEGATIVE'].append(str(posi_conf) + tweet[1])
+                emotion_tweet['NEGATIVE'].append(tweet[1])
 
-        #emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
-        #extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
-        extract_emotion_word = {'asariテスト': 1}
+        emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
+        extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
+        #extract_emotion_word = {'asariテスト': 1}
 
 
     '''

@@ -15,7 +15,6 @@ from flask import Flask
 LOCAL_ENV = False
 
 
-
 if LOCAL_ENV:
     with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
         dict_all_count = pickle.load(f)

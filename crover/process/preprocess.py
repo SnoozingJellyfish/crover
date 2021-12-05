@@ -33,9 +33,10 @@ else:
 logger = logging.getLogger(__name__)
 
 def preprocess_all(keyword, max_tweets, word_cloud_num):
-    print('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
+    logger.info('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
-    dict_word_count, tweets_list, b64_time_hist = scrape_token(keyword, max_tweets)
+    dict_word_count, tweets_list, b64_time_hist = scrape_tweet(keyword, max_tweets)
+    logger.info('finish scraping tweets')
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
         dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
@@ -61,7 +62,8 @@ def auth():
 
 def create_url(keyword, next_token_id=None, max_results=10):
     #query = "from:twitterdev -is:retweet"
-    query = keyword + " -is:retweet -is:reply lang:ja"
+    # リツイート、リプライ、公式アカウントを除外
+    query = keyword + " -is:retweet -is:reply -is:verified lang:ja"
     tweet_fields = "tweet.fields=author_id,created_at"
     mrf = "max_results={}".format(max_results)
     if next_token_id:
@@ -93,7 +95,7 @@ def requestAPI():
     print(json.dumps(json_response, indent=4, sort_keys=True))
 
 # ツイートの取得、クリーン、名詞抽出・カウント、
-def scrape_token(keyword, max_tweets, algo='sudachi'):
+def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
     bearer_token = auth()
     headers = create_headers(bearer_token)
