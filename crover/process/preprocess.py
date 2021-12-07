@@ -32,6 +32,16 @@ else:
 
 logger = logging.getLogger(__name__)
 
+def get_trend(trend_num=5):
+    logger.info('get trend')
+    bearer_token = auth()
+    headers = create_headers(bearer_token)
+    url = 'https://api.twitter.com/1.1/trends/place.json?id=23424856'
+    trend_list = connect_to_endpoint(url, headers)[0]['trends']
+    trend = [t['name'] for t in trend_list[:trend_num]]
+
+    return trend
+
 def preprocess_all(keyword, max_tweets, word_cloud_num):
     logger.info('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 

@@ -8,7 +8,7 @@ from flask import current_app as app
 from flask import Blueprint
 
 from crover import LOCAL_ENV
-from crover.process.preprocess import preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
+from crover.process.preprocess import get_trend, preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
 from crover.process.util import datastore_upload_wv
@@ -24,7 +24,9 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
-    return render_template('index.html', home_page='true')  # ナビゲーションバーなし
+    trend = get_trend()
+    logger.info(trend)
+    return render_template('index.html', home_page='true', trend=trend)  # ナビゲーションバーなし
 
 
 @view.app_errorhandler(404)
@@ -67,9 +69,12 @@ def collect_tweets():
     sess_info[session['searched_at']] = {}
     sess_info_at = sess_info[session['searched_at']]
 
-    keyword = request.form['keyword']
+    keyword = request.form.get('selected_trend', request.form.get('keyword'))
+    if keyword[0] == '#':
+        keyword = keyword[1:]
     sess_info_at['keyword'] = keyword
-    max_tweets = int(request.form['tweet_num'])
+
+    max_tweets = int(request.form.get('tweet_num', 500))
     sess_info_at['tweet_num'] = max_tweets
 
     # ツイート取得、ワードカウント

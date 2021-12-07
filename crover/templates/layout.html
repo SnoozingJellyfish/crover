@@ -51,104 +51,109 @@
 </script>
 
 <body>
+<div id="app">
 
-<div class="loader">
-    <div class="loading"></div>
-</div>
-
-
-{% if about_page == 'true' %}
-<div style="text-align: center">
-    <p class="content_text" id="about">
-        <br><br>
-        <font size="6px">言葉の海に潜ってみよう</font>
-        <br><br>
-        世界がネットワークで繋がって<br>
-        指先一つでどんな情報にもアクセスできるようになった<br>
-        毎日誰かの気の利いたつぶやきを目にするようになった<br>
-        でもその一方で<br>
-        網目から零れ落ちるように無数の言葉が情報の海に沈んでいく<br>
-        限りなく開かれた空間の中に淀みが生まれ<br>
-        知らぬ間に周りが見えなくなる<br>
-        隣の人は何の話をしている？<br>
-        あの話題について、みんなどう思っているんだろう？<br>
-        多様性は見えていないだけで、すぐそこにある<br>
-        分断を渡る地図を手に<br>
-        言葉の海に潜ってみよう<br>
-        <br>
-        <font size="6px">お問い合わせ・開発参加</font>
-        <br>
-        <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a><br>
-        <a href="https://github.com/SnoozingJellyfish/crover">アプリソースコード（GitHub）</a><br>
-        <br>
-        <font size="6px">License</font>
-        <br>
-        関連ワードの分割に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
-
-    </p>
-</div>
-{% endif %}
+    <div class="loader">
+        <div class="loading"></div>
+    </div>
 
 
-<div class="container">
-    <nav class="navbar fixed-top navbar-expand-md navbar-light bg-light">
-        <a class="navbar-brand" href="/">
-            {% if home_page == 'true' %}
-            <img src="../static/figure/transparent_background.png" width="100">
-            {% else %}
-            <img src="../static/figure/crover_logo_Helvetica_w_trans.png" width="100">
-            {% endif %}
-        </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    {% if about_page == 'true' %}
+    <div style="text-align: center">
+        <p class="content_text" id="about">
+            <br><br>
+            <font size="6px">言葉の海に潜ってみよう</font>
+            <br><br>
+            世界がネットワークで繋がって<br>
+            指先一つでどんな情報にもアクセスできるようになった<br>
+            毎日誰かの気の利いたつぶやきを目にするようになった<br>
+            でもその一方で<br>
+            網目から零れ落ちるように無数の言葉が情報の海に沈んでいく<br>
+            限りなく開かれた空間の中に淀みが生まれ<br>
+            知らぬ間に周りが見えなくなる<br>
+            隣の人は何の話をしている？<br>
+            あの話題について、みんなどう思っているんだろう？<br>
+            多様性は見えていないだけで、すぐそこにある<br>
+            分断を渡る地図を手に<br>
+            言葉の海に潜ってみよう<br>
+            <br>
+            <font size="6px">お問い合わせ・開発参加</font>
+            <br>
+            <a href="https://twitter.com/snooze_jelly">https://twitter.com/snooze_jelly</a><br>
+            <a href="https://github.com/SnoozingJellyfish/crover">アプリソースコード（GitHub）</a><br>
+            <br>
+            <font size="6px">License</font>
+            <br>
+            関連ワードの分割に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
 
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class ="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
-                </li>
-                {% if already_sess == 'true' %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('view.word_clustring', depth=depth) }}">Analysis</a>
-                </li>
+        </p>
+    </div>
+    {% endif %}
+
+
+    <div class="container">
+        <nav class="navbar fixed-top navbar-expand-md navbar-light bg-light">
+            <a class="navbar-brand" href="/">
+                {% if home_page == 'true' %}
+                <img src="../static/figure/transparent_background.png" width="100">
+                {% else %}
+                <img src="../static/figure/crover_logo_Helvetica_w_trans.png" width="100">
                 {% endif %}
-            </ul>
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-            {% if home_page != 'true' %}
-            <!-- 検索フォーム -->
-            <form class="form-inline" action ="{{ url_for('view.collect_tweets') }}" method=post>
-                <input type="text" class="form-control ml-2 form_radius" id="InputWord" name=keyword placeholder="キーワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required value={{keyword}} >
-                <select class="form-control ml-2 form_radius" id ="TweetNum" name=tweet_num>
-                    {% if tweet_num == 500 %}
-                    <option selected>500</option>
-                    <option>1000</option>
-                    <option>2000</option>
-                    {% elif tweet_num == 1000 %}
-                    <option>500</option>
-                    <option selected>1000</option>
-                    <option>2000</option>
-                    {% elif tweet_num == 2000 %}
-                    <option>500</option>
-                    <option>1000</option>
-                    <option selected>2000</option>
-                    {% else %}
-                    <option>500</option>
-                    <option>1000</option>
-                    <option>2000</option>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class ="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
+                    </li>
+                    {% if already_sess == 'true' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view.word_clustring', depth=depth) }}">Analysis</a>
+                    </li>
                     {% endif %}
-                </select>
-                <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
+                </ul>
 
-                <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius" onclick="spinner()">検索</button>
+                {% if home_page != 'true' %}
+                <!-- 検索フォーム -->
+                <form class="form-inline" action ="{{ url_for('view.collect_tweets') }}" method=post>
+                    <input type="text" class="form-control ml-2 form_radius" style="border-radius: 10px" id="InputWord" name=keyword placeholder="キーワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　]+" required value={{keyword}} >
+                    <select class="form-control ml-2 form_radius" style="border-radius: 10px" id ="TweetNum" name=tweet_num>
+                        {% if tweet_num == 500 %}
+                        <option selected>500</option>
+                        <option>1000</option>
+                        <option>2000</option>
+                        {% elif tweet_num == 1000 %}
+                        <option>500</option>
+                        <option selected>1000</option>
+                        <option>2000</option>
+                        {% elif tweet_num == 2000 %}
+                        <option>500</option>
+                        <option>1000</option>
+                        <option selected>2000</option>
+                        {% else %}
+                        <option>500</option>
+                        <option>1000</option>
+                        <option>2000</option>
+                        {% endif %}
+                    </select>
+                    <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
 
-            </form>
-            {% endif %}
-        </div>
-    </nav>
+                    <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius" style="border-radius: 10px" onclick="spinner()">検索</button>
 
-    {% block body %}{% endblock %}
+                </form>
+                {% endif %}
+            </div>
+        </nav>
 
+        {% block body %}{% endblock %}
+
+    </div>
 </div>
+
+<script src="{{ url_for('static', filename='load_tweet.js') }}"></script>
+
 </body>
 </html>
