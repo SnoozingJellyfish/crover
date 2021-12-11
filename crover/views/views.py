@@ -69,9 +69,7 @@ def collect_tweets():
     sess_info[session['searched_at']] = {}
     sess_info_at = sess_info[session['searched_at']]
 
-    keyword = request.form.get('selected_trend', request.form.get('keyword'))
-    if keyword[0] == '#':
-        keyword = keyword[1:]
+    keyword = request.form.get('keyword')
     sess_info_at['keyword'] = keyword
 
     max_tweets = int(request.form.get('tweet_num', 500))

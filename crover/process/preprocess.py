@@ -85,7 +85,8 @@ def create_url(keyword, next_token_id=None, max_results=10):
         url = "https://api.twitter.com/2/tweets/search/recent?query={}&{}&{}".format(
             query, tweet_fields, mrf
         )
-    return url
+
+    return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 def create_headers(bearer_token):
     headers = {"Authorization": "Bearer {}".format(bearer_token)}

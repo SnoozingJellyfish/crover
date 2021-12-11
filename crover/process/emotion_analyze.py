@@ -13,8 +13,11 @@ from wordcloud import WordCloud
 
 from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
-from asari.api import Sonar
-sonar = Sonar()
+
+from crover import LOCAL_ENV
+if not LOCAL_ENV:
+    from asari.api import Sonar
+    sonar = Sonar()
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +25,11 @@ def emotion_analyze_all(words, tweets):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
-    emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo='asari')
+    if LOCAL_ENV:
+        algo = 'mlask'
+    else:
+        algo = 'asari'
+    emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo=algo)
     logger.info('make pie chart')
 
     if len(emotion_word) == 0:
