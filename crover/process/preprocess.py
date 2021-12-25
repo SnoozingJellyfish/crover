@@ -34,8 +34,7 @@ logger = logging.getLogger(__name__)
 
 def get_trend(trend_num=5):
     logger.info('get trend')
-    bearer_token = auth()
-    headers = create_headers(bearer_token)
+    headers = create_headers()
     url = 'https://api.twitter.com/1.1/trends/place.json?id=23424856'
     trend_list = connect_to_endpoint(url, headers)[0]['trends']
     trend = [t['name'] for t in trend_list[:trend_num]]
@@ -61,55 +60,71 @@ def preprocess_all(keyword, max_tweets, word_cloud_num):
     dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_cloud_num, max_tweets, ignore_word_count)
     return dict_word_count_rate, tweets_list, b64_time_hist
 
-
-# To set your enviornment variables in your terminal run the following line:
-# export 'BEARER_TOKEN'='<your_bearer_token>'
-def auth():
+# 認証済みトークンのヘッダーを作成
+def create_headers():
     tokens = [os.environ.get("TWITTER_BEARER_TOKEN1"),
               os.environ.get("TWITTER_BEARER_TOKEN2"),
               os.environ.get("TWITTER_BEARER_TOKEN3")]
-    return tokens[np.random.randint(0, len(tokens))]
+    bearer_token = tokens[np.random.randint(0, len(tokens))]
+    headers = {"Authorization": "Bearer {}".format(bearer_token)}
+    return headers
 
+# ツイートを取得するURLを作成
 def create_url(keyword, next_token_id=None, max_results=10):
-    #query = "from:twitterdev -is:retweet"
-    # リツイート、リプライ、公式アカウントを除外
-    query = keyword + " -is:retweet -is:reply -is:verified lang:ja"
+    # リツイート、リプライ、公式アカウント、広告を除外
+    query = f'query={keyword} -is:retweet -is:reply -is:verified lang:ja'
     tweet_fields = "tweet.fields=author_id,created_at"
     mrf = "max_results={}".format(max_results)
     if next_token_id:
         next_token = 'next_token=' + next_token_id
-        url = "https://api.twitter.com/2/tweets/search/recent?query={}&{}&{}&{}".format(
+        url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
             query, tweet_fields, mrf, next_token
         )
     else:
-        url = "https://api.twitter.com/2/tweets/search/recent?query={}&{}&{}".format(
+        url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}".format(
             query, tweet_fields, mrf
         )
 
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
-def create_headers(bearer_token):
-    headers = {"Authorization": "Bearer {}".format(bearer_token)}
-    return headers
+# リツイートを取得するURLを作成（リツイートはTwitter API v1.1でないと取得できない）
+def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=1000):
+    if next_results:
+        url = f'https://api.twitter.com/1.1/search/tweets.json{next_results}'
+    else:
+        query = f'{keyword} lang:ja min_retweets:{min_retweets}'  # retweet
+        url = f'https://api.twitter.com/1.1/search/tweets.json?q={query}&count={max_results}'
+    return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
+# リツイートを取得
+def create_url_retweet_user(tweet, next_token_id=None, max_results=100):
+    #url = f'https://api.twitter.com/1.1/statuses/retweeters/ids.json?id={tweet_id}&cursor={cursor}'
+    query = f'query="{tweet}" is:retweet -is:reply'  # retweet
+    tweet_fields = "tweet.fields=author_id"
+    mrf = "max_results={}".format(max_results)
+    if next_token_id:
+        next_token = 'next_token=' + next_token_id
+        url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
+            query, tweet_fields, mrf, next_token
+        )
+    else:
+        url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}".format(
+            query, tweet_fields, mrf
+        )
+
+    return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
+
+# Twitter APIで情報を取得
 def connect_to_endpoint(url, headers):
     response = requests.request("GET", url, headers=headers)
     if response.status_code != 200:
         raise Exception(response.status_code, response.text)
     return response.json()
 
-def requestAPI():
-    bearer_token = auth()
-    url = create_url()
-    headers = create_headers(bearer_token)
-    json_response = connect_to_endpoint(url, headers)
-    print(json.dumps(json_response, indent=4, sort_keys=True))
-
 # ツイートの取得、クリーン、名詞抽出・カウント、
 def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
-    bearer_token = auth()
-    headers = create_headers(bearer_token)
+    headers = create_headers()
 
     # 除外するツイートのフレーズリストを取得
     with open('crover/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
@@ -132,15 +147,6 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
-        '''
-        logger.info('user site-packages: ' + site.getusersitepackages())
-        if LOCAL_ENV:
-            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                                resource_dir=os.path.join(site.getsitepackages()[0], 'sudachipy/resources')).create()
-        else:
-            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
-                                                 resource_dir=os.path.join(site.getusersitepackages(), 'sudachipy/resources')).create()
-        '''
         tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
         mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
 
@@ -203,6 +209,7 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
             dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
             tweets_list.append([created_at, tweet_no_URL, split_word])
+
         if 'next_token' in result['meta']:
             next_token_id = result['meta']['next_token']
         else:
@@ -211,7 +218,7 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     # ツイート日時のヒストグラムを作る
     b64_time_hist = make_time_hist(time_list)
 
-    print('-------------- scrape finish -----------------\n')
+    logger.info('-------------- scrape finish -----------------\n')
 
     return dict_word_count, tweets_list, b64_time_hist
 
@@ -450,6 +457,102 @@ def OKword(word, excluded_word, excluded_char):
             return False
 
     return True
+
+
+
+# リツイートの取得
+def scrape_retweet(keyword, max_tweets):
+    logger.info('-------------- scrape start -----------------\n')
+    headers = create_headers()
+
+    # 除外するツイートのフレーズリストを取得
+    with open('crover/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
+        excluded_tweet = f.read().split('\n')
+
+    URL_regex = re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
+
+    # 先頭と末尾のスペースを除去し、間のスペースをORに変換する
+    keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)
+    keyword = re.sub('[ 　]+', ' OR ', keyword)
+
+    next_results = None
+    max_results = 100  # 1度のリクエストで取得するツイート数
+    exclude_flag = False
+    past_tweets = []
+    tweet_ids = []
+
+    for i in range(max_tweets // max_results):
+        logger.info('start scraping')
+        url = create_url_retweet(keyword, next_results, max_results=max_results)
+        result = connect_to_endpoint(url, headers)
+        logger.info(f"{len(result['statuses'])} tweet")
+
+        # これ以上リツイートがない場合
+        if 'next_results' not in result['search_metadata']:
+            break
+
+        for res in result['statuses']:
+            tweet_text = res['text']
+
+            # 特定フレーズを含むツイートを除外
+            for w in excluded_tweet:
+                if w in tweet_text:
+                    exclude_flag = True
+                    break
+            if exclude_flag:
+                exclude_flag = False
+                continue
+
+            tweet_no_URL = URL_regex.sub('', tweet_text)
+            if tweet_no_URL in past_tweets:
+                continue
+            else:
+                past_tweets.append(tweet_no_URL)
+
+            tweet_ids.append(res['id'])
+
+            logger.info(f'retweet_count: {res["retweet_count"]}')
+
+        next_results = result['search_metadata']['next_results']
+
+    return tweet_ids, past_tweets
+
+# リツイートしたユーザーIDを取得する
+def get_retweet_user(tweet_id, tweet_text):
+    logger.info('get retweet user\n')
+    headers = create_headers()
+    user = {}
+
+    for i, t in enumerate(tweet_text):
+        user[tweet_id[i]] = np.empty(0, dtype=int)
+        next_token_id = None
+
+        while(True):
+            logger.info('start scraping')
+            url = create_url_retweet_user(t, next_token_id)
+            result = connect_to_endpoint(url, headers)
+
+            for res in result['data']:
+                user[tweet_id[i]] = np.append(user[tweet_id[i]], int(res['author_id']))
+
+            if 'next_token' in result['meta']:
+                next_token_id = result['meta']['next_token']
+            else:
+                break
+
+    return user
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

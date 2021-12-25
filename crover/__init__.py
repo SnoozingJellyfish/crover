@@ -12,7 +12,7 @@ import numpy as np
 
 from flask import Flask
 
-LOCAL_ENV = False
+LOCAL_ENV = True
 
 if LOCAL_ENV:
     with open('crover/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:

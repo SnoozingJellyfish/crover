@@ -11,6 +11,7 @@ from crover import LOCAL_ENV
 from crover.process.preprocess import get_trend, preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
+from crover.process.retweet_network import analyze_network
 from crover.process.util import datastore_upload_wv
 
 view = Blueprint('view', __name__)
@@ -74,6 +75,9 @@ def collect_tweets():
 
     max_tweets = int(request.form.get('tweet_num', 500))
     sess_info_at['tweet_num'] = max_tweets
+
+    #TODO: リツイートのネットワーク分析（暫定）
+    tmp = analyze_network(keyword, max_tweets)
 
     # ツイート取得、ワードカウント
     dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, WORD_CLOUD_NUM)
