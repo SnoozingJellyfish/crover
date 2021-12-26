@@ -1,4 +1,4 @@
-
+import copy
 import os
 import re
 import io
@@ -480,6 +480,7 @@ def scrape_retweet(keyword, max_tweets):
     exclude_flag = False
     past_tweets = []
     tweet_ids = []
+    retweet = {}
 
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
@@ -509,38 +510,67 @@ def scrape_retweet(keyword, max_tweets):
             else:
                 past_tweets.append(tweet_no_URL)
 
-            tweet_ids.append(res['id'])
-
-            logger.info(f'retweet_count: {res["retweet_count"]}')
+            retweet[str(res['id'])] = {'text': tweet_no_URL}
+            logger.info(f'retweet_count: {res["retweet_count"]}, {res["created_at"]}')
 
         next_results = result['search_metadata']['next_results']
 
-    return tweet_ids, past_tweets
+    return retweet
 
 # リツイートしたユーザーIDを取得する
-def get_retweet_user(tweet_id, tweet_text):
+def get_retweet_author(retweet):
     logger.info('get retweet user\n')
-    headers = create_headers()
-    user = {}
+    tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
+    mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
+    sign_regex = re.compile(
+        '[^\r\n0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）【】]')
 
-    for i, t in enumerate(tweet_text):
-        user[tweet_id[i]] = np.empty(0, dtype=int)
+    tweet_id = list(retweet.keys())
+    for i, k in enumerate(tweet_id):
+        headers = create_headers()
+        logger.info(f"{i+1} / {len(tweet_id)}")
+        t = retweet[k]['text']
         next_token_id = None
+        words = tokenizer_obj.tokenize(t, mode)
 
-        while(True):
-            logger.info('start scraping')
+        if '#' in t:
+            t = t[:t.find('#')]
+
+        noun_cnt = 0
+        for w in reversed(words):
+            if w.part_of_speech()[0] == '名詞':
+                noun_cnt += 1
+                if noun_cnt > 1 and not str(w).isdigit():
+                    t = t[:t.rfind(str(w)) + len(str(w))]
+                    break
+
+        t = sign_regex.sub(' ', t)
+        t = re.sub('[ 　]+', ' ', t)
+        if t == ' ' or len(t) < 3:
+            del retweet[k]
+            continue
+
+        retweet[k]['author'] = np.empty(0, dtype=int)
+
+        #while(True):
+        for j in range(50):
             url = create_url_retweet_user(t, next_token_id)
             result = connect_to_endpoint(url, headers)
 
+            if 'data' not in result:
+                logger.info(t)
+                del retweet[k]
+                break
+
             for res in result['data']:
-                user[tweet_id[i]] = np.append(user[tweet_id[i]], int(res['author_id']))
+                retweet[k]['author'] = np.append(retweet[k]['author'], int(res['author_id']))
 
             if 'next_token' in result['meta']:
                 next_token_id = result['meta']['next_token']
             else:
                 break
 
-    return user
+    return retweet
 
 
 

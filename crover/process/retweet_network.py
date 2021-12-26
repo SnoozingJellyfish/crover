@@ -2,17 +2,17 @@ import os
 import re
 import logging
 
-from crover.process.preprocess import scrape_retweet, get_retweet_user
+from crover.process.preprocess import scrape_retweet, get_retweet_author
 
 logger = logging.getLogger(__name__)
 
 
 def analyze_network(keyword, max_tweets):
     #TODO: リツイートを取得する
-    retweet_id, retweet_text = scrape_retweet(keyword, max_tweets)
+    retweet = scrape_retweet(keyword, max_tweets)
 
     #TODO: リツイートしたユーザーを取得する
-    user = get_retweet_user(retweet_id, retweet_text)
+    retweet = get_retweet_author(retweet)
 
     #TODO: リツイート間のユーザー類似度を算出する
 
