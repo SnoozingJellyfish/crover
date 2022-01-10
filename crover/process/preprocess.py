@@ -11,6 +11,7 @@ import json
 import logging
 import site
 import concurrent.futures
+import traceback
 
 import numpy as np
 import matplotlib
@@ -32,6 +33,11 @@ else:
 
 logger = logging.getLogger(__name__)
 
+
+class NoKeywordError(Exception):
+    """検索可能な文字が含まれないキーワードの場合のエラー"""
+    pass
+
 def get_trend(trend_num=5):
     logger.info('get trend')
     headers = create_headers()
@@ -41,7 +47,7 @@ def get_trend(trend_num=5):
 
     return trend
 
-def preprocess_all(keyword, max_tweets, word_cloud_num):
+def preprocess_all(keyword, max_tweets, word_num_in_cloud):
     logger.info('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
     dict_word_count, tweets_list, b64_time_hist = scrape_tweet(keyword, max_tweets)
@@ -57,7 +63,7 @@ def preprocess_all(keyword, max_tweets, word_cloud_num):
         ignore_word_count = 10
     else:
         ignore_word_count = 5
-    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_cloud_num, max_tweets, ignore_word_count)
+    dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud, max_tweets, ignore_word_count)
     return dict_word_count_rate, tweets_list, b64_time_hist
 
 # 認証済みトークンのヘッダーを作成
@@ -150,9 +156,12 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
         tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
         mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
 
-    # 先頭と末尾のスペースを除去し、間のスペースをORに変換する
+    # 先頭と末尾のスペース、末尾の#を除去し、間のスペースをORに変換する
     keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)
     keyword = re.sub('[ 　]+', ' OR ', keyword)
+    keyword = re.sub('[#]+$', '', keyword)
+    if keyword == '':
+        raise NoKeywordError
 
     dict_word_count = {}
     next_token_id = None
@@ -331,8 +340,8 @@ def make_time_hist(time_list):
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=2):
-    print('------------ word count rate start --------------')
+def word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=3):
+    logger.info('------------ word count rate start --------------')
     dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
 
@@ -353,29 +362,28 @@ def word_count_rate(dict_word_count, dict_all_count, top_word_num=20, max_tweets
             all_count = 0
 
         try:
-            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1)
+            # 1以下のカウントはwordcloudで認識されないため最後に1を足す
+            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1) + 1
         except TypeError:
             continue
 
     dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
-    i = 0
     extract_dict = {}
 
-    # 相対出現頻度が高いワードからword_length個抽出
+    # 相対出現頻度が高いワードからword_num_in_cloud個抽出
     for w in dict_word_count_rate.keys():
         if OKword(w, excluded_word, excluded_char) and len(w) < word_length and dict_word_count_rate[w] > thre_word_count_rate:
             extract_dict[w] = dict_word_count_rate[w]
-            i += 1
-            if i >= top_word_num:
+            if len(extract_dict) >= word_num_in_cloud:
                 break
 
-    print('------------ word count rate finish --------------')
+    logger.info('------------ word count rate finish --------------')
     return extract_dict
 
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
 def make_top_word2vec_dic(dict_word_count_rate):
-    print('-------------- making dict_top_word2vec start -----------------\n')
+    logger.info('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
     all_word_list = list(word2vec.keys())
@@ -390,12 +398,12 @@ def make_top_word2vec_dic(dict_word_count_rate):
         else:
             dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
-    print('-------------- making dict_top_word2vec finish -----------------\n')
+    logger.info('-------------- making dict_top_word2vec finish -----------------\n')
     return dict_top_word2vec
 
 
 def make_top_word2vec_dic_datastore(dict_word_count_rate):
-    print('-------------- making dict_top_word2vec start -----------------\n')
+    logger.info('-------------- making dict_top_word2vec start -----------------\n')
 
     dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
     client = datastore.Client()
@@ -406,7 +414,7 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate):
         keys.append(client.key('mecab_word2vec_100d', word))
 
     logger.info('entities')
-    entities = client.get_multi(keys) # 複数ワードのword2vecをクラウドからダウンロード
+    entities = client.get_multi(keys)  # 複数ワードのword2vecをクラウドからダウンロード
     logger.info('get multi word2vec')
 
     vec_exist_words = []
@@ -425,13 +433,13 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate):
             logger.info('vec not exist: ' + word)
             dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
-    print('-------------- making dict_top_word2vec finish -----------------\n')
+    logger.info('-------------- making dict_top_word2vec finish -----------------\n')
 
     return dict_top_word2vec
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
 def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
-    print('-------------- making dict_part_word2vec start -----------------\n')
+    logger.info('-------------- making dict_part_word2vec start -----------------\n')
 
     dict_part_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
 
@@ -442,7 +450,7 @@ def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
         dict_part_word2vec['vec'].append(top_word2vec['vec'][word_idx])
         dict_part_word2vec['word_count_rate'].append(top_word2vec['word_count_rate'][word_idx])
 
-    print('-------------- making dict_part_word2vec finish -----------------\n')
+    logger.info('-------------- making dict_part_word2vec finish -----------------\n')
 
     return dict_part_word2vec
 
@@ -461,7 +469,7 @@ def OKword(word, excluded_word, excluded_char):
 
 
 # リツイートの取得
-def scrape_retweet(keyword, max_tweets):
+def scrape_retweet(keyword, max_tweets=1000):
     logger.info('-------------- scrape start -----------------\n')
     headers = create_headers()
 
@@ -480,7 +488,7 @@ def scrape_retweet(keyword, max_tweets):
     exclude_flag = False
     past_tweets = []
     tweet_ids = []
-    retweet = {}
+    retweet = []
 
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
@@ -510,67 +518,97 @@ def scrape_retweet(keyword, max_tweets):
             else:
                 past_tweets.append(tweet_no_URL)
 
-            retweet[str(res['id'])] = {'text': tweet_no_URL}
+            retweet.append({'id': str(res['id']), 'author': res['user']['name'],
+                            'text': tweet_no_URL, 'count': res["retweet_count"]})
             logger.info(f'retweet_count: {res["retweet_count"]}, {res["created_at"]}')
 
         next_results = result['search_metadata']['next_results']
 
     return retweet
 
+# Twitter APIでツイートで検索するため名詞まで抽出
+def stop_noun(text, tokenizer_obj, mode):
+    words = list(tokenizer_obj.tokenize(text, mode))
+    noun_cnt = 0
+    for w in reversed(words):
+        if w.part_of_speech()[0] == '名詞':
+            noun_cnt += 1
+            if noun_cnt > 1 and not str(w).isdigit():
+                text = text[:text.rfind(str(w)) + len(str(w))]
+                return text
+            else:
+                text = text[:text.rfind(str(w))]
+
+    return ''
+
+
 # リツイートしたユーザーIDを取得する
-def get_retweet_author(retweet):
+def get_retweet_author(retweet, max_scrape_retweet=1500, thre_retweet_cnt=500):
     logger.info('get retweet user\n')
+    max_trial = 30
     tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
     mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
     sign_regex = re.compile(
         '[^\r\n0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）【】]')
 
-    tweet_id = list(retweet.keys())
-    for i, k in enumerate(tweet_id):
+    retweet_OK = []
+    for i, r in enumerate(retweet):
         headers = create_headers()
-        logger.info(f"{i+1} / {len(tweet_id)}")
-        t = retweet[k]['text']
+        logger.info(f"{i+1} / {len(retweet)}, retweet count: {r['count']}")
+        t = r['text']
         next_token_id = None
-        words = tokenizer_obj.tokenize(t, mode)
 
-        if '#' in t:
-            t = t[:t.find('#')]
+        #if '#' in t:
+            #t = t[:t.find('#')]
 
-        noun_cnt = 0
-        for w in reversed(words):
-            if w.part_of_speech()[0] == '名詞':
-                noun_cnt += 1
-                if noun_cnt > 1 and not str(w).isdigit():
-                    t = t[:t.rfind(str(w)) + len(str(w))]
-                    break
+        t = stop_noun(t, tokenizer_obj, mode)
 
         t = sign_regex.sub(' ', t)
         t = re.sub('[ 　]+', ' ', t)
         if t == ' ' or len(t) < 3:
-            del retweet[k]
+            logger.info(f"extract few string\n"
+                        f"cannot search '{r['text']}'")
             continue
 
-        retweet[k]['author'] = np.empty(0, dtype=int)
+        r['re_author'] = np.empty(0, dtype=int)
+        k = 0
 
-        #while(True):
-        for j in range(50):
-            url = create_url_retweet_user(t, next_token_id)
-            result = connect_to_endpoint(url, headers)
+        try:
+            for j in range(max_trial):
+                if k > max_scrape_retweet // 100:
+                    break
 
-            if 'data' not in result:
-                logger.info(t)
-                del retweet[k]
-                break
+                url = create_url_retweet_user(t, next_token_id)
+                result = connect_to_endpoint(url, headers)
 
-            for res in result['data']:
-                retweet[k]['author'] = np.append(retweet[k]['author'], int(res['author_id']))
+                if 'data' in result:
+                    k += 1
+                else:
+                    t = stop_noun(t, tokenizer_obj, mode)
+                    if t == ' ' or len(t) < 3:
+                        break
+                    else:
+                        continue
 
-            if 'next_token' in result['meta']:
-                next_token_id = result['meta']['next_token']
+                for res in result['data']:
+                    r['re_author'] = np.append(r['re_author'], int(res['author_id']))
+
+                if 'next_token' in result['meta']:
+                    next_token_id = result['meta']['next_token']
+                else:
+                    break
+
+            if len(r['re_author']) > thre_retweet_cnt:
+                retweet_OK.append(r)
             else:
-                break
+                logger.info(f"few retweet count: {len(r['re_author'])}\n"
+                            f"cannot search '{r['text']}'")
 
-    return retweet
+        except:  # twitter APIの15分間取得ツイート数を越えた場合
+            logger.info(traceback.format_exc())
+            pass
+
+    return retweet_OK
 
 
 

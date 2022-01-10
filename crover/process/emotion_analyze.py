@@ -15,20 +15,26 @@ from crover.process.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
 from crover import LOCAL_ENV
+
+'''
+# メモリ使用量が大きいためasariは用いない
 if not LOCAL_ENV:
     from asari.api import Sonar
     sonar = Sonar()
+'''
 
 logger = logging.getLogger(__name__)
 
-def emotion_analyze_all(words, tweets):
+def emotion_analyze_all(words, tweets, algo='mlask'):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
+    '''
     if LOCAL_ENV:
         algo = 'mlask'
     else:
         algo = 'asari'
+    '''
     emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo=algo)
     logger.info('make pie chart')
 
@@ -149,7 +155,6 @@ def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90
 
         emotion_word_list = sorted(emotion_word.items(), key=lambda x: x[1], reverse=True)
         extract_emotion_word = dict(emotion_word_list[:np.min((len(emotion_word_list), max_word))])
-        #extract_emotion_word = {'asariテスト': 1}
 
 
     '''

@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 col-12">
+            <div style="text-align: center">
+                <br><br><br>
+                <svg width="300" height="300" class="img-fluid border_radius" style="background-color:#eee"></svg>
+            </div>
+        </div>
+
+        <div class="col-xl-2 col-md-3 col-12">
+            <div style="text-align: center">
+                <label>
+                    <font size="4" color="#404040">グループワード</font>
+                </label>
+                <br>
+                <!-- デフォルトは無色 -->
+                <img id="wc_img" src="data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
+                     class="img-fluid img-shadow border_radius mb-2" width="250" height="250" border="0">
+                <br>
+                <label>
+                    <font size="4" color="#404040">全体ワード</font>
+                </label>
+                <br>
+                <img src={{word_clouds_all}} class="img-fluid img-shadow border_radius" width="250"
+                     height="250"><br>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- カーソルを合わせたときに表示する情報領域-->
+<div id="datatip">
+    <h2></h2>
+    <p></p>
+</div>
+
+<script type="text/javascript">
+var graph = eval({{graph_json|tojson}});
+var word_cloud = eval({{ word_clouds_part|tojson }});
+console.log(word_cloud);
+
+
+
+</script>
+
+{% endblock %}

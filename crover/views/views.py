@@ -2,6 +2,7 @@ import os
 import copy
 import logging
 from datetime import datetime, timedelta
+import traceback
 
 from flask import request, redirect, url_for, render_template, session, jsonify
 from flask import current_app as app
@@ -18,7 +19,7 @@ view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
 
 ONCE_TWEET_NUM = 10  # クライアントに一度に渡すツイート数
-WORD_CLOUD_NUM = 100  # ワードクラウドで表示する単語数
+WORD_NUM_IN_CLOUD = 100  # ワードクラウドで表示する単語数
 
 sess_info = {}  # global variable containing recent session information
 
@@ -38,7 +39,7 @@ def non_existant_route(error):
 @view.route('/about')
 def about():
     global sess_info
-    if 'searched_at' in session and session['searched_at'] in sess_info:
+    if session.get('searched_at') and sess_info.get(session['searched_at'], {}).get('depth') != None:
         already_sess = 'true'
         depth = sess_info[session['searched_at']]['depth']
     else:
@@ -76,16 +77,19 @@ def collect_tweets():
     max_tweets = int(request.form.get('tweet_num', 500))
     sess_info_at['tweet_num'] = max_tweets
 
-    #TODO: リツイートのネットワーク分析（暫定）
-    tmp = analyze_network(keyword, max_tweets)
-
     # ツイート取得、ワードカウント
-    dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, WORD_CLOUD_NUM)
+    try:
+        dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, WORD_NUM_IN_CLOUD)
+    except:  # 検索可能な文字がキーワードに含まれない場合
+        logger.info(traceback.format_exc())
+        return redirect(url_for('view.home'))
+
     sess_info_at['tweets'] = tweets_list
     sess_info_at['word_counts'] = list(dict_word_count_rate.items())
     cluster_to_words = [{0: dict_word_count_rate}]
     sess_info_at['cluster_to_words'] = cluster_to_words
-    figures = make_word_cloud(cluster_to_words[0])
+    colormaps = ['spring', 'summer', 'autumn', 'winter', 'PuRd', 'Wistia', 'cool', 'hot', 'YlGnBu', 'YlOrBr']
+    figures = make_word_cloud(cluster_to_words[0], colormaps)
 
     sess_info_at['figures_dictword'] = [figures]
     sess_info_at['figure_time_hist'] = time_hist
@@ -141,7 +145,8 @@ def analysis():
             for i in range(cluster_idx+1, len(list(pre_cluster_to_words.keys()))):
                 sess_info_at['cluster_to_words'][depth+1][i+1] = pre_cluster_to_words[i]
 
-        figures = make_word_cloud(sess_info_at['cluster_to_words'][depth+1])
+        colormaps = ['spring', 'summer', 'autumn', 'winter', 'PuRd', 'Wistia', 'cool', 'hot', 'YlGnBu', 'YlOrBr']
+        figures = make_word_cloud(sess_info_at['cluster_to_words'][depth+1], colormaps)
         if len(sess_info_at['figures_dictword']) == depth + 1:
             sess_info_at['figures_dictword'].append(figures)
         else:
@@ -252,3 +257,12 @@ def load_tweet(emotion, tweet_start_cnt):
         add_data['load_continue'] = 'false'
 
     return jsonify(add_data)
+
+@view.route('/network', methods=['GET'])
+def network():
+    # TODO: リツイートのネットワーク分析（暫定）
+    graph_dict, word_clouds = analyze_network()
+
+    return render_template('retweet_network.html', graph_json=graph_dict,
+                           word_clouds_all=word_clouds[-1],
+                           word_clouds_part=word_clouds[:-1])
