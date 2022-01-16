@@ -130,7 +130,7 @@ def datastore_upload_retweet():
     for k in retweet_info.keys():
         logger.info(f'retweet keyword: {k}')
         #keyword_entity = datastore.Entity(client.key(keyword_kind))
-        keyword_entity = datastore.Entity(client.key(keyword_kind), k)
+        keyword_entity = datastore.Entity(client.key(keyword_kind, k))
         #keyword_entity.update({'keyword': k})
         keyword_entities.append(keyword_entity)
 
