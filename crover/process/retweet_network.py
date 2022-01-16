@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import datetime
 
 import numpy as np
 import networkx as nx
@@ -22,6 +23,54 @@ else:
     plt.rcParams['font.family'] = 'IPAPGothic'
 
 logger = logging.getLogger(__name__)
+
+
+def get_retweet_keyword():
+    client = datastore.Client()
+    logger.info('get retweet keyword and date')
+
+    re_keyword = {'keyword': [],
+                  'default_start_date': [],
+                  'limit_start_date': [],
+                  'limit_end_date': []}
+
+    keyword_kind = "retweet_keyword"
+    date_kind = 'retweeted_date'
+    query = client.query(kind=keyword_kind)
+    keyword_entities = list(query.fetch())
+
+    for keyword_entity in keyword_entities:
+        # keyword = keyword_entity["keyword"]
+        keyword = keyword_entity.key.name
+        re_keyword['keyword'].append(keyword)
+        logger.info(f'date of retweet keyword- {keyword}')
+
+        # リツイートされたツイートとリツイートした人をアップロード
+        query = client.query(kind=date_kind, ancestor=keyword_entity.key)
+        date_entities = list(query.fetch())
+        date_int = []
+        for i, date_entity in enumerate(date_entities):
+            # date = date_entity['date']
+            date = date_entity.key.name
+            date_int.append(int(date.replace('/', '')))
+
+        start_date = date_entities[np.argmin(date_int)]
+        end_date = date_entities[np.argmax(date_int)]
+        start_date_dt = datetime.datetime.strptime(start_date, '%Y/%m/%d')
+        end_date_dt = datetime.datetime.strptime(end_date, '%Y/%m/%d')
+        td = end_date_dt - start_date_dt
+        if td.days > 7:
+            default_start_date_dt = end_date_dt - datetime.timedelta(days=7)
+        else:
+            default_start_date_dt = start_date_dt
+
+        default_start_date = default_start_date_dt.strftime('%Y/%m/%d')
+
+        re_keyword['default_start_date'].append(default_start_date)
+        re_keyword['limit_start_date'].append(start_date)
+        re_keyword['limit_end_date'].append(end_date)
+
+    return re_keyword
 
 
 def analyze_network():
@@ -55,8 +104,6 @@ def analyze_network():
     word_clouds_figure = make_word_cloud_node(keyword, retweet, group_num)
 
     # TODO: 収集済みリツイートのキーワードと日付を取得する
-
-
 
     # 収集済みリツイートキーワード
     re_keyword = {'keyword': ['コロナ', '紅白'],

@@ -158,7 +158,6 @@ def datastore_upload_retweet():
 
         client.put_multi(date_entities)
 
-
         # リツイートされたツイートとリツイートした人をアップロード
         query = client.query(kind=date_kind, ancestor=keyword_entity.key)
         date_entities = list(query.fetch())
@@ -167,12 +166,18 @@ def datastore_upload_retweet():
             date = date_entity.key.name
             logger.info(f'tweet of retweeted date- {date}')
             tweet_entities = []
-            for t in retweet_info[keyword][date].keys():
-                logger.info(f'tweet: {t}')
-                #tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key.id))
-                tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key))
-                tweet_entity.update({'tweet': t, 're_author': retweet_info[keyword][date][t]})
-                tweet_entities.append(tweet_entity)
 
-            client.put_multi(tweet_entities)
+            query = client.query(kind=tweet_kind, ancestor=date_entity.key)
+            tweet_entities_old = list(query.fetch())
+            tweet_old = [to['tweet'] for to in tweet_entities_old]
+            for t in retweet_info[keyword][date].keys():
+                if t not in tweet_old:
+                    logger.info(f'tweet: {t}')
+                    #tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key.id))
+                    tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key))
+                    tweet_entity.update({'tweet': t, 're_author': retweet_info[keyword][date][t]})
+                    tweet_entities.append(tweet_entity)
+
+            if len(tweet_entities) > 0:
+                client.put_multi(tweet_entities)
 

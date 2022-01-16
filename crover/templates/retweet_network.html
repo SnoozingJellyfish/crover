@@ -54,8 +54,10 @@
                     <font size="4" color="#404040">全体ワード</font>
                 </label>
                 <br>
+                <!--
                 <img src={{word_clouds_all}} class="img-fluid img-shadow border_radius" width="250"
                      height="250"><br>
+                -->
 
             </div>
         </div>
@@ -92,9 +94,9 @@
 -->
 
 <script type="text/javascript">
-var graph = eval({{graph_json|tojson}});
-var word_cloud = eval({{ word_clouds_part|tojson }});
-console.log(word_cloud);
+//var graph = eval({{graph_json|tojson}});
+//var word_cloud = eval({{ word_clouds_part|tojson }});
+//console.log(word_cloud);
 
 var re_keyword = eval({{re_keyword|tojson}});
 console.log(re_keyword);
