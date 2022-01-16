@@ -124,17 +124,17 @@ def datastore_upload_retweet():
                                  'テスト-地震3': [1, 2, 3, 4]}}}
 
     keyword_kind = "retweet_keyword"
-    '''
+
     keyword_entities = []
     # リツイートのキーワードをアップロード
     for k in retweet_info.keys():
         logger.info(f'retweet keyword: {k}')
-        keyword_entity = datastore.Entity(client.key(keyword_kind))
-        keyword_entity.update({'keyword': k})
+        #keyword_entity = datastore.Entity(client.key(keyword_kind))
+        keyword_entity = datastore.Entity(client.key(keyword_kind), k)
+        #keyword_entity.update({'keyword': k})
         keyword_entities.append(keyword_entity)
 
     client.put_multi(keyword_entities)
-    '''
 
     tweet_kind = 'retweeted_tweet'
 
@@ -143,25 +143,28 @@ def datastore_upload_retweet():
     query = client.query(kind=keyword_kind)
     keyword_entities = list(query.fetch())
     for keyword_entity in keyword_entities:
-        keyword = keyword_entity["keyword"]
+        #keyword = keyword_entity["keyword"]
+        keyword = keyword_entity.key.name
         logger.info(f'date of retweet keyword- {keyword}')
-        '''
+
         date_entities = []
         for d in retweet_info[keyword].keys():
             logger.info(f'date: {d}')
             #date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key.id))
-            date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key))
-            date_entity.update({'date': d})
+            #date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key))
+            date_entity = datastore.Entity(client.key(date_kind, d, parent=keyword_entity.key))
+            #date_entity.update({'date': d})
             date_entities.append(date_entity)
 
         client.put_multi(date_entities)
-        '''
-        
+
+
         # リツイートされたツイートとリツイートした人をアップロード
         query = client.query(kind=date_kind, ancestor=keyword_entity.key)
         date_entities = list(query.fetch())
         for date_entity in date_entities:
-            date = date_entity['date']
+            #date = date_entity['date']
+            date = date_entity.key.name
             logger.info(f'tweet of retweeted date- {date}')
             tweet_entities = []
             for t in retweet_info[keyword][date].keys():
