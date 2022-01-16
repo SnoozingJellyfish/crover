@@ -145,6 +145,7 @@ def datastore_upload_retweet():
     for keyword_entity in keyword_entities:
         keyword = keyword_entity["keyword"]
         logger.info(f'date of retweet keyword- {keyword}')
+        '''
         date_entities = []
         for d in retweet_info[keyword].keys():
             logger.info(f'date: {d}')
@@ -154,9 +155,10 @@ def datastore_upload_retweet():
             date_entities.append(date_entity)
 
         client.put_multi(date_entities)
-
+        '''
+        
         # リツイートされたツイートとリツイートした人をアップロード
-        query = client.query(kind=date_kind, ancestor=keyword_entity)
+        query = client.query(kind=date_kind, ancestor=keyword_entity.key)
         date_entities = list(query.fetch())
         for date_entity in date_entities:
             date = date_entity['date']
