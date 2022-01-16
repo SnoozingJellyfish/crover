@@ -32,6 +32,19 @@ Vue.component('emotion-tweets', {
     }
 });
 
+/*
+Vue.component('network-form', {
+    template: '#network-form',
+    data:function(){
+        return {
+            keyword_info: re_keyword,
+            keyword: Object.keys(re_keyword)[0]
+        }
+    }
+})
+*/
+
+
 new Vue({
     el:'#app',
     //delimiters:['[[',']]']  //なぜかdelimiters変わらない

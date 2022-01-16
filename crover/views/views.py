@@ -13,7 +13,7 @@ from crover.process.preprocess import get_trend, preprocess_all, make_top_word2v
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
 from crover.process.retweet_network import analyze_network
-from crover.process.util import datastore_upload_wv
+from crover.process.util import datastore_upload_wv, datastore_upload_retweet
 
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
@@ -26,6 +26,9 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
+    # develop: リツイートデータをdatastoreにアップロード
+    datastore_upload_retweet()
+
     trend = get_trend()
     logger.info(trend)
     return render_template('index.html', home_page='true', trend=trend)  # ナビゲーションバーなし
@@ -261,8 +264,9 @@ def load_tweet(emotion, tweet_start_cnt):
 @view.route('/network', methods=['GET'])
 def network():
     # TODO: リツイートのネットワーク分析（暫定）
-    graph_dict, word_clouds = analyze_network()
+    graph_dict, word_clouds, re_keyword = analyze_network()
 
     return render_template('retweet_network.html', graph_json=graph_dict,
                            word_clouds_all=word_clouds[-1],
-                           word_clouds_part=word_clouds[:-1])
+                           word_clouds_part=word_clouds[:-1],
+                           re_keyword=re_keyword)

@@ -185,17 +185,58 @@ function dragended(d) {
   d.fy = null;
 }
 
-/*
-Vue.component('retweet-word-cloud', {
-    template: '#retweet-word-cloud',
-    data:function(){
-        return {
-            retweet_word_cloud: word_cloud
-            },
-        }
-    }
+// 日付選択フォーム
+let keyword_select = document.getElementById("retweetKeyword")
+let start_date_form = document.getElementById("start-date-form")
+let end_date_form = document.getElementById("end-date-form")
+var key_index = keyword_select.selectedIndex
+
+function keywordChange(){
+  key_index = keyword_select.selectedIndex
+  console.log(key_index);
+  start_date_form.value = re_keyword['default_start_date'][key_index];
+  end_date_form.value = re_keyword['limit_end_date'][key_index];
+  $('.datepicker').datepicker('setStartDate', re_keyword['limit_start_date'][key_index]);
+  $('.datepicker').datepicker('setEndDate', re_keyword['limit_end_date'][key_index]);
+}
+
+keyword_select.addEventListener('change', keywordChange);
+
+//bootstrap-datepickerのjavascriptコード
+$(function(){
+    $('.datepicker').datepicker({
+        format: 'yyyy/mm/dd',
+        autoclose: true,
+        assumeNearbyYear: true,
+        startDate: re_keyword['limit_start_date'][key_index],
+        endDate: re_keyword['limit_end_date'][key_index],
+        language: 'ja',
+    });
+});
+
+$(function(){
+    $('#start-date-form').datepicker()
+        .on('changeDate', function(e) {
+            console.log(start_date_form.value);
+            $('#end-date-form').datepicker('setStartDate', start_date_form.value);
+    });
 })
 
+$(function(){
+    $('#end-date-form').datepicker()
+        .on('changeDate', function(e) {
+            console.log(end_date_form.value);
+            var end_date = Date.parse(end_date_form.value);
+            var start_date = Date.parse(start_date_form.value);
+            if (start_date > end_date){
+                start_date_form.value = end_date_form.value;
+            }
+            $('#start-date-form').datepicker('setEndDate', end_date_form.value);
+    });
+})
+
+
+/*
 new Vue({
     el:'#app',
     //delimiters:['[[',']]']  //なぜかdelimiters変わらない

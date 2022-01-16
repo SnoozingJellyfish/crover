@@ -90,16 +90,19 @@
 /* td { */
 /*  width: 500px; */
 /* } */
+/*
 thead {
   display: table;
 }
-tbody {
+*/
+tbody.tweet {
   overflow-x: hidden;
   overflow-y: scroll;
   height: 500px;
   display: block;
   table-layout:fixed;
 }
+
 span_old {
   position: absolute;
   color:white;
@@ -155,3 +158,18 @@ p#about {
 #datatip p {
   font-size: 14px;
 }
+
+/*
+.datepicker,
+.table-condensed {
+  width: 170px;
+  height:220px;
+}
+
+
+.ui-datepicker
+{
+    width: 12em;
+    height: 12em;
+}
+*/

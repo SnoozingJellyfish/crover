@@ -149,7 +149,7 @@ var nega_tweet_init = eval({{ nega_tweet|tojson }});
         <!-- ポジティブツイート -->
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="positive-tab">
             <table class="table table-striped">
-                <tbody>
+                <tbody class="tweet">
                     <template v-for="t in tweets.positive.tweet">
                         <tr>
                             <td>{{ t }}</td>
@@ -167,7 +167,7 @@ var nega_tweet_init = eval({{ nega_tweet|tojson }});
         <!-- ニュートラルツイート -->
         <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="neutral-tab">
             <table class="table table-striped">
-                <tbody>
+                <tbody class="tweet">
                     <template v-for="t in tweets.neutral.tweet">
                         <tr>
                             <td>{{ t }}</td>
@@ -185,7 +185,7 @@ var nega_tweet_init = eval({{ nega_tweet|tojson }});
         <!-- ネガティブツイート -->
         <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="negative-tab">
             <table class="table table-striped">
-                <tbody>
+                <tbody class="tweet">
                     <template v-for="t in tweets.negative.tweet">
                         <tr>
                             <td>{{ t }}</td>

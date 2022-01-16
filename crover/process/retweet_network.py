@@ -13,8 +13,10 @@ from crover.process.preprocess import scrape_retweet, get_retweet_author, tokeni
     noun_count, word_count_rate
 from crover.process.clustering import make_word_cloud
 from crover.process.util import download_from_cloud
+
 if LOCAL_ENV:
     from crover import dict_all_count
+
     plt.rcParams['font.family'] = 'Hiragino Sans GB'
 else:
     plt.rcParams['font.family'] = 'IPAPGothic'
@@ -26,33 +28,52 @@ def analyze_network():
     keyword = '紅白'
     sim_thre = 0.03
 
-    #リツイートを取得する
-    #retweet = scrape_retweet(keyword)
+    # リツイートを取得する
+    # retweet = scrape_retweet(keyword)
 
-    #リツイートしたユーザーを取得する
-    #retweet = get_retweet_author(retweet)
+    # リツイートしたユーザーを取得する
+    # retweet = get_retweet_author(retweet)
 
     # debug
     import pickle
-    #with open(f'crover/data/retweet_{keyword}_all2.pickle', 'wb') as f:
-        #pickle.dump(retweet, f)
+    # with open(f'crover/data/retweet_{keyword}_all2.pickle', 'wb') as f:
+    # pickle.dump(retweet, f)
     with open(f'crover/data/retweet_{keyword}_all2.pickle', 'rb') as f:
         retweet = pickle.load(f)
 
     # リツイート間のユーザー類似度を算出する
     edge = author_similarity(retweet, sim_thre)
 
-    #閾値以上の類似度のユーザー間を繋いだグラフを作る
+    # 閾値以上の類似度のユーザー間を繋いだグラフを作る
     g, cmap_idx = sim_graph(edge, retweet)
 
     # d3.jsでグラフを描画するためのjson用dictを作る
     graph_dict = make_graph_dict(edge, retweet, cmap_idx)
 
-    # TODO: 頻出単語のワードクラウドを作成する
-    group_num = max(cmap_idx)+1
+    # 頻出単語のワードクラウドを作成する
+    group_num = max(cmap_idx) + 1
     word_clouds_figure = make_word_cloud_node(keyword, retweet, group_num)
 
-    return graph_dict, word_clouds_figure
+    # TODO: 収集済みリツイートのキーワードと日付を取得する
+
+
+
+    # 収集済みリツイートキーワード
+    re_keyword = {'keyword': ['コロナ', '紅白'],
+                  'default_start_date': ['2022/01/08', '2022/12/29'],
+                  'limit_start_date': ['2022/01/01', '2021/12/24'],
+                  'limit_end_date': ['2022/01/15', '2022/01/05']}
+    '''
+    re_keyword = {'コロナ': {'default_start_date': '2022/01/08',
+                          'limit_start_date': '2022/01/01',
+                          'limit_end_date': '2022/01/15'},
+                  '紅白': {'default_start_date': '2022/12/29',
+                         'limit_start_date': '2021/12/24',
+                         'limit_end_date': '2022/01/05'}}
+    '''
+
+    return graph_dict, word_clouds_figure, re_keyword
+
 
 # リツイート間のユーザー類似度を算出する
 def author_similarity(retweet, sim_thre=0.03):
@@ -63,7 +84,7 @@ def author_similarity(retweet, sim_thre=0.03):
         author1 = retweet[i]['re_author']
         # 多すぎて収集できなかったツイート分を補正
         correct1 = np.sqrt(retweet[i]['count'] / len(author1))
-        for j in range(i+1, re_len):
+        for j in range(i + 1, re_len):
             author2 = retweet[j]['re_author']
             # 多すぎて収集できなかったツイート分を補正
             correct2 = np.sqrt(retweet[j]['count'] / len(author2))
@@ -74,6 +95,7 @@ def author_similarity(retweet, sim_thre=0.03):
 
     edge = list(zip(*np.where(mat > sim_thre)))
     return edge
+
 
 # 閾値以上の類似度のユーザー間を繋いだグラフを作る
 def sim_graph(edge, retweet, level=3):
@@ -95,17 +117,18 @@ def sim_graph(edge, retweet, level=3):
         for i, s in enumerate(communities[level]):
             if node in s:
                 cmap_idx.append(i)
-                #cmap.append(color[i])
+                # cmap.append(color[i])
 
     pos = nx.spring_layout(G, k=0.9)
-    #nx.draw_networkx(G, pos)
+    # nx.draw_networkx(G, pos)
     black_edges = list(G.edges())
     node_size = [d["count"] // 20 for (n, d) in G.nodes(data=True)]
-    #nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=cmap)
+    # nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=cmap)
     nx.draw_networkx_edges(G, pos, edgelist=black_edges, width=0.2)
     nx.draw_networkx_labels(G, pos)
 
     return G, cmap_idx
+
 
 # d3.jsでグラフを描画するためのjson用dictを作る
 def make_graph_dict(edge, retweet, cmap_idx):
@@ -133,9 +156,9 @@ def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
 
     for r in retweet:
         word_count_cluster[-1], _ = noun_count(r['text'], word_count_cluster[-1],
-                                                    tokenizer_obj, mode, keyword)
+                                               tokenizer_obj, mode, keyword)
         word_count_cluster[r['group']], _ = noun_count(r['text'], word_count_cluster[r['group']],
-                                                    tokenizer_obj, mode, keyword)
+                                                       tokenizer_obj, mode, keyword)
 
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
@@ -146,13 +169,12 @@ def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
         from crover import dict_all_count
 
     word_count_rate_cluster = []
-    for i in range(group_num+1):
+    for i in range(group_num + 1):
         word_count_rate_cluster.append(word_count_rate(word_count_cluster[i],
                                                        dict_all_count, word_num_in_cloud=20,
                                                        max_tweets=len(retweet),
                                                        thre_word_count_rate=0,
                                                        ignore_word_count=0))
-
 
     colormaps = ['Blues', 'Oranges', 'Greens', 'Reds', 'Purples', 'copper', 'pink', 'bone', 'YlGn', 'BuGn']
     word_clouds_figure = make_word_cloud(word_count_rate_cluster[:-1], colormaps=colormaps)

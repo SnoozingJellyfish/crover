@@ -5,20 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>crover</title>
     <link rel="crover logo icon" href="favicon.ico">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" type= "text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" type="text/css">
 
     <!-- Vue -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
 
     <!-- d3.js for network graph visualization -->
     <script src="https://d3js.org/d3.v4.min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <!-- bootstrap-datepickerを読み込む -->
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='bootstrap-datepicker-1.9.0-dist/css/bootstrap-datepicker.min.css') }}">
+    <script type="text/javascript"
+            src="{{ url_for('static', filename='bootstrap-datepicker-1.9.0-dist/js/bootstrap-datepicker.min.js') }}"></script>
+    <script type="text/javascript"
+            src="{{ url_for('static', filename='bootstrap-datepicker-1.9.0-dist/locales/bootstrap-datepicker.ja.min.js') }}"></script>
+
 </head>
-
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
-
 
 
 <link href="https://fonts.googleapis.com/earlyaccess/mplus1p.css" rel="stylesheet" type="text/css">
@@ -37,6 +45,8 @@
   $(function () {
   $('[data-toggle="tooltip"]').tooltip()
 })
+
+
 </script>
 
 <script type="text/javascript">
@@ -51,6 +61,8 @@ function spinner() {
     // スクロール禁止(PC)
     document.addEventListener('mousewheel', noScroll, { passive: false });
 }
+
+
 </script>
 
 <body>
@@ -87,7 +99,8 @@ function spinner() {
             <br>
             <font size="6px">License</font>
             <br>
-            関連ワードの分割に<a href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
+            関連ワードの分割に<a
+                href="http://www.cl.ecei.tohoku.ac.jp/~m-suzuki/jawiki_vector/">WikiEntVec（鈴木正敏、2019年/CC-BY-SA）</a>のword2vecを使用
 
         </p>
     </div>
@@ -103,21 +116,22 @@ function spinner() {
                 <img src="../static/figure/crover_logo_Helvetica_w_trans.png" width="100">
                 {% endif %}
             </a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class ="navbar-nav mr-auto">
+                <ul class="navbar-nav mr-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
                     </li>
                     <!-- network graph -->
-                    <!--
+
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('view.network') }}">Network</a>
                     </li>
-                    -->
+
                     {% if already_sess == 'true' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('view.word_clustring', depth=depth) }}">Analysis</a>
@@ -127,9 +141,13 @@ function spinner() {
 
                 {% if home_page != 'true' %}
                 <!-- 検索フォーム -->
-                <form class="form-inline" action ="{{ url_for('view.collect_tweets') }}" method=post>
-                    <input type="text" class="form-control ml-2 form_radius" style="border-radius: 10px" id="InputWord" name=keyword placeholder="キーワード" pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　#]+" required value={{keyword}} >
-                    <select class="form-control ml-2 form_radius" style="border-radius: 10px" id ="TweetNum" name=tweet_num>
+                <form class="form-inline" action="{{ url_for('view.collect_tweets') }}" method=post>
+                    <input type="text" class="form-control ml-2 form_radius" style="border-radius: 10px" id="InputWord"
+                           name=keyword placeholder="キーワード"
+                           pattern="[0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）\-%％「」, 　#]+"
+                           required value={{keyword}}>
+                    <select class="form-control ml-2 form_radius" style="border-radius: 10px" id="TweetNum"
+                            name=tweet_num>
                         {% if tweet_num == 500 %}
                         <option selected>500</option>
                         <option>1000</option>
@@ -150,7 +168,9 @@ function spinner() {
                     </select>
                     <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
 
-                    <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius" style="border-radius: 10px" onclick="spinner()">検索</button>
+                    <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius"
+                            style="border-radius: 10px" onclick="spinner()">検索
+                    </button>
 
                 </form>
                 {% endif %}
