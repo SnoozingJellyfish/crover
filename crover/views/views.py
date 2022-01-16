@@ -26,9 +26,6 @@ sess_info = {}  # global variable containing recent session information
 
 @view.route('/')
 def home():
-    # develop: リツイートデータをdatastoreにアップロード
-    datastore_upload_retweet()
-
     trend = get_trend()
     logger.info(trend)
     return render_template('index.html', home_page='true', trend=trend)  # ナビゲーションバーなし
@@ -41,6 +38,9 @@ def non_existant_route(error):
 
 @view.route('/about')
 def about():
+    # develop: リツイートデータをdatastoreにアップロード
+    datastore_upload_retweet()
+    
     global sess_info
     if session.get('searched_at') and sess_info.get(session['searched_at'], {}).get('depth') != None:
         already_sess = 'true'
