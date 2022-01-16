@@ -1,3 +1,9 @@
+/* retweet_network.htmlに移動させる
+var graph = eval({{graph_json|tojson}});
+var word_cloud = eval({{ word_clouds_part|tojson }});
+console.log(word_cloud);
+*/
+
 //カーソルを合わせたときに表示する情報領域
 var datatip = d3.select("#datatip");
 
