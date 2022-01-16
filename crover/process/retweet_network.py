@@ -54,8 +54,8 @@ def get_retweet_keyword():
             date = date_entity.key.name
             date_int.append(int(date.replace('/', '')))
 
-        start_date = date_entities[np.argmin(date_int)]
-        end_date = date_entities[np.argmax(date_int)]
+        start_date = date_entities[np.argmin(date_int)].key.name
+        end_date = date_entities[np.argmax(date_int)].key.name
         start_date_dt = datetime.datetime.strptime(start_date, '%Y/%m/%d')
         end_date_dt = datetime.datetime.strptime(end_date, '%Y/%m/%d')
         td = end_date_dt - start_date_dt
