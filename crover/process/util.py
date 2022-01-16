@@ -149,7 +149,7 @@ def datastore_upload_retweet():
         for d in retweet_info[keyword].keys():
             logger.info(f'date: {d}')
             #date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key.id))
-            date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity))
+            date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key))
             date_entity.update({'date': d})
             date_entities.append(date_entity)
 
@@ -165,7 +165,7 @@ def datastore_upload_retweet():
             for t in retweet_info[keyword][date].keys():
                 logger.info(f'tweet: {t}')
                 #tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key.id))
-                tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity))
+                tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key))
                 tweet_entity.update({'tweet': t, 're_author': retweet_info[keyword][date][t]})
                 tweet_entities.append(tweet_entity)
 
