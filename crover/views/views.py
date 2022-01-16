@@ -40,7 +40,7 @@ def non_existant_route(error):
 def about():
     # develop: リツイートデータをdatastoreにアップロード
     datastore_upload_retweet()
-    
+
     global sess_info
     if session.get('searched_at') and sess_info.get(session['searched_at'], {}).get('depth') != None:
         already_sess = 'true'
