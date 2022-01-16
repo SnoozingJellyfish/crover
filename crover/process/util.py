@@ -124,6 +124,7 @@ def datastore_upload_retweet():
                                  'テスト-地震3': [1, 2, 3, 4]}}}
 
     keyword_kind = "retweet_keyword"
+    '''
     keyword_entities = []
     # リツイートのキーワードをアップロード
     for k in retweet_info.keys():
@@ -133,6 +134,7 @@ def datastore_upload_retweet():
         keyword_entities.append(keyword_entity)
 
     client.put_multi(keyword_entities)
+    '''
 
     tweet_kind = 'retweeted_tweet'
 
@@ -146,7 +148,8 @@ def datastore_upload_retweet():
         date_entities = []
         for d in retweet_info[keyword].keys():
             logger.info(f'date: {d}')
-            date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key.id))
+            #date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity.key.id))
+            date_entity = datastore.Entity(client.key(date_kind, parent=keyword_entity))
             date_entity.update({'date': d})
             date_entities.append(date_entity)
 
@@ -161,7 +164,8 @@ def datastore_upload_retweet():
             tweet_entities = []
             for t in retweet_info[keyword][date].keys():
                 logger.info(f'tweet: {t}')
-                tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key.id))
+                #tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity.key.id))
+                tweet_entity = datastore.Entity(client.key(tweet_kind, parent=date_entity))
                 tweet_entity.update({'tweet': t, 're_author': retweet_info[keyword][date][t]})
                 tweet_entities.append(tweet_entity)
 
