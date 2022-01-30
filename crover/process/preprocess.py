@@ -580,7 +580,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=100, thre_retweet
                         f"cannot search '{r['text']}'")
             continue
 
-        r['re_author'] = np.empty(0, dtype=int)
+        r['re_author'] = []
         k = 0
 
         try:
@@ -605,7 +605,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=100, thre_retweet
 
                 #for res in result['data']:
                 for res in result['statuses']:
-                    r['re_author'] = np.append(r['re_author'], res['user']['id'])
+                    r['re_author'].append(res['user']['id'])
 
                 #if 'next_token' in result['meta']:
                     #next_token_id = result['meta']['next_token']
