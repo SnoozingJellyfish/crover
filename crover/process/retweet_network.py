@@ -24,8 +24,23 @@ else:
 
 logger = logging.getLogger(__name__)
 
+KEYWORD_KIND = "retweet_keyword"
+DATE_KIND = "retweeted_date"
+TWEET_KIND = 'retweeted_tweet'
+
 
 def get_retweet_keyword():
+    '''
+    # debug
+    # 収集済みリツイートキーワード
+    re_keyword = {'keyword': ['コロナ', '紅白'],
+                  'default_start_date': ['2022/01/08', '2022/12/29'],
+                  'limit_start_date': ['2022/01/01', '2021/12/24'],
+                  'limit_end_date': ['2022/01/15', '2022/01/05']}
+    return re_keyword
+    ###
+    '''
+
     client = datastore.Client()
     logger.info('get retweet keyword and date')
 
@@ -34,23 +49,19 @@ def get_retweet_keyword():
                   'limit_start_date': [],
                   'limit_end_date': []}
 
-    keyword_kind = "retweet_keyword"
-    date_kind = 'retweeted_date'
-    query = client.query(kind=keyword_kind)
-    keyword_entities = list(query.fetch())
+    keyword_query = client.query(kind=KEYWORD_KIND)
+    keyword_entities = list(keyword_query.fetch())
 
     for keyword_entity in keyword_entities:
-        # keyword = keyword_entity["keyword"]
         keyword = keyword_entity.key.name
         re_keyword['keyword'].append(keyword)
         logger.info(f'date of retweet keyword- {keyword}')
 
         # リツイートされたツイートとリツイートした人をアップロード
-        query = client.query(kind=date_kind, ancestor=keyword_entity.key)
-        date_entities = list(query.fetch())
+        date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
+        date_entities = list(date_query.fetch())
         date_int = []
-        for i, date_entity in enumerate(date_entities):
-            # date = date_entity['date']
+        for date_entity in date_entities:
             date = date_entity.key.name
             date_int.append(int(date.replace('/', '')))
 
@@ -59,6 +70,8 @@ def get_retweet_keyword():
         start_date_dt = datetime.datetime.strptime(start_date, '%Y/%m/%d')
         end_date_dt = datetime.datetime.strptime(end_date, '%Y/%m/%d')
         td = end_date_dt - start_date_dt
+        # 一番最近の収集日から7日前をデフォルト開始日とする
+        # 一番古い収集日がデフォルト開始日より遅い場合はデフォルト開始日を一番古い収集日とする
         if td.days > 7:
             default_start_date_dt = end_date_dt - datetime.timedelta(days=7)
         else:
@@ -73,7 +86,8 @@ def get_retweet_keyword():
     return re_keyword
 
 
-def analyze_network():
+def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
+    '''
     keyword = '紅白'
     sim_thre = 0.03
 
@@ -89,6 +103,46 @@ def analyze_network():
     # pickle.dump(retweet, f)
     with open(f'crover/data/retweet_{keyword}_all2.pickle', 'rb') as f:
         retweet = pickle.load(f)
+    '''
+
+    logger.info('analyze network')
+    start_date = int(start_date.replace('/', ''))
+    end_date = int(end_date.replace('/', ''))
+
+    retweet_dict = {}
+
+    # datastoreからリツイートを取得する
+    client = datastore.Client()
+    keyword_entity = client.get(client.key(KEYWORD_KIND, keyword))
+
+    # リツイートされたツイートとリツイートした人をダウンロード
+    date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
+    date_entities = list(date_query.fetch())
+    for date_entity in date_entities:
+        date = int(date_entity.key.name.replace('/', ''))
+
+        # 範囲外の日付の場合はスキップ
+        if date < start_date or date > end_date:
+            continue
+
+        tweet_query = client.query(kind=TWEET_KIND, ancestor=date_entity.key)
+        tweet_entities = list(tweet_query.fetch())
+
+        for tweet_entity in tweet_entities:
+            tweet_id_str = str(tweet_entity['tweet_id'])
+            if tweet_id_str in retweet_dict:
+                retweet_elem = retweet_dict[tweet_id_str]
+                retweet_elem['count'] += tweet_entity['count']
+                retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
+                                                       np.array(tweet_entity['re_author'])))
+            else:
+                retweet_dict[tweet_id_str] = {'tweet_id': tweet_entity['tweet_id'],
+                                          'author': tweet_entity['author'],
+                                          'text': tweet_entity['text'],
+                                          'count': tweet_entity['count'],
+                                          're_author': tweet_entity['re_author']}
+
+    retweet = list(retweet_dict.values())
 
     # リツイート間のユーザー類似度を算出する
     edge = author_similarity(retweet, sim_thre)
@@ -102,24 +156,9 @@ def analyze_network():
     # 頻出単語のワードクラウドを作成する
     group_num = max(cmap_idx) + 1
     word_clouds_figure = make_word_cloud_node(keyword, retweet, group_num)
+    graph = {'graph_dict': graph_dict, 'word_cloud': word_clouds_figure}
 
-    # TODO: 収集済みリツイートのキーワードと日付を取得する
-
-    # 収集済みリツイートキーワード
-    re_keyword = {'keyword': ['コロナ', '紅白'],
-                  'default_start_date': ['2022/01/08', '2022/12/29'],
-                  'limit_start_date': ['2022/01/01', '2021/12/24'],
-                  'limit_end_date': ['2022/01/15', '2022/01/05']}
-    '''
-    re_keyword = {'コロナ': {'default_start_date': '2022/01/08',
-                          'limit_start_date': '2022/01/01',
-                          'limit_end_date': '2022/01/15'},
-                  '紅白': {'default_start_date': '2022/12/29',
-                         'limit_start_date': '2021/12/24',
-                         'limit_end_date': '2022/01/05'}}
-    '''
-
-    return graph_dict, word_clouds_figure, re_keyword
+    return graph
 
 
 # リツイート間のユーザー類似度を算出する

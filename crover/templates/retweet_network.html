@@ -26,15 +26,15 @@
 
             <br>
             <div style="text-align: center">
-                <button type="submit" class="btn btn-primary col-4 mb-3 ml-1 mr-1" style="border-radius: 10px"
-                        name=act_network onclick="spinner()">実行
+                <button class="btn btn-primary col-4 mb-3 ml-1 mr-1" style="border-radius: 10px"
+                        name="show_network" id="show_network">実行
                 </button>
                 <button class="btn btn-info rounded-circle mb-3 ml-1 mr-1" name=network_help"><b>?</b></button>
             </div>
         </div>
 
         <div class="col-md-6 col-12">
-            <div style="text-align: center">
+            <div style="text-align: center" id="network_graph">
                 <br><br><br>
                 <svg width="300" height="300" class="img-fluid border_radius" style="background-color:#eee"></svg>
             </div>
@@ -47,18 +47,16 @@
                 </label>
                 <br>
                 <!-- デフォルトは無色 -->
-                <img id="wc_img" src="data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
+                <img id="wc_img_group" src="data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
                      class="img-fluid img-shadow border_radius mb-2" width="250" height="250" border="0">
                 <br>
                 <label>
                     <font size="4" color="#404040">全体ワード</font>
                 </label>
                 <br>
-                <!--
-                <img src={{word_clouds_all}} class="img-fluid img-shadow border_radius" width="250"
+                <img id="wc_img_all" src="data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
+                    class="img-fluid img-shadow border_radius" width="250"
                      height="250"><br>
-                -->
-
             </div>
         </div>
     </div>

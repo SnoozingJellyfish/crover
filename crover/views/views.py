@@ -261,16 +261,19 @@ def load_tweet(emotion, tweet_start_cnt):
 
     return jsonify(add_data)
 
-@view.route('/network', methods=['GET'])
-def network():
-    # TODO: リツイートのネットワーク分析（暫定）
-    #graph_dict, word_clouds, re_keyword = analyze_network()
+# 収集済みリツイートキーワードを取得
+@view.route('/network_keyword', methods=['GET'])
+def network_keyword():
     re_keyword = get_retweet_keyword()
 
     return render_template('retweet_network.html', re_keyword=re_keyword)
-    '''
-    return render_template('retweet_network.html', graph_json=graph_dict,
-                           word_clouds_all=word_clouds[-1],
-                           word_clouds_part=word_clouds[:-1],
-                           re_keyword=re_keyword)
-    '''
+
+
+# 選択されたキーワード、開始日、終了日からネットワークを生成する
+@view.route('/ajax_show_network', methods=['POST'])
+def show_network():
+    keyword = request.form['keyword']
+    start_date = request.form['start_date']
+    end_date = request.form['end_date']
+    graph = analyze_network(keyword, start_date, end_date)
+    return jsonify(graph)

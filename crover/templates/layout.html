@@ -129,7 +129,7 @@ function spinner() {
                     <!-- network graph -->
 
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view.network') }}">Network</a>
+                        <a class="nav-link" href="{{ url_for('view.network_keyword') }}">Network</a>
                     </li>
 
                     {% if already_sess == 'true' %}
@@ -187,7 +187,7 @@ function spinner() {
 </div>
 
 <script src="{{ url_for('static', filename='load_tweet.js') }}"></script>
-<!--<script src="{{ url_for('static', filename='visualize_network.js') }}"></script>-->
+<script src="{{ url_for('static', filename='visualize_network.js') }}"></script>
 <!--<script src="{{ url_for('static', filename='visualize_network_tmp.js') }}"></script>-->
 
 </body>
