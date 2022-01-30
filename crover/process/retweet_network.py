@@ -316,3 +316,4 @@ def datastore_upload_retweet(keyword, date, retweet_info):
 
     if len(tweet_entities) > 0:
         client.put_multi(tweet_entities)
+
