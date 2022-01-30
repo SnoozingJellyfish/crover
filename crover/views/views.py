@@ -303,4 +303,4 @@ def run_collect_retweet_job():
         # リツイートしたユーザーを取得する
         retweet = get_retweet_author(retweet, since_date)
         # リツイート情報をdatastoreに保存する
-        datastore_upload_retweet(keyword, today, retweet)
+        datastore_upload_retweet(k, today, retweet)
