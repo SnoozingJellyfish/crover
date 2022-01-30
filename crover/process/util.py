@@ -3,6 +3,7 @@ import pickle
 from io import BytesIO
 import logging
 import json
+import datetime as dt
 
 import numpy as np
 from google.cloud import storage
@@ -103,8 +104,8 @@ def datastore_upload_wv(split, up_vec_num):
             client.put_multi(entities)
 
 
-# datastore upload retweet_info
-def datastore_upload_retweet():
+# datastore upload retweet_info by manual
+def datastore_upload_retweet_manual():
     retweet_info = {'テスト-コロナ':
                            {'2022/01/01':
                                 [{'tweet_id': 0,
@@ -217,4 +218,52 @@ def datastore_upload_retweet():
 
             if len(tweet_entities) > 0:
                 client.put_multi(tweet_entities)
+
+
+def make_retweet_list(keyword, start_date, end_date):
+    retweet_dict = {}
+    with open('crover/data/test_retweet_info.json', 'r') as f:
+        retweet_info = json.load(f)
+
+    for date_str in retweet_info[keyword].keys():
+        date = int(date_str.replace('/', ''))
+
+        # 範囲外の日付の場合はスキップ
+        if date < start_date or date > end_date:
+            continue
+
+        for tweet_info in retweet_info[keyword][date_str]:
+            tweet_id_str = str(tweet_info['tweet_id'])
+            if tweet_id_str in retweet_dict:
+                retweet_elem = retweet_dict[tweet_id_str]
+                retweet_elem['count'] = max((retweet_elem['count'], tweet_info['count']))
+                retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
+                                                       np.array(tweet_info['re_author'])))
+            else:
+                retweet_dict[tweet_id_str] = {'tweet_id': tweet_info['tweet_id'],
+                                              'author': tweet_info['author'],
+                                              'text': tweet_info['text'],
+                                              'count': tweet_info['count'],
+                                              're_author': tweet_info['re_author']}
+
+    return retweet_dict
+
+
+# cloud schedulerのjobを模擬
+def test_run_collect_retweet_job():
+    from crover.process.preprocess import scrape_retweet, get_retweet_author
+
+    keyword = ['コロナ']
+
+    jst_delta = dt.timedelta(hours=9)
+    JST = dt.timezone(jst_delta, 'JST')
+    yesterday_dt = dt.datetime.now(JST) - dt.timedelta(days=1)
+    since_date = yesterday_dt.strftime('%Y-%m-%d')
+    for k in keyword:
+        # リツイートを取得する
+        retweet = scrape_retweet(k)
+        # リツイートしたユーザーを取得する
+        retweet = get_retweet_author(retweet, since_date)
+        pass
+
 

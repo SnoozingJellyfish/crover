@@ -15,7 +15,7 @@ from crover import LOCAL_ENV
 from crover.process.preprocess import scrape_retweet, get_retweet_author, tokenizer, suda_dict, \
     noun_count, word_count_rate
 from crover.process.clustering import make_word_cloud
-from crover.process.util import download_from_cloud
+from crover.process.util import download_from_cloud, make_retweet_list
 
 if LOCAL_ENV:
     from crover import dict_all_count
@@ -88,6 +88,7 @@ def get_retweet_keyword():
 
     return re_keyword
 
+
 # datastoreからリツイートを取得しネットワークを生成する
 def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
     '''
@@ -146,33 +147,9 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
                                           'count': tweet_entity['count'],
                                           're_author': tweet_entity['re_author']}
 
-    '''
     # debug
-    with open('crover/data/test_retweet_info.json', 'r') as f:
-        retweet_info = json.load(f)
+    #retweet_dict = make_retweet_list(keyword, start_date, end_date)
 
-    for date_str in retweet_info[keyword].keys():
-        date = int(date_str.replace('/', ''))
-
-        # 範囲外の日付の場合はスキップ
-        if date < start_date or date > end_date:
-            continue
-
-        for tweet_info in retweet_info[keyword][date_str]:
-            tweet_id_str = str(tweet_info['tweet_id'])
-            if tweet_id_str in retweet_dict:
-                retweet_elem = retweet_dict[tweet_id_str]
-                retweet_elem['count'] = max((retweet_elem['count'], tweet_info['count']))
-                retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
-                                                       np.array(tweet_info['re_author'])))
-            else:
-                retweet_dict[tweet_id_str] = {'tweet_id': tweet_info['tweet_id'],
-                                              'author': tweet_info['author'],
-                                              'text': tweet_info['text'],
-                                              'count': tweet_info['count'],
-                                              're_author': tweet_info['re_author']}
-    #####
-    '''
     retweet = list(retweet_dict.values())
 
     # リツイート間のユーザー類似度を算出する
@@ -304,3 +281,38 @@ def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
     word_clouds_figure.append(make_word_cloud([word_count_rate_cluster[-1]], colormaps=['Greys'])[0])
 
     return word_clouds_figure
+
+
+# Cloud Scheduler: datastore upload retweet_info
+def datastore_upload_retweet(keyword, date, retweet_info):
+    client = datastore.Client()
+    logger.info('start upload retweet info')
+
+    # リツイートのキーワードをアップロード
+    logger.info(f'retweet keyword: {keyword}')
+    keyword_entity = datastore.Entity(client.key(KEYWORD_KIND, keyword))
+    client.put(keyword_entity)
+
+    # リツイートした日付をアップロード
+    keyword_entity = client.get(client.key(KEYWORD_KIND, keyword))
+    logger.info(f'date: {date}')
+    date_entity = datastore.Entity(client.key(DATE_KIND, date, parent=keyword_entity.key))
+    client.put(date_entity)
+
+    # リツイートされたツイートとリツイートした人をアップロード
+    date_entity = client.get(client.key(DATE_KIND, date, parent=keyword_entity.key))
+    logger.info(f'tweet of retweeted date- {date}')
+    tweet_entities = []
+    tweet_query = client.query(kind=TWEET_KIND, ancestor=date_entity.key)
+    tweet_entities_old = list(tweet_query.fetch())
+    tweet_id_old = [t_o['tweet_id'] for t_o in tweet_entities_old]
+
+    for t in retweet_info:
+        if t['tweet_id'] not in tweet_id_old:
+            logger.info(f'tweet: {t["text"]}')
+            tweet_entity = datastore.Entity(client.key(TWEET_KIND, parent=date_entity.key))
+            tweet_entity.update(t)
+            tweet_entities.append(tweet_entity)
+
+    if len(tweet_entities) > 0:
+        client.put_multi(tweet_entities)

@@ -103,20 +103,25 @@ def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 # リツイートを取得
-def create_url_retweet_user(tweet, next_token_id=None, max_results=100):
+def create_url_retweet_author(tweet, since_date=None, next_token_id=None, max_results=100):
     #url = f'https://api.twitter.com/1.1/statuses/retweeters/ids.json?id={tweet_id}&cursor={cursor}'
-    query = f'query="{tweet}" is:retweet -is:reply'  # retweet
-    tweet_fields = "tweet.fields=author_id"
-    mrf = "max_results={}".format(max_results)
+    #query = f'query="{tweet}" is:retweet -is:reply since:{since_date}_00:00:00_JST'  # retweet
+    #query = f'query="{tweet}" is:retweet -is:reply'  # retweet
+    #tweet_fields = "tweet.fields=author_id"
+    #mrf = "max_results={}".format(max_results)
+    #since = f"until={since_date}"
     if next_token_id:
-        next_token = 'next_token=' + next_token_id
-        url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
-            query, tweet_fields, mrf, next_token
-        )
+        #next_token = 'next_token=' + next_token_id
+        #url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
+            #query, tweet_fields, mrf, next_token
+        #)
+        url = f'https://api.twitter.com/1.1/search/tweets.json{next_token_id}'  # v1.1
     else:
-        url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}".format(
-            query, tweet_fields, mrf
-        )
+        #url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
+            #query, tweet_fields, mrf, since
+        #)
+        query = f'"{tweet}" since:{since_date}_00:00:00_JST'  # retweet
+        url = f'https://api.twitter.com/1.1/search/tweets.json?q={query}&count={max_results}'
 
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
@@ -518,13 +523,14 @@ def scrape_retweet(keyword, max_tweets=1000):
             else:
                 past_tweets.append(tweet_no_URL)
 
-            retweet.append({'id': str(res['id']), 'author': res['user']['name'],
+            retweet.append({'tweet_id': res['id'], 'author': res['user']['name'],
                             'text': tweet_no_URL, 'count': res["retweet_count"]})
             logger.info(f'retweet_count: {res["retweet_count"]}, {res["created_at"]}')
 
         next_results = result['search_metadata']['next_results']
 
     return retweet
+
 
 # Twitter APIでツイートで検索するため名詞まで抽出
 def stop_noun(text, tokenizer_obj, mode):
@@ -543,7 +549,7 @@ def stop_noun(text, tokenizer_obj, mode):
 
 
 # リツイートしたユーザーIDを取得する
-def get_retweet_author(retweet, max_scrape_retweet=1500, thre_retweet_cnt=500):
+def get_retweet_author(retweet, since_date, max_scrape_retweet=100, thre_retweet_cnt=50):
     logger.info('get retweet user\n')
     max_trial = 30
     tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
@@ -553,6 +559,10 @@ def get_retweet_author(retweet, max_scrape_retweet=1500, thre_retweet_cnt=500):
 
     retweet_OK = []
     for i, r in enumerate(retweet):
+        # debug
+        if i > 10:
+            break
+
         headers = create_headers()
         logger.info(f"{i+1} / {len(retweet)}, retweet count: {r['count']}")
         t = r['text']
@@ -578,23 +588,30 @@ def get_retweet_author(retweet, max_scrape_retweet=1500, thre_retweet_cnt=500):
                 if k > max_scrape_retweet // 100:
                     break
 
-                url = create_url_retweet_user(t, next_token_id)
-                result = connect_to_endpoint(url, headers)
+                url = create_url_retweet_author(t, since_date, next_token_id)
+                #result = connect_to_endpoint(url, headers)
 
-                if 'data' in result:
+                #if 'data' in result:
+                try:
+                    result = connect_to_endpoint(url, headers)
                     k += 1
-                else:
+                #else:
+                except:
                     t = stop_noun(t, tokenizer_obj, mode)
                     if t == ' ' or len(t) < 3:
                         break
                     else:
                         continue
 
-                for res in result['data']:
-                    r['re_author'] = np.append(r['re_author'], int(res['author_id']))
+                #for res in result['data']:
+                for res in result['statuses']:
+                    r['re_author'] = np.append(r['re_author'], res['user']['id'])
 
-                if 'next_token' in result['meta']:
-                    next_token_id = result['meta']['next_token']
+                #if 'next_token' in result['meta']:
+                    #next_token_id = result['meta']['next_token']
+                # これ以上リツイートがない場合
+                if 'next_results' in result['search_metadata']:
+                    next_token_id = result['search_metadata']['next_results']
                 else:
                     break
 

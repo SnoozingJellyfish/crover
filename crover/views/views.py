@@ -1,7 +1,8 @@
 import os
 import copy
 import logging
-from datetime import datetime, timedelta
+import datetime as dt
+#from datetime import datetime, timedelta
 import traceback
 
 from flask import request, redirect, url_for, render_template, session, jsonify
@@ -9,11 +10,13 @@ from flask import current_app as app
 from flask import Blueprint
 
 from crover import LOCAL_ENV
-from crover.process.preprocess import get_trend, preprocess_all, make_top_word2vec_dic, make_part_word2vec_dic, make_top_word2vec_dic_datastore
+from crover.process.preprocess import get_trend, preprocess_all, make_top_word2vec_dic, \
+    make_part_word2vec_dic, make_top_word2vec_dic_datastore,\
+    scrape_retweet, get_retweet_author
 from crover.process.clustering import clustering, make_word_cloud
 from crover.process.emotion_analyze import emotion_analyze_all
-from crover.process.retweet_network import analyze_network, get_retweet_keyword
-from crover.process.util import datastore_upload_wv, datastore_upload_retweet
+from crover.process.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet
+from crover.process.util import datastore_upload_wv, datastore_upload_retweet_manual, test_run_collect_retweet_job
 
 view = Blueprint('view', __name__)
 logger = logging.getLogger(__name__)
@@ -39,7 +42,8 @@ def non_existant_route(error):
 @view.route('/about')
 def about():
     # develop: リツイートデータをdatastoreにアップロード
-    datastore_upload_retweet()
+    #datastore_upload_retweet()
+    test_run_collect_retweet_job()
 
     global sess_info
     if session.get('searched_at') and sess_info.get(session['searched_at'], {}).get('depth') != None:
@@ -56,14 +60,14 @@ def collect_tweets():
 
     # ツイートを取得しワード数をカウントする
     session.permanent = True
-    app.permanent_session_lifetime = timedelta(minutes=5)
+    app.permanent_session_lifetime = dt.timedelta(minutes=5)
 
     # ユーザーの直前のセッションの情報を削除
     if 'searched_at' in session and session['searched_at'] in sess_info:
         del sess_info[session['searched_at']]
 
     # セッションを区別するタイムスタンプを設定
-    session['searched_at'] = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    session['searched_at'] = dt.datetime.now().strftime('%Y%m%d_%H%M%S_%f')
     logger.info(session['searched_at'])
     searched_at_list = list(sess_info.keys())
     logger.info('count of remembered session: ' + str(len(searched_at_list)))
@@ -277,3 +281,26 @@ def show_network():
     end_date = request.form['end_date']
     graph = analyze_network(keyword, start_date, end_date)
     return jsonify(graph)
+
+
+# Cloud Schedulerで1日ごとにリツイートを収集しdatastoreに保存する
+@view.route('/run_collect_retweet_job', methods=['POST'])
+def run_collect_retweet_job():
+    logger.info('running collect retweet scheduler')
+    keyword = request.get_data(as_text=True).split(',')
+    logger.info(f'keyword: {str(keyword)}')
+
+    jst_delta = dt.timedelta(hours=9)
+    JST = dt.timezone(jst_delta, 'JST')
+    today_dt = dt.datetime.now(JST)
+    today = today_dt.strftime('%Y/%m/%d')
+    yesterday_dt = dt.datetime.now(JST) - dt.timedelta(days=1)
+    since_date = yesterday_dt.strftime('%Y-%m-%d')
+
+    for k in keyword:
+        # リツイートを取得する
+        retweet = scrape_retweet(k)
+        # リツイートしたユーザーを取得する
+        retweet = get_retweet_author(retweet, since_date)
+        # リツイート情報をdatastoreに保存する
+        datastore_upload_retweet(keyword, today, retweet)
