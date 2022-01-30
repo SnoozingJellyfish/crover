@@ -2,6 +2,8 @@ import os
 import re
 import logging
 import datetime
+import itertools
+import json
 
 import numpy as np
 import networkx as nx
@@ -33,13 +35,14 @@ def get_retweet_keyword():
     '''
     # debug
     # 収集済みリツイートキーワード
-    re_keyword = {'keyword': ['コロナ', '紅白'],
-                  'default_start_date': ['2022/01/08', '2022/12/29'],
-                  'limit_start_date': ['2022/01/01', '2021/12/24'],
-                  'limit_end_date': ['2022/01/15', '2022/01/05']}
+    re_keyword = {'keyword': ['テスト-コロナ', 'テスト-地震'],
+                  'default_start_date': ['2022/01/01', '2022/01/02'],
+                  'limit_start_date': ['2022/01/01', '2022/01/02'],
+                  'limit_end_date': ['2022/01/02', '2022/01/03']}
     return re_keyword
     ###
     '''
+
 
     client = datastore.Client()
     logger.info('get retweet keyword and date')
@@ -85,7 +88,7 @@ def get_retweet_keyword():
 
     return re_keyword
 
-
+# datastoreからリツイートを取得しネットワークを生成する
 def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
     '''
     keyword = '紅白'
@@ -103,6 +106,7 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
     # pickle.dump(retweet, f)
     with open(f'crover/data/retweet_{keyword}_all2.pickle', 'rb') as f:
         retweet = pickle.load(f)
+    ###
     '''
 
     logger.info('analyze network')
@@ -132,7 +136,7 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
             tweet_id_str = str(tweet_entity['tweet_id'])
             if tweet_id_str in retweet_dict:
                 retweet_elem = retweet_dict[tweet_id_str]
-                retweet_elem['count'] += tweet_entity['count']
+                retweet_elem['count'] = max((retweet_elem['count'], tweet_entity['count']))
                 retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
                                                        np.array(tweet_entity['re_author'])))
             else:
@@ -142,6 +146,33 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
                                           'count': tweet_entity['count'],
                                           're_author': tweet_entity['re_author']}
 
+    '''
+    # debug
+    with open('crover/data/test_retweet_info.json', 'r') as f:
+        retweet_info = json.load(f)
+
+    for date_str in retweet_info[keyword].keys():
+        date = int(date_str.replace('/', ''))
+
+        # 範囲外の日付の場合はスキップ
+        if date < start_date or date > end_date:
+            continue
+
+        for tweet_info in retweet_info[keyword][date_str]:
+            tweet_id_str = str(tweet_info['tweet_id'])
+            if tweet_id_str in retweet_dict:
+                retweet_elem = retweet_dict[tweet_id_str]
+                retweet_elem['count'] = max((retweet_elem['count'], tweet_info['count']))
+                retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
+                                                       np.array(tweet_info['re_author'])))
+            else:
+                retweet_dict[tweet_id_str] = {'tweet_id': tweet_info['tweet_id'],
+                                              'author': tweet_info['author'],
+                                              'text': tweet_info['text'],
+                                              'count': tweet_info['count'],
+                                              're_author': tweet_info['re_author']}
+    #####
+    '''
     retweet = list(retweet_dict.values())
 
     # リツイート間のユーザー類似度を算出する
@@ -192,15 +223,20 @@ def sim_graph(edge, retweet, level=3):
     # クラスタリング
     communities = []
     comp = community.girvan_newman(G)
-    for _ in range(10):
-        communities.append(next(comp))
-
+    #for _ in range(10):
+        #communities.append(next(comp))
+    #for i, c in enumerate(comp):
+        #if i > level:
+            #break
+    for i, c in enumerate(itertools.islice(comp, level)):
+        communities.append(c)
+    last_level = i
     color = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'brown', 'pink', 'skyblue', 'olive']
     cmap = []
     cmap_idx = []
 
     for node in G:
-        for i, s in enumerate(communities[level]):
+        for i, s in enumerate(communities[last_level]):
             if node in s:
                 cmap_idx.append(i)
                 # cmap.append(color[i])

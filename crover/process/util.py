@@ -2,6 +2,8 @@ import os
 import pickle
 from io import BytesIO
 import logging
+import json
+
 import numpy as np
 from google.cloud import storage
 
@@ -103,11 +105,6 @@ def datastore_upload_wv(split, up_vec_num):
 
 # datastore upload retweet_info
 def datastore_upload_retweet():
-    from google.cloud import datastore
-    # from crover import word2vec
-    client = datastore.Client()
-    logger.info('start upload retweet info')
-
     retweet_info = {'テスト-コロナ':
                            {'2022/01/01':
                                 [{'tweet_id': 0,
@@ -154,6 +151,14 @@ def datastore_upload_retweet():
                                   'text': 'text5',
                                   'count': 3000,
                                   're_author': [100, 600]}]}}
+
+    with open('crover/data/test_retweet_info.json', 'w') as f:
+        json.dump(retweet_info, f, indent=4, ensure_ascii=False)
+
+    from google.cloud import datastore
+    # from crover import word2vec
+    client = datastore.Client()
+    logger.info('start upload retweet info')
 
     keyword_kind = "retweet_keyword"
 
