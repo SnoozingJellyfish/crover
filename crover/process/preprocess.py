@@ -549,9 +549,8 @@ def stop_noun(text, tokenizer_obj, mode):
 
 
 # リツイートしたユーザーIDを取得する
-def get_retweet_author(retweet, since_date, max_scrape_retweet=100, thre_retweet_cnt=50):
+def get_retweet_author(retweet, since_date, max_scrape_retweet=1500, thre_retweet_cnt=500, max_trial=30):
     logger.info('get retweet user\n')
-    max_trial = 30
     tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
     mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
     sign_regex = re.compile(
@@ -560,8 +559,8 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=100, thre_retweet
     retweet_OK = []
     for i, r in enumerate(retweet):
         # debug
-        if i > 10:
-            break
+        #if i > 10:
+            #break
 
         headers = create_headers()
         logger.info(f"{i+1} / {len(retweet)}, retweet count: {r['count']}")
@@ -623,7 +622,6 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=100, thre_retweet
 
         except:  # twitter APIの15分間取得ツイート数を越えた場合
             logger.info(traceback.format_exc())
-            pass
 
     return retweet_OK
 
