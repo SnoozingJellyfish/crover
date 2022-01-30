@@ -305,3 +305,5 @@ def run_collect_retweet_job():
         # リツイート情報をdatastoreに保存する
         datastore_upload_retweet(k, today, retweet)
 
+    return '', 200
+
