@@ -94,7 +94,7 @@ def create_url(keyword, next_token_id=None, max_results=10):
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 # リツイートを取得するURLを作成（リツイートはTwitter API v1.1でないと取得できない）
-def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=1000):
+def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=2000):
     if next_results:
         url = f'https://api.twitter.com/1.1/search/tweets.json{next_results}'
     else:
@@ -120,7 +120,7 @@ def create_url_retweet_author(tweet, since_date=None, next_token_id=None, max_re
         #url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
             #query, tweet_fields, mrf, since
         #)
-        query = f'"{tweet}" since:{since_date}_00:00:00_JST'  # retweet
+        query = f'"{tweet}" since:{since_date}_03:00:00_JST'  # retweet
         url = f'https://api.twitter.com/1.1/search/tweets.json?q={query}&count={max_results}'
 
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
@@ -549,7 +549,7 @@ def stop_noun(text, tokenizer_obj, mode):
 
 
 # リツイートしたユーザーIDを取得する
-def get_retweet_author(retweet, since_date, max_scrape_retweet=1500, thre_retweet_cnt=500, max_trial=30):
+def get_retweet_author(retweet, since_date, max_scrape_retweet=2500, thre_retweet_cnt=1000, max_trial=30):
     logger.info('get retweet user\n')
     tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
     mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール

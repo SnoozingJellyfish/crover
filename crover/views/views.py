@@ -292,10 +292,10 @@ def run_collect_retweet_job():
 
     jst_delta = dt.timedelta(hours=9)
     JST = dt.timezone(jst_delta, 'JST')
-    today_dt = dt.datetime.now(JST)
-    today = today_dt.strftime('%Y/%m/%d')
+    #today = today_dt.strftime('%Y/%m/%d')
     yesterday_dt = dt.datetime.now(JST) - dt.timedelta(days=1)
     since_date = yesterday_dt.strftime('%Y-%m-%d')
+    yesterday = yesterday_dt.strftime('%Y/%m/%d')
 
     for k in keyword:
         # リツイートを取得する
@@ -303,7 +303,7 @@ def run_collect_retweet_job():
         # リツイートしたユーザーを取得する
         retweet = get_retweet_author(retweet, since_date)
         # リツイート情報をdatastoreに保存する
-        datastore_upload_retweet(k, today, retweet)
+        datastore_upload_retweet(k, yesterday, retweet)
 
     return '', 200
 
