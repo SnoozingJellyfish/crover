@@ -549,7 +549,7 @@ def stop_noun(text, tokenizer_obj, mode):
 
 
 # リツイートしたユーザーIDを取得する
-def get_retweet_author(retweet, since_date, max_scrape_retweet=2500, thre_retweet_cnt=1000, max_trial=30):
+def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retweet_cnt=100, max_trial=30):
     logger.info('get retweet user\n')
     tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
     mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
@@ -575,8 +575,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2500, thre_retwee
         t = sign_regex.sub(' ', t)
         t = re.sub('[ 　]+', ' ', t)
         if t == ' ' or len(t) < 3:
-            logger.info(f"extract few string\n"
-                        f"cannot search '{r['text']}'")
+            logger.info(f"extract few string '{r['text']}'")
             continue
 
         r['re_author'] = []
@@ -598,6 +597,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2500, thre_retwee
                 except:
                     t = stop_noun(t, tokenizer_obj, mode)
                     if t == ' ' or len(t) < 3:
+                        logger.info(f"extract few string '{r['text']}'")
                         break
                     else:
                         continue
