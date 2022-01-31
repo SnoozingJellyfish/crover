@@ -618,7 +618,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
                 retweet_OK.append(r)
             else:
                 logger.info(f"few retweet count: {len(r['re_author'])}\n"
-                            f"cannot search '{r['text']}'")
+                            f"cannot search '{t}'")
 
         except:  # twitter APIの15分間取得ツイート数を越えた場合
             logger.info(traceback.format_exc())
