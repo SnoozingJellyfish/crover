@@ -567,8 +567,12 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
         t = r['text']
         next_token_id = None
 
-        #if '#' in t:
-            #t = t[:t.find('#')]
+        if '#' in t:
+            t = t[:t.find('#')]
+
+        if t == ' ' or len(t) < 3:
+            logger.info(f"extract few string '{r['text']}'")
+            continue
 
         t = stop_noun(t, tokenizer_obj, mode)
 
@@ -580,6 +584,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
 
         r['re_author'] = []
         k = 0
+        extract_cnt = 0
 
         try:
             for j in range(max_trial):
@@ -600,6 +605,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
                         logger.info(f"extract few string '{r['text']}'")
                         break
                     else:
+                        extract_cnt += 1
                         continue
 
                 #for res in result['data']:
@@ -617,7 +623,8 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
             if len(r['re_author']) > thre_retweet_cnt:
                 retweet_OK.append(r)
             else:
-                logger.info(f"few retweet count: {len(r['re_author'])}\n"
+                logger.info(f"extract count: {extract_cnt}\n"
+                            f"few retweet count: {len(r['re_author'])}\n"
                             f"cannot search '{t}'")
 
         except:  # twitter APIの15分間取得ツイート数を越えた場合
