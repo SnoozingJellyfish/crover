@@ -94,7 +94,7 @@ def create_url(keyword, next_token_id=None, max_results=10):
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 # リツイートを取得するURLを作成（リツイートはTwitter API v1.1でないと取得できない）
-def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=2000):
+def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=3000):
     if next_results:
         url = f'https://api.twitter.com/1.1/search/tweets.json{next_results}'
     else:
@@ -600,6 +600,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
                     k += 1
                 #else:
                 except:
+                    logger.info(traceback.format_exc())
                     t = stop_noun(t, tokenizer_obj, mode)
                     if t == ' ' or len(t) < 3:
                         logger.info(f"extract few string '{r['text']}'")
