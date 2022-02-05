@@ -261,9 +261,9 @@ def test_run_collect_retweet_job():
     since_date = yesterday_dt.strftime('%Y-%m-%d')
     for k in keyword:
         # リツイートを取得する
-        retweet = scrape_retweet(k)
+        retweet = scrape_retweet(k, max_tweets=3000)
         # リツイートしたユーザーを取得する
-        retweet = get_retweet_author(retweet, since_date)
+        retweet = get_retweet_author(retweet, since_date, max_scrape_retweet=500)
         pass
 
 

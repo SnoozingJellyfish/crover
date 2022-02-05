@@ -43,7 +43,9 @@ def non_existant_route(error):
 def about():
     # develop: リツイートデータをdatastoreにアップロード
     #datastore_upload_retweet()
-    test_run_collect_retweet_job()
+    if LOCAL_ENV:
+        #test_run_collect_retweet_job()  # リツイートを収集(Cloud Schedulerを模擬)
+        pass
 
     global sess_info
     if session.get('searched_at') and sess_info.get(session['searched_at'], {}).get('depth') != None:
@@ -292,7 +294,6 @@ def run_collect_retweet_job():
 
     jst_delta = dt.timedelta(hours=9)
     JST = dt.timezone(jst_delta, 'JST')
-    #today = today_dt.strftime('%Y/%m/%d')
     yesterday_dt = dt.datetime.now(JST) - dt.timedelta(days=1)
     since_date = yesterday_dt.strftime('%Y-%m-%d')
     yesterday = yesterday_dt.strftime('%Y/%m/%d')

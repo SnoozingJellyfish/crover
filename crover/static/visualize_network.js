@@ -1,9 +1,3 @@
-/* retweet_network.htmlに移動させる
-var graph = eval({{graph_json|tojson}});
-var word_cloud = eval({{ word_clouds_part|tojson }});
-console.log(word_cloud);
-*/
-
 //カーソルを合わせたときに表示する情報領域
 var datatip = d3.select("#datatip");
 
@@ -27,7 +21,7 @@ let end_date_form = document.getElementById("end-date-form")
 var key_index = keyword_select.selectedIndex
 
 function keywordChange(){
-  key_index = keyword_select.selectedIndex
+  key_index = keyword_select.selectedIndex;
   console.log(key_index);
   start_date_form.value = re_keyword['default_start_date'][key_index];
   end_date_form.value = re_keyword['limit_end_date'][key_index];
@@ -77,6 +71,7 @@ $(function(){
         var start_date = start_date_form.value;
         var end_date = end_date_form.value;
         console.log(keyword, start_date, end_date);
+        enable_spinner();  // ロード中はスピナーを表示、スクロール禁止
 
         $.ajax({
             type: 'POST',
@@ -84,6 +79,8 @@ $(function(){
             data: {"keyword": keyword, "start_date": start_date, "end_date": end_date},
         }).done(function(res){
             console.log(res);
+            // スピナー表示、スクロール禁止を解除
+            disable_spinner();
 
             // 事前に描画したグラフをクリア
             var graph_elem = d3.select("#network_graph").selectAll("g");

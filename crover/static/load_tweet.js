@@ -32,19 +32,7 @@ Vue.component('emotion-tweets', {
     }
 });
 
-/*
-Vue.component('network-form', {
-    template: '#network-form',
-    data:function(){
-        return {
-            keyword_info: re_keyword,
-            keyword: Object.keys(re_keyword)[0]
-        }
-    }
-})
-*/
-
-
+// 他のファイルに以下記載すると他のjavascriptの動作に影響する
 new Vue({
     el:'#app',
     //delimiters:['[[',']]']  //なぜかdelimiters変わらない

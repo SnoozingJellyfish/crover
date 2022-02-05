@@ -42,28 +42,12 @@
 
 
 <script>
-  $(function () {
+$(function () {
   $('[data-toggle="tooltip"]').tooltip()
 })
-
-
 </script>
 
-<script type="text/javascript">
-function spinner() {
-    document.getElementsByClassName("loader")[0].style.display = "block";
-    // スクロールを禁止する関数
-    function noScroll(event) {
-        event.preventDefault();
-    }
-    // スクロール禁止(SP)
-    document.addEventListener('touchmove', noScroll, { passive: false });
-    // スクロール禁止(PC)
-    document.addEventListener('mousewheel', noScroll, { passive: false });
-}
-
-
-</script>
+<script src="{{ url_for('static', filename='spinner.js') }}"></script>
 
 <body>
 <div id="app">
@@ -169,7 +153,7 @@ function spinner() {
                     <label for="TweetNum" class="col-form-label ml-2">ツイート</label>
 
                     <button type="submit" class="form-control btn btn-outline-primary ml-2 form_radius"
-                            style="border-radius: 10px" onclick="spinner()">検索
+                            style="border-radius: 10px" onclick="enable_spinner()">検索
                     </button>
 
                 </form>
@@ -188,7 +172,10 @@ function spinner() {
 
 <script src="{{ url_for('static', filename='load_tweet.js') }}"></script>
 <script src="{{ url_for('static', filename='visualize_network.js') }}"></script>
-<!--<script src="{{ url_for('static', filename='visualize_network_tmp.js') }}"></script>-->
+
+<script>
+
+</script>
 
 </body>
 </html>

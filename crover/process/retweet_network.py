@@ -1,9 +1,7 @@
 import os
-import re
 import logging
 import datetime
 import itertools
-import json
 
 import numpy as np
 import networkx as nx
@@ -12,7 +10,7 @@ import matplotlib.pyplot as plt
 from google.cloud import datastore, storage
 
 from crover import LOCAL_ENV
-from crover.process.preprocess import scrape_retweet, get_retweet_author, tokenizer, suda_dict, \
+from crover.process.preprocess import tokenizer, suda_dict, \
     noun_count, word_count_rate
 from crover.process.clustering import make_word_cloud
 from crover.process.util import download_from_cloud, make_retweet_list
@@ -32,16 +30,13 @@ TWEET_KIND = 'retweeted_tweet'
 
 
 def get_retweet_keyword():
-    '''
-    # debug
-    # 収集済みリツイートキーワード
-    re_keyword = {'keyword': ['テスト-コロナ', 'テスト-地震'],
-                  'default_start_date': ['2022/01/01', '2022/01/02'],
-                  'limit_start_date': ['2022/01/01', '2022/01/02'],
-                  'limit_end_date': ['2022/01/02', '2022/01/03']}
-    return re_keyword
-    ###
-    '''
+    if LOCAL_ENV:
+        # 収集済みリツイートキーワード
+        re_keyword = {'keyword': ['テスト-コロナ', 'テスト-地震'],
+                      'default_start_date': ['2022/01/01', '2022/01/02'],
+                      'limit_start_date': ['2022/01/01', '2022/01/02'],
+                      'limit_end_date': ['2022/01/02', '2022/01/03']}
+        return re_keyword
 
 
     client = datastore.Client()
@@ -91,64 +86,45 @@ def get_retweet_keyword():
 
 # datastoreからリツイートを取得しネットワークを生成する
 def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
-    '''
-    keyword = '紅白'
-    sim_thre = 0.03
-
-    # リツイートを取得する
-    # retweet = scrape_retweet(keyword)
-
-    # リツイートしたユーザーを取得する
-    # retweet = get_retweet_author(retweet)
-
-    # debug
-    import pickle
-    # with open(f'crover/data/retweet_{keyword}_all2.pickle', 'wb') as f:
-    # pickle.dump(retweet, f)
-    with open(f'crover/data/retweet_{keyword}_all2.pickle', 'rb') as f:
-        retweet = pickle.load(f)
-    ###
-    '''
-
     logger.info('analyze network')
     start_date = int(start_date.replace('/', ''))
     end_date = int(end_date.replace('/', ''))
 
     retweet_dict = {}
 
-    # datastoreからリツイートを取得する
-    client = datastore.Client()
-    keyword_entity = client.get(client.key(KEYWORD_KIND, keyword))
+    if LOCAL_ENV:
+        retweet_dict = make_retweet_list(keyword, start_date, end_date)
+    else:
+        # datastoreからリツイートを取得する
+        client = datastore.Client()
+        keyword_entity = client.get(client.key(KEYWORD_KIND, keyword))
 
-    # リツイートされたツイートとリツイートした人をダウンロード
-    date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
-    date_entities = list(date_query.fetch())
-    for date_entity in date_entities:
-        date = int(date_entity.key.name.replace('/', ''))
+        # リツイートされたツイートとリツイートした人をダウンロード
+        date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
+        date_entities = list(date_query.fetch())
+        for date_entity in date_entities:
+            date = int(date_entity.key.name.replace('/', ''))
 
-        # 範囲外の日付の場合はスキップ
-        if date < start_date or date > end_date:
-            continue
+            # 範囲外の日付の場合はスキップ
+            if date < start_date or date > end_date:
+                continue
 
-        tweet_query = client.query(kind=TWEET_KIND, ancestor=date_entity.key)
-        tweet_entities = list(tweet_query.fetch())
+            tweet_query = client.query(kind=TWEET_KIND, ancestor=date_entity.key)
+            tweet_entities = list(tweet_query.fetch())
 
-        for tweet_entity in tweet_entities:
-            tweet_id_str = str(tweet_entity['tweet_id'])
-            if tweet_id_str in retweet_dict:
-                retweet_elem = retweet_dict[tweet_id_str]
-                retweet_elem['count'] = max((retweet_elem['count'], tweet_entity['count']))
-                retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
-                                                       np.array(tweet_entity['re_author'])))
-            else:
-                retweet_dict[tweet_id_str] = {'tweet_id': tweet_entity['tweet_id'],
-                                          'author': tweet_entity['author'],
-                                          'text': tweet_entity['text'],
-                                          'count': tweet_entity['count'],
-                                          're_author': tweet_entity['re_author']}
-
-    # debug
-    #retweet_dict = make_retweet_list(keyword, start_date, end_date)
+            for tweet_entity in tweet_entities:
+                tweet_id_str = str(tweet_entity['tweet_id'])
+                if tweet_id_str in retweet_dict:
+                    retweet_elem = retweet_dict[tweet_id_str]
+                    retweet_elem['count'] = max((retweet_elem['count'], tweet_entity['count']))
+                    retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
+                                                           np.array(tweet_entity['re_author'])))
+                else:
+                    retweet_dict[tweet_id_str] = {'tweet_id': tweet_entity['tweet_id'],
+                                              'author': tweet_entity['author'],
+                                              'text': tweet_entity['text'],
+                                              'count': tweet_entity['count'],
+                                              're_author': tweet_entity['re_author']}
 
     retweet = list(retweet_dict.values())
 

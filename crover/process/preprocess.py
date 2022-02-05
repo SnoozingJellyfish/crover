@@ -38,6 +38,11 @@ class NoKeywordError(Exception):
     """検索可能な文字が含まれないキーワードの場合のエラー"""
     pass
 
+class InvalidURLError(Exception):
+    """Twitter APIにリクエストするURLが有効でない場合のエラー"""
+    pass
+
+
 def get_trend(trend_num=5):
     logger.info('get trend')
     headers = create_headers()
@@ -129,7 +134,10 @@ def create_url_retweet_author(tweet, since_date=None, next_token_id=None, max_re
 def connect_to_endpoint(url, headers):
     response = requests.request("GET", url, headers=headers)
     if response.status_code != 200:
-        raise Exception(response.status_code, response.text)
+        if json.loads(response.text)['errors'][0]['code'] == 195:
+            raise InvalidURLError(response.text)
+        else:
+            raise Exception(response.status_code, response.text)
     return response.json()
 
 # ツイートの取得、クリーン、名詞抽出・カウント、
@@ -492,12 +500,11 @@ def scrape_retweet(keyword, max_tweets=1000):
     max_results = 100  # 1度のリクエストで取得するツイート数
     exclude_flag = False
     past_tweets = []
-    tweet_ids = []
     retweet = []
 
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
-        url = create_url_retweet(keyword, next_results, max_results=max_results)
+        url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=2000)
         result = connect_to_endpoint(url, headers)
         logger.info(f"{len(result['statuses'])} tweet")
 
@@ -586,50 +593,53 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
         k = 0
         extract_cnt = 0
 
-        try:
-            for j in range(max_trial):
-                if k > max_scrape_retweet // 100:
+        for j in range(max_trial):
+            if k > max_scrape_retweet // 100:
+                break
+
+            url = create_url_retweet_author(t, since_date, next_token_id)
+            #result = connect_to_endpoint(url, headers)
+
+            #if 'data' in result:
+            try:
+                result = connect_to_endpoint(url, headers)
+                if len(result['statuses']) == 0:
+                    raise InvalidURLError
+
+                k += 1
+            #else:
+            except InvalidURLError:
+                #logger.info(traceback.format_exc())
+                t = stop_noun(t, tokenizer_obj, mode)
+                if t == ' ' or len(t) < 3:
+                    logger.info(f"extract few string '{t}'")
                     break
-
-                url = create_url_retweet_author(t, since_date, next_token_id)
-                #result = connect_to_endpoint(url, headers)
-
-                #if 'data' in result:
-                try:
-                    result = connect_to_endpoint(url, headers)
-                    k += 1
-                #else:
-                except:
-                    #logger.info(traceback.format_exc())
-                    t = stop_noun(t, tokenizer_obj, mode)
-                    if t == ' ' or len(t) < 3:
-                        logger.info(f"extract few string '{r['text']}'")
-                        break
-                    else:
-                        extract_cnt += 1
-                        continue
-
-                #for res in result['data']:
-                for res in result['statuses']:
-                    r['re_author'].append(res['user']['id'])
-
-                #if 'next_token' in result['meta']:
-                    #next_token_id = result['meta']['next_token']
-                # これ以上リツイートがない場合
-                if 'next_results' in result['search_metadata']:
-                    next_token_id = result['search_metadata']['next_results']
                 else:
-                    break
+                    extract_cnt += 1
+                    continue
+            except:
+                logger.info('Unpredicted Error')
+                logger.info(traceback.format_exc())
+                break
 
-            if len(r['re_author']) > thre_retweet_cnt:
-                retweet_OK.append(r)
+            #for res in result['data']:
+            for res in result['statuses']:
+                r['re_author'].append(res['user']['id'])
+
+            #if 'next_token' in result['meta']:
+                #next_token_id = result['meta']['next_token']
+            # これ以上リツイートがない場合
+            if 'next_results' in result['search_metadata']:
+                next_token_id = result['search_metadata']['next_results']
             else:
-                logger.info(f"extract count: {extract_cnt}\n"
-                            f"few retweet count: {len(r['re_author'])}\n"
-                            f"cannot search '{t}'")
+                break
 
-        except:  # twitter APIの15分間取得ツイート数を越えた場合
-            logger.info(traceback.format_exc())
+        if len(r['re_author']) > thre_retweet_cnt:
+            retweet_OK.append(r)
+        else:
+            logger.info(f"extract count: {extract_cnt}\n"
+                        f"few retweet count: {len(r['re_author'])}\n"
+                        f"cannot search '{t}'")
 
     return retweet_OK
 

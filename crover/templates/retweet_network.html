@@ -4,9 +4,7 @@
 <div class="container">
     <div class="row">
         <!-- リツイートネットワークの入力フォーム -->
-        <!--<network-form></network-form>-->
         <div class="col-md-3 col-12">
-            <!--<div style="text-align: center">-->
             <label>キーワード</label>
             <select class="form-control form_radius" style="border-radius: 10px" id="retweetKeyword"
                     name=retweetKeyword>
@@ -67,37 +65,10 @@
     <h2></h2>
     <p></p>
 </div>
-<!--
-{% raw %}
-<script type="text/x-template" id="network-form">
-    <div class="col-md-3 col-12">-->
-<!--<div style="text-align: center">-->
-<!--
-<label>キーワード</label>
-<select class="form-control form_radius" style="border-radius: 10px" id="retweetKeyword_"
-        name=retweetKeyword v-model="keyword">
-    <template v-for="k in Object.keys(keyword_info)">
-        <option>{{ k }}</option>
-    </template>
-</select>
-<br>
-<label>開始日</label>
-<input type="text" class="form-control" style="border-radius: 10px" id="start-date_">
-<br>
-<label>終了日</label>
-<input type="text" class="form-control" style="border-radius: 10px" id="end-date_">
-</div>
-</script>
-{% endraw %}
--->
 
 <script>
-
 var re_keyword = eval({{re_keyword|tojson}});
 console.log(re_keyword);
-
-
-
 </script>
 
 {% endblock %}
