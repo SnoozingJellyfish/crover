@@ -301,8 +301,13 @@ def run_collect_retweet_job():
     for k in keyword:
         # リツイートを取得する
         retweet = scrape_retweet(k)
+        if len(retweet) == 0:
+            break
         # リツイートしたユーザーを取得する
         retweet = get_retweet_author(retweet, since_date)
+        if len(retweet) == 0:
+            break
+
         # リツイート情報をdatastoreに保存する
         datastore_upload_retweet(k, yesterday, retweet)
 

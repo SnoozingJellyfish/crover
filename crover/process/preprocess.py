@@ -12,6 +12,7 @@ import logging
 import site
 import concurrent.futures
 import traceback
+import datetime as dt
 
 import numpy as np
 import matplotlib
@@ -505,7 +506,13 @@ def scrape_retweet(keyword, max_tweets=1000):
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
         url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=2000)
-        result = connect_to_endpoint(url, headers)
+        try:
+            result = connect_to_endpoint(url, headers)
+        except:
+            logger.info('Unpredicted Error')
+            logger.info(traceback.format_exc())
+            return retweet
+
         logger.info(f"{len(result['statuses'])} tweet")
 
         # これ以上リツイートがない場合
@@ -603,9 +610,6 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
             #if 'data' in result:
             try:
                 result = connect_to_endpoint(url, headers)
-                if len(result['statuses']) == 0:
-                    raise InvalidURLError
-
                 k += 1
             #else:
             except InvalidURLError:
