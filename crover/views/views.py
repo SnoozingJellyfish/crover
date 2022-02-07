@@ -91,6 +91,7 @@ def collect_tweets():
         dict_word_count_rate, tweets_list, time_hist = preprocess_all(keyword, max_tweets, WORD_NUM_IN_CLOUD)
     except:  # 検索可能な文字がキーワードに含まれない場合
         logger.info(traceback.format_exc())
+        logger.info('redirect to home')
         return redirect(url_for('view.home'))
 
     sess_info_at['tweets'] = tweets_list

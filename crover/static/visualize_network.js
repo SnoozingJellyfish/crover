@@ -81,6 +81,8 @@ $(function(){
             console.log(res);
             // スピナー表示、スクロール禁止を解除
             disable_spinner();
+            // 「実行ボタン」の選択状態を解除
+            document.getElementById("show_network").blur();
 
             // 事前に描画したグラフをクリア
             var graph_elem = d3.select("#network_graph").selectAll("g");
@@ -144,6 +146,7 @@ $(function(){
                       .on('end', dragended));
 
             let wc_img_group = document.getElementById("wc_img_group");
+            wc_img_group.src = "data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
             let wc_img_all = document.getElementById("wc_img_all");
             wc_img_all.src = word_cloud[word_cloud.length - 1];
 

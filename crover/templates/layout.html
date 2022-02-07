@@ -136,13 +136,14 @@ function disable_spinner() {
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mr-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
-                    </li>
                     <!-- network graph -->
-
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('view.network_keyword') }}">Network</a>
+                    </li>
+
+                    <!-- About -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('view.about') }}">About</a>
                     </li>
 
                     {% if already_sess == 'true' %}
