@@ -505,7 +505,7 @@ def scrape_retweet(keyword, max_tweets=1000):
 
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
-        url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=2000)
+        url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=1500)
         try:
             result = connect_to_endpoint(url, headers)
         except:
