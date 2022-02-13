@@ -27,7 +27,10 @@
                 <button class="btn btn-primary col-4 mb-3 ml-1 mr-1" style="border-radius: 10px"
                         name="show_network" id="show_network">実行
                 </button>
-                <button class="btn btn-info rounded-circle mb-3 ml-1 mr-1" name=network_help" data-toggle="tooltip" data-placement="bottom" title="実行ボタンを押すと、よくリツイートされたツイートが丸で表示されます。リツイートされた回数が多いほど大きな丸になります。線でつながった2つのツイートは同じユーザーにリツイートされることが多く、関連性が高いです。"><b>?</b></button>
+                <button class="btn btn-info rounded-circle mb-3 ml-1 mr-1" name=network_help" data-toggle="tooltip"
+                        data-placement="bottom"
+                        title="実行ボタンを押すと、よくリツイートされたツイートが丸で表示されます。リツイートされた回数が多いほど大きな丸になります。線でつながった2つのツイートは同じユーザーにリツイートされることが多く、関連性が高いです。">
+                    <b>?</b></button>
             </div>
         </div>
 
@@ -53,7 +56,7 @@
                 </label>
                 <br>
                 <img id="wc_img_all" src="data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
-                    class="img-fluid img-shadow border_radius" width="250"
+                     class="img-fluid img-shadow border_radius" width="250"
                      height="250"><br>
             </div>
         </div>
@@ -69,6 +72,7 @@
 <script>
 var re_keyword = eval({{re_keyword|tojson}});
 console.log(re_keyword);
+
 </script>
 
 {% endblock %}

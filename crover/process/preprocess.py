@@ -483,7 +483,7 @@ def OKword(word, excluded_word, excluded_char):
 
 
 # リツイートの取得
-def scrape_retweet(keyword, max_tweets=1000):
+def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
     logger.info('-------------- scrape start -----------------\n')
     headers = create_headers()
 
@@ -505,7 +505,7 @@ def scrape_retweet(keyword, max_tweets=1000):
 
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
-        url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=1500)
+        url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=min_retweets)
         try:
             result = connect_to_endpoint(url, headers)
         except:

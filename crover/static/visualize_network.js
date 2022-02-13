@@ -99,12 +99,12 @@ $(function(){
                 .force("link", d3.forceLink().id(function(d) { return d.id; }))
                 .force("charge", d3.forceManyBody())
                 .force("center", d3.forceCenter(width / 2, height / 2))
-                //.force('colllision',d3.forceCollide(40))                                 //nodeの衝突半径：Nodeの最大値と同じ
-                .force('positioningX',d3.forceX())                                        //詳細設定は後で
+                //.force('colllision',d3.forceCollide(40))     //nodeの衝突半径：Nodeの最大値と同じ
+                .force('positioningX',d3.forceX())             //詳細設定は後で
                 .force('positioningY',d3.forceY());
 
             simulation.force('charge')
-                .strength(function(d) {return -15})  //node間の力
+                .strength(-15)  //node間の力
 
             simulation.force('positioningX')   //X方向の中心に向けた引力
                 .strength(0.06)
@@ -123,7 +123,7 @@ $(function(){
             //"svg"上に"g"をappendしてdragイベントを設定
             var g = svg.append("g")
               .call(d3.drag()
-              .on('drag', SVGdragged))
+                .on('drag', SVGdragged))
 
             function SVGzoomed() {
               g.attr("transform", d3.event.transform);
@@ -146,6 +146,7 @@ $(function(){
                       .on('end', dragended));
 
             let wc_img_group = document.getElementById("wc_img_group");
+            // 最初は無色
             wc_img_group.src = "data:image/gif;base64,R0lGODlhAQABAGAAACH5BAEKAP8ALAAAAAABAAEAAAgEAP8FBAA7"
             let wc_img_all = document.getElementById("wc_img_all");
             wc_img_all.src = word_cloud[word_cloud.length - 1];

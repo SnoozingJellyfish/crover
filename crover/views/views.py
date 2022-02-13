@@ -299,9 +299,10 @@ def run_collect_retweet_job():
     since_date = yesterday_dt.strftime('%Y-%m-%d')
     yesterday = yesterday_dt.strftime('%Y/%m/%d')
 
-    for k in keyword:
+    for i in range(len(keyword) // 2):
+        k = keyword[i*2]
         # リツイートを取得する
-        retweet = scrape_retweet(k)
+        retweet = scrape_retweet(k, min_retweets=int(keyword[i*2 + 1]))
         if len(retweet) == 0:
             break
         # リツイートしたユーザーを取得する
