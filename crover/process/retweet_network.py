@@ -1,6 +1,6 @@
 import os
 import logging
-import datetime
+import datetime as dt
 import itertools
 
 import numpy as np
@@ -29,7 +29,8 @@ DATE_KIND = "retweeted_date"
 TWEET_KIND = 'retweeted_tweet'
 
 
-def get_retweet_keyword():
+def get_retweet_keyword(ignore_day=7):
+    # debug用
     if LOCAL_ENV:
         # 収集済みリツイートキーワード
         re_keyword = {'keyword': ['テスト-コロナ', 'テスト-地震'],
@@ -39,6 +40,7 @@ def get_retweet_keyword():
         return re_keyword
 
 
+    # release用
     client = datastore.Client()
     logger.info('get retweet keyword and date')
 
@@ -51,10 +53,6 @@ def get_retweet_keyword():
     keyword_entities = list(keyword_query.fetch())
 
     for keyword_entity in keyword_entities:
-        keyword = keyword_entity.key.name
-        re_keyword['keyword'].append(keyword)
-        logger.info(f'date of retweet keyword- {keyword}')
-
         # リツイートされたツイートとリツイートした人をアップロード
         date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
         date_entities = list(date_query.fetch())
@@ -65,18 +63,28 @@ def get_retweet_keyword():
 
         start_date = date_entities[np.argmin(date_int)].key.name
         end_date = date_entities[np.argmax(date_int)].key.name
-        start_date_dt = datetime.datetime.strptime(start_date, '%Y/%m/%d')
-        end_date_dt = datetime.datetime.strptime(end_date, '%Y/%m/%d')
+        start_date_dt = dt.datetime.strptime(start_date, '%Y/%m/%d')
+        end_date_dt = dt.datetime.strptime(end_date, '%Y/%m/%d')
+
+        # 一番最近の収集日が今日よりignore_day日前の場合スキップ
+        JST = dt.timezone(dt.timedelta(hours=9), 'JST')
+        dif_today_end = dt.datetime.now(JST) - end_date_dt
+        if dif_today_end.days > ignore_day:
+            continue
+
         td = end_date_dt - start_date_dt
         # 一番最近の収集日から7日前をデフォルト開始日とする
         # 一番古い収集日がデフォルト開始日より遅い場合はデフォルト開始日を一番古い収集日とする
         if td.days > 7:
-            default_start_date_dt = end_date_dt - datetime.timedelta(days=7)
+            default_start_date_dt = end_date_dt - dt.timedelta(days=7)
         else:
             default_start_date_dt = start_date_dt
 
         default_start_date = default_start_date_dt.strftime('%Y/%m/%d')
 
+        keyword = keyword_entity.key.name
+        re_keyword['keyword'].append(keyword)
+        logger.info(f'date of retweet keyword- {keyword}')
         re_keyword['default_start_date'].append(default_start_date)
         re_keyword['limit_start_date'].append(start_date)
         re_keyword['limit_end_date'].append(end_date)
