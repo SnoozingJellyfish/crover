@@ -67,8 +67,7 @@ def get_retweet_keyword(ignore_day=7):
         end_date_dt = dt.datetime.strptime(end_date, '%Y/%m/%d')
 
         # 一番最近の収集日が今日よりignore_day日前の場合スキップ
-        JST = dt.timezone(dt.timedelta(hours=9), 'JST')
-        dif_today_end = dt.datetime.now(JST) - end_date_dt
+        dif_today_end = dt.datetime.now() - end_date_dt
         if dif_today_end.days > ignore_day:
             continue
 
