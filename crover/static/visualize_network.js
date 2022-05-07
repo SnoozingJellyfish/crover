@@ -64,6 +64,8 @@ $(function(){
     });
 })
 
+var color = d3.scaleOrdinal(d3.schemeCategory10);
+
 // リツイートキーワードと日付をサーバーに送ってネットワークを描画する
 $(function(){
     $("#show_network").on("click", function(){
@@ -92,8 +94,6 @@ $(function(){
             var graph = res.graph_dict;
             var word_cloud = res.word_cloud;
 
-            var color = d3.scaleOrdinal(d3.schemeCategory10);
-
             var simulation = d3.forceSimulation()
                 //.velocityDecay(0.4)
                 .force("link", d3.forceLink().id(function(d) { return d.id; }))
@@ -112,13 +112,9 @@ $(function(){
             simulation.force('positioningY')  //Y方向の中心に向けた引力
                 .strength(0.06)
 
-
-            //"svg"にZoomイベントを設定
-            var zoom = d3.zoom()
-              .scaleExtent([1/4 ,4])
-              .on('zoom', SVGzoomed);
-
-            svg.call(zoom);
+            function SVGdragged(d) {
+              d3.select(this).attr('cx', d.x = d3.event.x).attr('cy', d.y = d3.event.y);
+            };
 
             //"svg"上に"g"をappendしてdragイベントを設定
             var g = svg.append("g")
@@ -129,21 +125,25 @@ $(function(){
               g.attr("transform", d3.event.transform);
             }
 
-            function SVGdragged(d) {
-              d3.select(this).attr('cx', d.x = d3.event.x).attr('cy', d.y = d3.event.y);
-            };
+            //"svg"にZoomイベントを設定
+            var zoom = d3.zoom()
+              .scaleExtent([1/4 ,4])
+              .on('zoom', SVGzoomed);
+
+            svg.call(zoom);
 
             var link = g.append("g")
                 .attr("class", "links")
                 .selectAll("line")
                 .data(graph.links)
-                .enter().append("line")
-                  .attr("stroke","#999")  //輪郭線の色指定追加
-                  .attr("stroke-width", function(d) { return Math.sqrt(d.value) - 0.8; })
-                  .call(d3.drag()　              //無いとエラーになる。。
-                      .on('start', dragstarted)
-                      .on('drag', dragged)
-                      .on('end', dragended));
+                .enter()
+                .append("line")
+                .attr("stroke","#999")  //輪郭線の色指定追加
+                .attr("stroke-width", function(d) { return Math.sqrt(d.value) - 0.8; })
+                .call(d3.drag()　              //無いとエラーになる。。
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
 
             let wc_img_group = document.getElementById("wc_img_group");
             // 最初は無色
