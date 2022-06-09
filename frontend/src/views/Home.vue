@@ -1,12 +1,15 @@
 <template>
   <div class="home-page">
-    <h1>This is a home page</h1>
-    <button type="button" class="btn btn-success">Success</button>
+    <about-view></about-view>
   </div>
 </template>
 
 <script>
+import AboutView from './About.vue'
 export default {
-  name: 'home-page'
+  name: 'home-page',
+  components: {
+    AboutView
+  }
 }
 </script>

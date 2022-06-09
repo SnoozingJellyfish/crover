@@ -24,7 +24,7 @@
           <ul class="navbar-nav mr-auto">
             <!-- About -->
             <li class="nav-item">
-              <a class="nav-link" href="#">About</a>
+              <a class="nav-link" href="/about">About</a>
             </li>
             <!-- emotion analysis -->
             <li class="nav-item">
@@ -38,7 +38,7 @@
         </div>
       </div>
     </nav>
-    <router-view />
+    <router-view></router-view>
   </div>
 </template>
 
