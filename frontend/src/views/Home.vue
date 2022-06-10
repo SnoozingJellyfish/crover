@@ -1,15 +1,29 @@
 <template>
   <div class="home-page">
-    <about-view></about-view>
+    <about-block></about-block>
+    <emotion-block></emotion-block>
   </div>
 </template>
 
 <script>
-import AboutView from './About.vue'
+import AboutBlock from './About.vue'
+import EmotionBlock from './Emotion.vue'
 export default {
   name: 'home-page',
   components: {
-    AboutView
+    AboutBlock,
+    EmotionBlock
   }
 }
 </script>
+
+<style>
+.feature-block {
+  background-color: #eee;
+}
+
+.feature-title {
+  text-align: left;
+  padding: 3rem 1rem 1rem 3rem;
+}
+</style>

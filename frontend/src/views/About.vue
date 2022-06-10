@@ -1,11 +1,15 @@
 <template>
-  <div class="about-page">
+  <div class="about-block">
     <br />
     <h1>言葉の海に潜ってみよう</h1>
     <h2>Twitter分析ツール</h2>
-
-    <div class="about-toggle" @click="isOpen = true" v-show="!isOpen">
-      ▼About
+    <div class="about-align">
+      <span class="about-toggle" @click="isOpen = true" v-show="!isOpen">
+        ▼About
+      </span>
+    </div>
+    <div v-show="isOpen">
+      <br />
     </div>
     <transition
       name="topSlide"
@@ -43,15 +47,17 @@
         >のword2vecを使用
       </div>
     </transition>
-    <div class="about-toggle" @click="isOpen = false" v-show="isOpen">
-      ▲close
+    <div class="about-align">
+      <span class="about-toggle" @click="isOpen = false" v-show="isOpen">
+        ▲close
+      </span>
     </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'about-page',
+  name: 'about-block',
   data() {
     return {
       isOpen: false
@@ -78,6 +84,11 @@ export default {
 .about-toggle {
   color: blue;
   cursor: pointer;
+  padding: 0rem 10rem 0rem 0rem;
+}
+.about-align {
+  text-align: right;
+  padding-bottom: 0.3rem;
 }
 </style>
 
