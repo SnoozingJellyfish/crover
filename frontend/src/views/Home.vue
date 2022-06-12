@@ -24,6 +24,14 @@ export default {
 
 .feature-title {
   text-align: left;
-  padding: 3rem 1rem 1rem 3rem;
+  padding: 2rem 3rem 3rem 3rem;
+}
+.icon-title {
+  width: 3rem;
+  margin-right: 1rem;
+}
+.input-form {
+  border-radius: 10px;
+  margin-right: 3rem;
 }
 </style>

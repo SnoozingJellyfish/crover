@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 import numpy as np
 from flask import Flask
 
-from views.views import view
+#from views.views import view
 
 LOCAL_ENV = False
 

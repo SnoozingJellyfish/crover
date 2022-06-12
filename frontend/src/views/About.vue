@@ -84,7 +84,7 @@ export default {
 .about-toggle {
   color: blue;
   cursor: pointer;
-  padding: 0rem 10rem 0rem 0rem;
+  padding: 0rem 5rem 0rem 0rem;
 }
 .about-align {
   text-align: right;

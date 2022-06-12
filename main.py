@@ -1,9 +1,14 @@
 
 from flask import Flask, render_template
+from flask_restful import Api
+
+from backend import preprocess
 
 app = Flask(__name__, static_folder='frontend/dist/static', template_folder='frontend/dist')
+api = Api(app)
+api.add_resource(preprocess.SearchTrend, '/trend') 
 
-@app.route('/', defaults={'path': ''})
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
 @app.route('/<path:path>')
 def index(path):
     return render_template('index.html')
