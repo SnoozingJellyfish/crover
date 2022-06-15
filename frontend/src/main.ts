@@ -6,6 +6,8 @@ import store from './store'
 // import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { FontAwesomeIcon } from '@/plugins/font-awesome'
+import Axios from 'axios'
+Axios.defaults.baseURL = 'http://localhost:3000' // mockサーバーを設定
 
 createApp(App)
   .use(store)

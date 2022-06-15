@@ -2,9 +2,7 @@
   <div class="emotion-block feature-block">
     <div class="feature-title">
       <h2><fa icon="face-meh" class="icon-title"></fa>感情分析</h2>
-
       キーワードを含むツイートの感情と、一緒にツイートされている言葉を調べる
-
       <form method="post">
         <div class="row">
           <div class="form-group col-lg-3 col-md-5 col-sm-6 col-xs-12">
