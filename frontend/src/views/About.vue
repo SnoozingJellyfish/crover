@@ -56,25 +56,13 @@
 </template>
 
 <script>
+import { Openable } from './util'
 export default {
   name: 'about-block',
+  mixins: [Openable],
   data() {
     return {
       isOpen: false
-    }
-  },
-  methods: {
-    beforeEnter(el) {
-      el.style.height = '0'
-    },
-    enter(el) {
-      el.style.height = el.scrollHeight + 'px'
-    },
-    beforeLeave(el) {
-      el.style.height = el.scrollHeight + 'px'
-    },
-    leave(el) {
-      el.style.height = '0'
     }
   }
 }
@@ -92,19 +80,4 @@ export default {
 }
 </style>
 
-<style>
-.topSlide {
-  transition: height 0.3s ease-in-out;
-  overflow: hidden;
-}
-
-.topSlide-enter-active {
-  animation-duration: 0.3s;
-  animation-fill-mode: both;
-}
-
-.topSlide-leave-active {
-  animation-duration: 0.3s;
-  animation-fill-mode: both;
-}
-</style>
+<style></style>

@@ -21,6 +21,7 @@
               class="form-control input-form"
               id="TweetNum"
               name="tweet_num"
+              v-model="tweetNum"
             >
               <option selected>500</option>
               <option>1000</option>
@@ -31,7 +32,13 @@
             <label for="TweetNum" class="col-form-label">ツイート</label>
           </div>
           <div class="form-group col-lg-1 col-md-3 col-sm-2 col-4 d-grid">
-            <button type="submit" class="btn btn-primary">探す</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="isOpen = true"
+            >
+              探す
+            </button>
           </div>
         </div>
 
@@ -45,6 +52,11 @@
         >
           {{ t }}
         </button>
+        <emotion-result
+          :isOpen="isOpen"
+          :keyword="keyword"
+          :tweetNum="tweetNum"
+        />
       </form>
     </div>
   </div>
@@ -52,14 +64,17 @@
 
 <script>
 import axios from 'axios'
+import EmotionResult from './EmotionResult.vue'
 
 export default {
+  components: { EmotionResult },
   name: 'emotion-block',
   data() {
     return {
       isOpen: false,
       trend: '',
-      keyword: ''
+      keyword: '',
+      tweetNum: 500
     }
   },
   mounted() {
