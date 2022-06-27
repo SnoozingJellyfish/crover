@@ -1,9 +1,9 @@
 <template>
-  <div class="emotion-block feature-block">
-    <div class="feature-title">
-      <h2><fa icon="face-meh" class="icon-title"></fa>感情分析</h2>
-      キーワードを含むツイートの感情と、一緒にツイートされている言葉を調べる
-      <form method="post">
+  <div id="emotion-block">
+    <div class="feature-block">
+      <div class="feature-title">
+        <h2><fa icon="face-meh" class="icon-title"></fa>感情分析</h2>
+        キーワードを含むツイートの感情と、一緒にツイートされている言葉を調べる
         <div class="row">
           <div class="form-group col-lg-3 col-md-5 col-sm-6 col-xs-12">
             <input
@@ -35,7 +35,7 @@
             <button
               type="button"
               class="btn btn-primary"
-              @click="isOpen = true"
+              @click="searchAnalyze(keyword, tweetNum)"
             >
               探す
             </button>
@@ -47,34 +47,75 @@
           v-for="t in trend"
           v-bind:key="t"
           @click="keyword = t"
-          class="btn btn-outline-primary trend-button mb-3 ml-1 mr-1"
           type="button"
+          class="btn btn-outline-primary trend-button mb-3 ml-1 mr-1"
         >
           {{ t }}
         </button>
-        <emotion-result
-          :isOpen="isOpen"
-          :keyword="keyword"
-          :tweetNum="tweetNum"
-        />
-      </form>
+        <br />
+
+        <transition
+          name="topSlide"
+          @before-enter="beforeEnter"
+          @enter="enter"
+          @before-leave="beforeLeave"
+          @leave="leave"
+        >
+          <div class="topSlide result-region" v-show="isOpen">
+            <pulse-loader
+              :loading="!isSpinner"
+              :color="spinnerColor"
+              :size="spinnerSize"
+              class="spinner"
+            />
+            <div v-if="isSpinner">
+              <div class="cloud-region">
+                <vue-d3-cloud
+                  :data="topicWord"
+                  :fontSizeMapper="fontSizeMapper"
+                  :width="300"
+                  :font="'Noto Sans JP'"
+                  :colors="cloudColor"
+                  :padding="5"
+                />
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
-import EmotionResult from './EmotionResult.vue'
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
+import { Openable } from './util'
+// import WordCloud from './WordCloud.vue'
+import VueD3Cloud from './VueD3Cloud.vue'
 
 export default {
-  components: { EmotionResult },
+  // components: { PulseLoader, wordcloud },
+  // components: { PulseLoader, WordCloud },
+  components: { PulseLoader, VueD3Cloud },
+  mixins: [Openable],
   name: 'emotion-block',
   data() {
     return {
       isOpen: false,
       trend: '',
       keyword: '',
-      tweetNum: 500
+      tweetNum: 500,
+      isSpinner: true,
+      spinnerColor: '#999',
+      spinnerSize: '15px',
+      topicWord: [],
+      tweet: [],
+      wordcloudColor: ['#1f77b4'],
+      wcMargin: { top: 10, right: 5, bottom: 15, left: 15 },
+      wcRotate: { from: 0, to: 0, numOfOrientation: 1 },
+      fontSizeMapper: (word) => Math.log2(word.value) * 10,
+      cloudColor: ['navy']
     }
   },
   mounted() {
@@ -82,17 +123,15 @@ export default {
     console.log(this.trend)
   },
   methods: {
-    beforeEnter(el) {
-      el.style.height = '0'
+    searchAnalyze(keyword, tweetNum) {
+      this.isOpen = true
+      axios.get('/search_analyze').then((response) => {
+        this.topicWord = response.data.topicWord
+        // this.tweet = response.tweet
+      })
     },
-    enter(el) {
-      el.style.height = el.scrollHeight + 'px'
-    },
-    beforeLeave(el) {
-      el.style.height = el.scrollHeight + 'px'
-    },
-    leave(el) {
-      el.style.height = '0'
+    wordClickHandler(name, value, vm) {
+      console.log('wordClickHandler', name, value, vm)
     }
   }
 }
@@ -105,6 +144,15 @@ export default {
 }
 .trend-button {
   margin: 0.8rem 1rem 0rem 0rem;
+}
+.cloud-region {
+  background-color: #fff;
+  border-radius: 10px;
+  width: 30rem;
+  height: 30rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 5rem;
+  text-align: center;
 }
 </style>
 
