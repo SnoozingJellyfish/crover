@@ -73,7 +73,8 @@
                 <vue-d3-cloud
                   :data="topicWord"
                   :fontSizeMapper="fontSizeMapper"
-                  :width="300"
+                  :width="cloudWH"
+                  :height="cloudWH"
                   :font="'Noto Sans JP'"
                   :colors="cloudColor"
                   :padding="5"
@@ -115,12 +116,18 @@ export default {
       wcMargin: { top: 10, right: 5, bottom: 15, left: 15 },
       wcRotate: { from: 0, to: 0, numOfOrientation: 1 },
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
-      cloudColor: ['navy']
+      cloudColor: ['navy'],
+      cloudWH: '600'
     }
   },
   mounted() {
     axios.get('/trend').then((response) => (this.trend = response.data))
     console.log(this.trend)
+    const relativeCloudWH = window.innerWidth * 0.65
+
+    if (relativeCloudWH < 600) {
+      this.cloudWH = String(relativeCloudWH)
+    }
   },
   methods: {
     searchAnalyze(keyword, tweetNum) {
@@ -148,11 +155,13 @@ export default {
 .cloud-region {
   background-color: #fff;
   border-radius: 10px;
-  width: 30rem;
-  height: 30rem;
+  width: 65vw;
+  height: 65vw;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  margin: 5rem;
+  margin: 2rem;
   text-align: center;
+  max-width: 600px;
+  max-height: 600px;
 }
 </style>
 
