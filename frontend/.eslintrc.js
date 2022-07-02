@@ -9,7 +9,8 @@ module.exports = {
     '@vue/typescript/recommended'
   ],
   parserOptions: {
-    ecmaVersion: 2020
+    ecmaVersion: 2020,
+    exclude: ['node_modules']
   },
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
@@ -26,5 +27,6 @@ module.exports = {
         jest: true
       }
     }
-  ]
+  ],
+  ignorePatterns: ['**/node_modules/**']
 }

@@ -69,17 +69,23 @@
               class="spinner"
             />
             <div v-if="isSpinner">
-              <div class="cloud-region">
-                <vue-d3-cloud
-                  :data="topicWord"
-                  :fontSizeMapper="fontSizeMapper"
-                  :width="cloudWH"
-                  :height="cloudWH"
-                  :font="'Noto Sans JP'"
-                  :colors="cloudColor"
-                  :padding="5"
-                />
-              </div>
+              <vue-d3-cloud
+                :data="topicWord"
+                :fontSizeMapper="fontSizeMapper"
+                :width="cloudWH"
+                :height="cloudWH"
+                :font="'Noto Sans JP'"
+                :colors="cloudColor"
+                :padding="5"
+                class="cloud-region"
+              />
+              <Bar
+                :chart-options="chartOptions"
+                :chart-data="tweetedTime"
+                :width="barChartW"
+                :height="barChartH"
+                class="tweeted-time-chart"
+              />
             </div>
           </div>
         </transition>
@@ -92,13 +98,22 @@
 import axios from 'axios'
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 import { Openable } from './util'
-// import WordCloud from './WordCloud.vue'
 import VueD3Cloud from './VueD3Cloud.vue'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 export default {
-  // components: { PulseLoader, wordcloud },
-  // components: { PulseLoader, WordCloud },
-  components: { PulseLoader, VueD3Cloud },
+  components: { PulseLoader, VueD3Cloud, Bar },
   mixins: [Openable],
   name: 'emotion-block',
   data() {
@@ -117,7 +132,25 @@ export default {
       wcRotate: { from: 0, to: 0, numOfOrientation: 1 },
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
       cloudColor: ['navy'],
-      cloudWH: '600'
+      cloudWH: '600',
+      tweetedTime: {},
+      chartOptions: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      },
+      barChartW: 10,
+      barChartH: 5
     }
   },
   mounted() {
@@ -135,6 +168,7 @@ export default {
       axios.get('/search_analyze').then((response) => {
         this.topicWord = response.data.topicWord
         // this.tweet = response.tweet
+        this.tweetedTime = response.data.tweetedTime
       })
     },
     wordClickHandler(name, value, vm) {
@@ -162,6 +196,10 @@ export default {
   text-align: center;
   max-width: 600px;
   max-height: 600px;
+}
+.tweeted-time-chart {
+  width: 25vw;
+  height: 25vw;
 }
 </style>
 
