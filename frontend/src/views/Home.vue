@@ -24,7 +24,7 @@ export default {
 
 .feature-title {
   text-align: left;
-  padding: 2rem 3rem 3rem 3rem;
+  padding: 40px 40px 40px 40px;
 }
 .icon-title {
   width: 3rem;

@@ -1,0 +1,37 @@
+{
+  "trend": ["trend1", "trend2", "trend3", "trend4", "trend5"],
+  "search_analyze": {
+    "topicWord": [
+      { "text": "夏", "value": 10 },
+      { "text": "梅雨", "value": 7 },
+      { "text": "与田祐希", "value": 15 },
+      { "text": "3月のライオン", "value": 12 },
+      { "text": "強化学習", "value": 5 }
+    ],
+    "emotionWord": [
+      { "text": "好き", "value": 10 },
+      { "text": "かわいい", "value": 7 },
+      { "text": "暑い", "value": 15 }
+    ],
+    "tweetedTime": {
+      "labels": ["10:00", "", "", "", "11:00", "", "", "", "12:00"],
+      "datasets": [
+        {
+          "data": [5, 50, 20, 40, 35, 60, 40, 30, 25],
+          "backgroundColor": "dodgerblue",
+          "barPercentage": 1.2
+        }
+      ]
+    },
+    "emotionRatio": {
+      "labels": ["ネガティブ", "ニュートラル", "ポジティブ"],
+      "datasets": [
+        {
+          "label": "Data One",
+          "backgroundColor": ["#75B2F7", "#9CE7B0", "#EE8B98"],
+          "data": [40, 20, 70]
+        }
+      ]
+    }
+  }
+}

@@ -68,24 +68,63 @@
               :size="spinnerSize"
               class="spinner"
             />
+
             <div v-if="isSpinner">
-              <vue-d3-cloud
-                :data="topicWord"
-                :fontSizeMapper="fontSizeMapper"
-                :width="cloudWH"
-                :height="cloudWH"
-                :font="'Noto Sans JP'"
-                :colors="cloudColor"
-                :padding="5"
-                class="cloud-region"
-              />
-              <Bar
-                :chart-options="chartOptions"
-                :chart-data="tweetedTime"
-                :width="barChartW"
-                :height="barChartH"
-                class="tweeted-time-chart"
-              />
+              <div class="row">
+                <div class="col-md-6 col-12" id="topicCloud">
+                  <div class="chart-caption">
+                    「{{ searchKeyword }}」と一緒に呟かれている言葉
+                  </div>
+                  <vue-d3-cloud
+                    :data="topicWord"
+                    :fontSizeMapper="fontSizeMapper"
+                    :width="topicCloudSize"
+                    :height="topicCloudSize"
+                    :font="'Noto Sans JP'"
+                    :colors="topicCloudColor"
+                    :padding="5"
+                  />
+                </div>
+                <div class="col-md-6 col-12">
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="chart-caption">ツイート数</div>
+                      <Bar
+                        :chart-options="tweetedTimeOptions"
+                        :chart-data="tweetedTime"
+                        :width="topicCloudSize"
+                        :height="tweetedTimeHeight"
+                        class="tweeted-time-chart"
+                      />
+                    </div>
+
+                    <div class="col-md-6 col-12">
+                      <div class="chart-caption">ツイート割合</div>
+                      <Pie
+                        :chart-options="emotionRatioOptions"
+                        :chart-data="emotionRatio"
+                        class="emotion-ratio-chart"
+                        :style="{
+                          width: emotionRatioWidth + 'px',
+                          height: emotionRatioHeight + 'px'
+                        }"
+                      />
+                    </div>
+                    <div class="col-md-6 col-12">
+                      <div class="chart-caption">感情ワード</div>
+                      <vue-d3-cloud
+                        :data="emotionWord"
+                        :fontSizeMapper="fontSizeMapper"
+                        :width="emotionCloudWidth"
+                        :height="emotionCloudWidth"
+                        :font="'Noto Sans JP'"
+                        :colors="emotionCloudColor"
+                        :padding="5"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </transition>
@@ -99,21 +138,33 @@ import axios from 'axios'
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 import { Openable } from './util'
 import VueD3Cloud from './VueD3Cloud.vue'
-import { Bar } from 'vue-chartjs'
+import 'chart.js/auto'
+import { Bar, Pie } from 'vue-chartjs'
+/*
 import {
   Chart as ChartJS,
   Title,
   Tooltip,
   Legend,
   BarElement,
+  ArcElement,
   CategoryScale,
   LinearScale
 } from 'chart.js'
 
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  ArcElement,
+  CategoryScale,
+  LinearScale
+)
+*/
 
 export default {
-  components: { PulseLoader, VueD3Cloud, Bar },
+  components: { PulseLoader, VueD3Cloud, Bar, Pie },
   mixins: [Openable],
   name: 'emotion-block',
   data() {
@@ -121,20 +172,19 @@ export default {
       isOpen: false,
       trend: '',
       keyword: '',
+      searchKeyword: '',
       tweetNum: 500,
       isSpinner: true,
       spinnerColor: '#999',
       spinnerSize: '15px',
       topicWord: [],
+      emotionWord: [],
       tweet: [],
-      wordcloudColor: ['#1f77b4'],
-      wcMargin: { top: 10, right: 5, bottom: 15, left: 15 },
-      wcRotate: { from: 0, to: 0, numOfOrientation: 1 },
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
-      cloudColor: ['navy'],
-      cloudWH: '600',
+      topicCloudColor: ['navy'],
+      emotionCloudColor: ['darkgreen'],
       tweetedTime: {},
-      chartOptions: {
+      tweetedTimeOptions: {
         responsive: true,
         plugins: {
           legend: {
@@ -145,31 +195,87 @@ export default {
           x: {
             grid: {
               display: false
+            },
+            ticks: {
+              // font: { size: 13 }
             }
           }
         }
       },
       barChartW: 10,
-      barChartH: 5
+      barChartH: 3,
+      emotionRatio: {},
+      emotionRatioOptions: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { reverse: true }
+          // legend: { reverse: true, labels: { font: { size: 15 } } }
+        }
+      },
+      currentWindowWidth: 0,
+      colMdMin: 768
+    }
+  },
+  computed: {
+    // eslint-disable-next-line
+    topicCloudSize: function () {
+      if (this.currentWindowWidth < this.colMdMin) {
+        return String(this.currentWindowWidth - 140)
+      } else {
+        return String(Number(this.currentWindowWidth / 2) - 140)
+      }
+    },
+    // eslint-disable-next-line
+    tweetedTimeHeight: function () {
+      if (this.currentWindowWidth < this.colMdMin) {
+        return String(Number(this.topicCloudSize) / 2)
+      } else {
+        return String(Number(this.topicCloudSize) / 3)
+      }
+    },
+    // eslint-disable-next-line
+    emotionRatioWidth: function () {
+      if (this.currentWindowWidth < this.colMdMin) {
+        return this.topicCloudSize
+      } else {
+        return String(Number(this.currentWindowWidth / 4) - 30)
+      }
+    },
+    // eslint-disable-next-line
+    emotionRatioHeight: function () {
+      return String(Number(this.emotionRatioWidth) - 100)
+    },
+    // eslint-disable-next-line
+    emotionCloudWidth: function () {
+      if (this.currentWindowWidth < this.colMdMin) {
+        return this.topicCloudSize
+      } else {
+        return String(Number(this.currentWindowWidth / 4) - 140)
+      }
     }
   },
   mounted() {
     axios.get('/trend').then((response) => (this.trend = response.data))
     console.log(this.trend)
-    const relativeCloudWH = window.innerWidth * 0.65
-
-    if (relativeCloudWH < 600) {
-      this.cloudWH = String(relativeCloudWH)
-    }
+    this.currentWindowWidth = window.innerWidth
+    window.addEventListener('resize', () => {
+      this.currentWindowWidth = window.innerWidth
+    })
   },
   methods: {
     searchAnalyze(keyword, tweetNum) {
       this.isOpen = true
       axios.get('/search_analyze').then((response) => {
+        this.searchKeyword = this.keyword
         this.topicWord = response.data.topicWord
         // this.tweet = response.tweet
         this.tweetedTime = response.data.tweetedTime
+        this.emotionRatio = response.data.emotionRatio
+        this.emotionWord = response.data.emotionWord
       })
+      this.topic_cloud_w = document.getElementById('topicCloud').style.maxWidth
+      this.topic_cloud_h = document.getElementById('topicCloud').style.maxHeight
     },
     wordClickHandler(name, value, vm) {
       console.log('wordClickHandler', name, value, vm)
@@ -186,20 +292,20 @@ export default {
 .trend-button {
   margin: 0.8rem 1rem 0rem 0rem;
 }
-.cloud-region {
-  background-color: #fff;
-  border-radius: 10px;
-  width: 65vw;
-  height: 65vw;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  margin: 2rem;
-  text-align: center;
-  max-width: 600px;
-  max-height: 600px;
+.chart-caption {
+  font-size: 1.3rem;
+  margin: 30px;
+  text-align: left;
+}
+.emotion-cloud-size {
+  width: 20rem;
+  height: 20rem;
 }
 .tweeted-time-chart {
-  width: 25vw;
-  height: 25vw;
+  margin: 30px;
+}
+.emotion-ratio-chart {
+  margin: 30px;
 }
 </style>
 
