@@ -28,7 +28,7 @@
       "datasets": [
         {
           "label": "Data One",
-          "backgroundColor": ["#75B2F7", "#9CE7B0", "#EE8B98"],
+          "backgroundColor": ["#59a0f1", "#5bca78", "#e77181"],
           "data": [40, 20, 70]
         }
       ]

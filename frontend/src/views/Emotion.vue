@@ -53,81 +53,124 @@
           {{ t }}
         </button>
         <br />
-
+        <!--
         <transition
           name="topSlide"
           @before-enter="beforeEnter"
           @enter="enter"
           @before-leave="beforeLeave"
           @leave="leave"
-        >
-          <div class="topSlide result-region" v-show="isOpen">
-            <pulse-loader
-              :loading="!isSpinner"
-              :color="spinnerColor"
-              :size="spinnerSize"
-              class="spinner"
-            />
+        >-->
+        <div class="topSlide result-region" v-show="isOpen">
+          <pulse-loader
+            :loading="!isSpinner"
+            :color="spinnerColor"
+            :size="spinnerSize"
+            class="spinner"
+          />
 
-            <div v-if="isSpinner">
-              <div class="row">
-                <div class="col-md-6 col-12" id="topicCloud">
-                  <div class="chart-caption">
-                    「{{ searchKeyword }}」と一緒に呟かれている言葉
-                  </div>
-                  <vue-d3-cloud
-                    :data="topicWord"
-                    :fontSizeMapper="fontSizeMapper"
-                    :width="topicCloudSize"
-                    :height="topicCloudSize"
-                    :font="'Noto Sans JP'"
-                    :colors="topicCloudColor"
-                    :padding="5"
-                  />
+          <div v-if="isSpinner">
+            <div class="row">
+              <div class="col-md-6 col-12" id="topicCloud">
+                <div class="chart-caption">
+                  「{{ searchKeyword }}」と一緒に呟かれている言葉
                 </div>
-                <div class="col-md-6 col-12">
-                  <div class="row">
-                    <div class="col-12">
-                      <div class="chart-caption">ツイート数</div>
-                      <Bar
-                        :chart-options="tweetedTimeOptions"
-                        :chart-data="tweetedTime"
-                        :width="topicCloudSize"
-                        :height="tweetedTimeHeight"
-                        class="tweeted-time-chart"
-                      />
-                    </div>
+                <vue-d3-cloud
+                  :data="topicWord"
+                  :fontSizeMapper="fontSizeMapper"
+                  :width="topicCloudSize"
+                  :height="topicCloudSize"
+                  :font="'Noto Sans JP'"
+                  :colors="topicCloudColor"
+                  :padding="5"
+                />
+              </div>
 
-                    <div class="col-md-6 col-12">
-                      <div class="chart-caption">ツイート割合</div>
-                      <Pie
-                        :chart-options="emotionRatioOptions"
-                        :chart-data="emotionRatio"
-                        class="emotion-ratio-chart"
-                        :style="{
-                          width: emotionRatioWidth + 'px',
-                          height: emotionRatioHeight + 'px'
-                        }"
-                      />
-                    </div>
-                    <div class="col-md-6 col-12">
-                      <div class="chart-caption">感情ワード</div>
-                      <vue-d3-cloud
-                        :data="emotionWord"
-                        :fontSizeMapper="fontSizeMapper"
-                        :width="emotionCloudWidth"
-                        :height="emotionCloudWidth"
-                        :font="'Noto Sans JP'"
-                        :colors="emotionCloudColor"
-                        :padding="5"
-                      />
-                    </div>
+              <div class="col-md-6 col-12">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="chart-caption">ツイート数</div>
+                    <Bar
+                      :chart-options="tweetedTimeOptions"
+                      :chart-data="tweetedTime"
+                      :width="topicCloudSize"
+                      :height="tweetedTimeHeight"
+                      class="tweeted-time-chart"
+                    />
+                  </div>
+
+                  <div class="col-md-6 col-12">
+                    <div class="chart-caption">ツイート割合</div>
+                    <Pie
+                      :chart-options="emotionRatioOptions"
+                      :chart-data="emotionRatio"
+                      class="emotion-ratio-chart"
+                      :style="{
+                        width: emotionRatioWidth + 'px',
+                        height: emotionRatioHeight + 'px'
+                      }"
+                    />
+                  </div>
+                  <div class="col-md-6 col-12">
+                    <div class="chart-caption">感情ワード</div>
+                    <vue-d3-cloud
+                      :data="emotionWord"
+                      :fontSizeMapper="fontSizeMapper"
+                      :width="emotionCloudWidth"
+                      :height="emotionCloudWidth"
+                      :font="'Noto Sans JP'"
+                      :colors="emotionCloudColor"
+                      :padding="5"
+                    />
                   </div>
                 </div>
               </div>
             </div>
+            <ul
+              class="nav nav-justified emotion-table"
+              id="myTab"
+              role="tablist"
+            >
+              <li class="nav-item">
+                <a
+                  class="nav-link active tab-positive"
+                  id="positive-tab"
+                  data-toggle="tab"
+                  href="#home"
+                  role="tab"
+                  aria-controls="home"
+                  aria-selected="true"
+                  >ポジティブ</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link tab-neutral"
+                  id="neutral-tab"
+                  data-toggle="tab"
+                  href="#profile"
+                  role="tab"
+                  aria-controls="profile"
+                  aria-selected="false"
+                  >ニュートラル</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link tab-negative"
+                  id="negative-tab"
+                  data-toggle="tab"
+                  href="#contact"
+                  role="tab"
+                  aria-controls="contact"
+                  aria-selected="false"
+                  >ネガティブ</a
+                >
+              </li>
+            </ul>
           </div>
-        </transition>
+        </div>
+        <!--</transition>-->
       </div>
     </div>
   </div>
@@ -165,6 +208,7 @@ ChartJS.register(
 
 export default {
   components: { PulseLoader, VueD3Cloud, Bar, Pie },
+  // components: { PulseLoader, VueD3Cloud },
   mixins: [Openable],
   name: 'emotion-block',
   data() {
@@ -209,7 +253,7 @@ export default {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { reverse: true }
+          legend: { reverse: true, display: false }
           // legend: { reverse: true, labels: { font: { size: 15 } } }
         }
       },
@@ -239,7 +283,7 @@ export default {
       if (this.currentWindowWidth < this.colMdMin) {
         return this.topicCloudSize
       } else {
-        return String(Number(this.currentWindowWidth / 4) - 30)
+        return String(Number(this.currentWindowWidth / 4) - 50)
       }
     },
     // eslint-disable-next-line
@@ -297,14 +341,52 @@ export default {
   margin: 30px;
   text-align: left;
 }
-.emotion-cloud-size {
-  width: 20rem;
-  height: 20rem;
-}
 .tweeted-time-chart {
   margin: 30px;
 }
 .emotion-ratio-chart {
+  margin: 30px;
+}
+.tab-positive {
+  color: white;
+  background-color: #e77181;
+}
+.tab-positive:hover {
+  color: white;
+  background-color: #c7606e;
+}
+.tab-positive:focus {
+  color: white;
+  box-shadow: 0 0 1px 4px #f1afb8;
+  background-color: #c7606e;
+}
+.tab-neutral {
+  color: white;
+  background-color: #5bca78;
+}
+.tab-neutral:hover {
+  color: white;
+  background-color: #50b76b;
+}
+.tab-neutral:focus {
+  color: white;
+  box-shadow: 0 0 1px 4px #60dd81;
+  background-color: #50b76b;
+}
+.tab-negative {
+  color: white;
+  background-color: #59a0f1;
+}
+.tab-negative:hover {
+  color: white;
+  background-color: #4e90db;
+}
+.tab-negative:focus {
+  color: white;
+  box-shadow: 0 0 1px 4px #61a6f5;
+  background-color: #4e90db;
+}
+.emotion-table {
   margin: 30px;
 }
 </style>

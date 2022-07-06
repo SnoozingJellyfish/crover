@@ -142,7 +142,7 @@ export default {
           return `translate(${[d.x, d.y]})rotate(${d.rotate})`
         })
         .text((d) => d.text)
-        .on('click', (d) => this.onWordClick(d))
+      // .on('click', (d) => this.onWordClick(d))
     }
   }
 }
