@@ -28,6 +28,7 @@
     "popper.js": "^1.16.1",
     "portal-vue": "^2.1.7",
     "register-service-worker": "^1.7.2",
+    "v3-infinite-loading": "^1.0.6",
     "vue": "^3.2.13",
     "vue-chartjs": "^4.1.1",
     "vue-d3-barchart": "^0.0.28",

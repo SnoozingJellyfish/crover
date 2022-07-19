@@ -126,48 +126,75 @@
                 </div>
               </div>
             </div>
-            <ul
-              class="nav nav-justified emotion-table"
-              id="myTab"
-              role="tablist"
-            >
-              <li class="nav-item">
-                <a
-                  class="nav-link active tab-positive"
-                  id="positive-tab"
-                  data-toggle="tab"
-                  href="#home"
-                  role="tab"
-                  aria-controls="home"
-                  aria-selected="true"
-                  >ポジティブ</a
+            <div class="emotion-table">
+              <ul class="nav nav-justified" id="myTab" role="tablist">
+                <li class="nav-item">
+                  <a
+                    class="nav-link active tab-positive"
+                    id="positive-tab"
+                    data-toggle="tab"
+                    href="#home"
+                    role="tab"
+                    aria-controls="home"
+                    aria-selected="true"
+                    @click="clickPositiveTab()"
+                    >ポジティブ</a
+                  >
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link tab-neutral"
+                    id="neutral-tab"
+                    data-toggle="tab"
+                    href="#profile"
+                    role="tab"
+                    aria-controls="profile"
+                    aria-selected="false"
+                    @click="clickNeutralTab()"
+                    >ニュートラル</a
+                  >
+                </li>
+                <li class="nav-item">
+                  <a
+                    class="nav-link tab-negative"
+                    id="negative-tab"
+                    data-toggle="tab"
+                    href="#contact"
+                    role="tab"
+                    aria-controls="contact"
+                    aria-selected="false"
+                    @click="clickNegativeTab()"
+                    >ネガティブ</a
+                  >
+                </li>
+              </ul>
+              <div class="tab-content" id="myTabContent">
+                <!-- ポジティブツイート -->
+                <div
+                  class="tab-pane fade show active"
+                  role="tabpanel"
+                  aria-labelledby="positive-tab"
                 >
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link tab-neutral"
-                  id="neutral-tab"
-                  data-toggle="tab"
-                  href="#profile"
-                  role="tab"
-                  aria-controls="profile"
-                  aria-selected="false"
-                  >ニュートラル</a
-                >
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link tab-negative"
-                  id="negative-tab"
-                  data-toggle="tab"
-                  href="#contact"
-                  role="tab"
-                  aria-controls="contact"
-                  aria-selected="false"
-                  >ネガティブ</a
-                >
-              </li>
-            </ul>
+                  <table class="table table-striped">
+                    <tbody class="tweet" id="tbody-tweet">
+                      <tr v-for="t in selectedTweet" :key="t" class="tweetline">
+                        <td
+                          class="tweetline"
+                          :style="{
+                            width: String(currentWindowWidth - 170) + 'px'
+                          }"
+                        >
+                          {{ t }}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <!--</transition>-->
@@ -183,32 +210,9 @@ import { Openable } from './util'
 import VueD3Cloud from './VueD3Cloud.vue'
 import 'chart.js/auto'
 import { Bar, Pie } from 'vue-chartjs'
-/*
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  ArcElement,
-  CategoryScale,
-  LinearScale
-} from 'chart.js'
-
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  ArcElement,
-  CategoryScale,
-  LinearScale
-)
-*/
 
 export default {
   components: { PulseLoader, VueD3Cloud, Bar, Pie },
-  // components: { PulseLoader, VueD3Cloud },
   mixins: [Openable],
   name: 'emotion-block',
   data() {
@@ -223,7 +227,6 @@ export default {
       spinnerSize: '15px',
       topicWord: [],
       emotionWord: [],
-      tweet: [],
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
       topicCloudColor: ['navy'],
       emotionCloudColor: ['darkgreen'],
@@ -258,7 +261,17 @@ export default {
         }
       },
       currentWindowWidth: 0,
-      colMdMin: 768
+      colMdMin: 768,
+      tweet: {},
+      focusEmotion: 'positive',
+      moreTweet: true,
+      positiveTab: null,
+      neutralTab: null,
+      negativeTab: null,
+      positiveTabDefaultColor: '#e77181',
+      neutralTabDefaultColor: '#5bca78',
+      negativeTabDefaultColor: '#59a0f1',
+      tbodyElem: null
     }
   },
   computed: {
@@ -297,6 +310,16 @@ export default {
       } else {
         return String(Number(this.currentWindowWidth / 4) - 140)
       }
+    },
+    // eslint-disable-next-line
+    selectedTweet: function () {
+      if (this.focusEmotion === 'positive') {
+        return this.tweet.positive
+      } else if (this.focusEmotion === 'neutral') {
+        return this.tweet.neutral
+      } else if (this.focusEmotion === 'negative') {
+        return this.tweet.negative
+      }
     }
   },
   mounted() {
@@ -313,16 +336,72 @@ export default {
       axios.get('/search_analyze').then((response) => {
         this.searchKeyword = this.keyword
         this.topicWord = response.data.topicWord
-        // this.tweet = response.tweet
         this.tweetedTime = response.data.tweetedTime
         this.emotionRatio = response.data.emotionRatio
         this.emotionWord = response.data.emotionWord
+        this.tweet = response.data.tweet
       })
       this.topic_cloud_w = document.getElementById('topicCloud').style.maxWidth
       this.topic_cloud_h = document.getElementById('topicCloud').style.maxHeight
+      this.focusEmotion = 'positive'
+
+      this.$nextTick(() => {
+        this.positiveTab = document.getElementById('positive-tab')
+        this.neutralTab = document.getElementById('neutral-tab')
+        this.negativeTab = document.getElementById('negative-tab')
+        this.clickPositiveTab()
+        this.tbodyElem = document.getElementById('tbody-tweet')
+        this.tbodyElem.addEventListener('scroll', this.loadTweet)
+      })
+
+      // this.tbodyElem = document.getElementById('tbody-tweet')
     },
     wordClickHandler(name, value, vm) {
       console.log('wordClickHandler', name, value, vm)
+    },
+    clickPositiveTab() {
+      this.focusEmotion = 'positive'
+      this.focusTab(this.positiveTab, 'rgb(240, 79, 100)', '#f1afb8')
+      this.blurTab(this.neutralTab, this.neutralTabDefaultColor)
+      this.blurTab(this.negativeTab, this.negativeTabDefaultColor)
+    },
+    clickNeutralTab() {
+      this.focusEmotion = 'neutral'
+      this.blurTab(this.positiveTab, this.positiveTabDefaultColor)
+      this.focusTab(this.neutralTab, 'rgb(44, 210, 88)', '#60dd81')
+      this.blurTab(this.negativeTab, this.negativeTabDefaultColor)
+    },
+    clickNegativeTab() {
+      this.focusEmotion = 'negative'
+      this.blurTab(this.positiveTab, this.positiveTabDefaultColor)
+      this.blurTab(this.neutralTab, this.neutralTabDefaultColor)
+      this.focusTab(this.negativeTab, 'rgb(64, 140, 255)', '#6babf4')
+    },
+    focusTab(tabElem, bgColor, shadowColor) {
+      tabElem.style.color = 'white'
+      tabElem.style.background = bgColor
+      tabElem.style.boxShadow = '0 0 1px 3px ' + shadowColor
+    },
+    blurTab(tabElem, bgColor) {
+      tabElem.style.color = 'white'
+      tabElem.style.background = bgColor
+      tabElem.style.boxShadow = '0 0'
+    },
+    loadTweet() {
+      if (
+        this.tbodyElem.scrollHeight ===
+        this.tbodyElem.clientHeight + this.tbodyElem.scrollTop
+      ) {
+        axios.get('/load_tweet_' + this.focusEmotion).then((response) => {
+          if (this.focusEmotion === 'positive') {
+            this.tweet.positive = this.tweet.positive.concat(response.data)
+          } else if (this.focusEmotion === 'neutral') {
+            this.tweet.neutral = this.tweet.neutral.concat(response.data)
+          } else if (this.focusEmotion === 'negative') {
+            this.tweet.negative = this.tweet.negative.concat(response.data)
+          }
+        })
+      }
     }
   }
 }
@@ -351,43 +430,33 @@ export default {
   color: white;
   background-color: #e77181;
 }
-.tab-positive:hover {
-  color: white;
-  background-color: #c7606e;
-}
-.tab-positive:focus {
-  color: white;
-  box-shadow: 0 0 1px 4px #f1afb8;
-  background-color: #c7606e;
-}
 .tab-neutral {
   color: white;
   background-color: #5bca78;
-}
-.tab-neutral:hover {
-  color: white;
-  background-color: #50b76b;
-}
-.tab-neutral:focus {
-  color: white;
-  box-shadow: 0 0 1px 4px #60dd81;
-  background-color: #50b76b;
 }
 .tab-negative {
   color: white;
   background-color: #59a0f1;
 }
-.tab-negative:hover {
-  color: white;
-  background-color: #4e90db;
-}
-.tab-negative:focus {
-  color: white;
-  box-shadow: 0 0 1px 4px #61a6f5;
-  background-color: #4e90db;
-}
 .emotion-table {
   margin: 30px;
+}
+
+tbody.tweet {
+  /*overflow-x: hidden;*/
+  overflow-y: scroll;
+  display: block;
+  height: 500px;
+  /*table-layout: fixed;*/
+}
+td.tweetline {
+  display: block;
+}
+
+.load-tweet {
+  text-align: center;
+  color: blue;
+  cursor: pointer;
 }
 </style>
 
