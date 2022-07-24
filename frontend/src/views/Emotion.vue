@@ -61,7 +61,7 @@
           @before-leave="beforeLeave"
           @leave="leave"
         >-->
-        <div class="topSlide result-region" v-show="isOpen">
+        <div class="topSlide result-region" v-if="isOpen">
           <pulse-loader
             :loading="!isSpinner"
             :color="spinnerColor"
@@ -71,19 +71,56 @@
 
           <div v-if="isSpinner">
             <div class="row">
-              <div class="col-md-6 col-12" id="topicCloud">
-                <div class="chart-caption">
+              <div class="col-md-6 col-12">
+                <div class="chart-caption-topic">
                   「{{ searchKeyword }}」と一緒に呟かれている言葉
                 </div>
-                <vue-d3-cloud
-                  :data="topicWord"
-                  :fontSizeMapper="fontSizeMapper"
-                  :width="topicCloudSize"
-                  :height="topicCloudSize"
-                  :font="'Noto Sans JP'"
-                  :colors="topicCloudColor"
-                  :padding="5"
-                />
+
+                <div class="row wc-region">
+                  <div
+                    v-for="(tw, wcId) in topicWord"
+                    v-bind:key="wcId"
+                    :class="topicWordColClass"
+                  >
+                    <div
+                      class="wc-box"
+                      @mouseover="displayWcButton[wcId] = true"
+                      @mouseleave="displayWcButton[wcId] = false"
+                    >
+                      <vue-d3-cloud
+                        :data="tw"
+                        :fontSizeMapper="fontSizeMapper"
+                        :width="topicCloudSize"
+                        :height="topicCloudSize"
+                        :font="'Noto Sans JP'"
+                        :colors="topicCloudColor"
+                        :padding="5"
+                        class="cloud-region"
+                      />
+                      <fa
+                        icon="face-meh"
+                        class="icon-title wc-box-face"
+                        v-show="displayWcEmotionIcon[wcId]"
+                      ></fa>
+                      <button
+                        type="button"
+                        class="btn btn-info wc-box-split mb-3 ml-1 mr-1"
+                        v-show="displayWcButton[wcId]"
+                        @click="splitWc(wcId)"
+                      >
+                        意味で分ける
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-info wc-box-emotion mb-3 ml-1 mr-1"
+                        v-show="displayWcButton[wcId]"
+                        @click="clickWcEmotionButton(wcId)"
+                      >
+                        感情分析
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="col-md-6 col-12">
@@ -93,7 +130,7 @@
                     <Bar
                       :chart-options="tweetedTimeOptions"
                       :chart-data="tweetedTime"
-                      :width="topicCloudSize"
+                      :width="cloudSize"
                       :height="tweetedTimeHeight"
                       class="tweeted-time-chart"
                     />
@@ -103,7 +140,7 @@
                     <div class="chart-caption">ツイート割合</div>
                     <Pie
                       :chart-options="emotionRatioOptions"
-                      :chart-data="emotionRatio"
+                      :chart-data="emotionRatio[selectedWcId]"
                       class="emotion-ratio-chart"
                       :style="{
                         width: emotionRatioWidth + 'px',
@@ -111,17 +148,21 @@
                       }"
                     />
                   </div>
+
                   <div class="col-md-6 col-12">
                     <div class="chart-caption">感情ワード</div>
-                    <vue-d3-cloud
-                      :data="emotionWord"
-                      :fontSizeMapper="fontSizeMapper"
-                      :width="emotionCloudWidth"
-                      :height="emotionCloudWidth"
-                      :font="'Noto Sans JP'"
-                      :colors="emotionCloudColor"
-                      :padding="5"
-                    />
+                    <div class="wc-region">
+                      <vue-d3-cloud
+                        :data="emotionWord[selectedWcId]"
+                        :fontSizeMapper="fontSizeMapper"
+                        :width="emotionCloudWidth"
+                        :height="emotionCloudWidth"
+                        :font="'Noto Sans JP'"
+                        :colors="emotionCloudColor"
+                        :padding="5"
+                        class="cloud-region"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -169,7 +210,6 @@
                 </li>
               </ul>
               <div class="tab-content" id="myTabContent">
-                <!-- ポジティブツイート -->
                 <div
                   class="tab-pane fade show active"
                   role="tabpanel"
@@ -212,6 +252,7 @@ import 'chart.js/auto'
 import { Bar, Pie } from 'vue-chartjs'
 
 export default {
+  // components: { PulseLoader, VueD3Cloud, Bar, Pie },
   components: { PulseLoader, VueD3Cloud, Bar, Pie },
   mixins: [Openable],
   name: 'emotion-block',
@@ -225,6 +266,11 @@ export default {
       isSpinner: true,
       spinnerColor: '#999',
       spinnerSize: '15px',
+      displayWcEmotionIcon: [true, false, false, false],
+      displayWcButton: [false, false, false, false],
+      displayWcEmotionButton: [false, true, true, true],
+      topicWcBgColor: ['#fff', '#fff', '#fff', '#fff'],
+      selectedWcId: 0,
       topicWord: [],
       emotionWord: [],
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
@@ -251,7 +297,7 @@ export default {
       },
       barChartW: 10,
       barChartH: 3,
-      emotionRatio: {},
+      emotionRatio: [],
       emotionRatioOptions: {
         responsive: true,
         maintainAspectRatio: false,
@@ -271,12 +317,21 @@ export default {
       positiveTabDefaultColor: '#e77181',
       neutralTabDefaultColor: '#5bca78',
       negativeTabDefaultColor: '#59a0f1',
-      tbodyElem: null
+      tbodyElem: null,
+      selectedTweetPre: []
     }
   },
   computed: {
     // eslint-disable-next-line
-    topicCloudSize: function () {
+    topicWordColClass: function () {
+      if (this.topicWord.length > 1) {
+        return 'col-md-6 col-12'
+      } else {
+        return 'col-12'
+      }
+    },
+    // eslint-disable-next-line
+    cloudSize: function () {
       if (this.currentWindowWidth < this.colMdMin) {
         return String(this.currentWindowWidth - 140)
       } else {
@@ -284,17 +339,25 @@ export default {
       }
     },
     // eslint-disable-next-line
+    topicCloudSize: function () {
+      if (this.topicWord.length === 1) {
+        return this.cloudSize
+      } else {
+        return this.cloudSize / 2
+      }
+    },
+    // eslint-disable-next-line
     tweetedTimeHeight: function () {
       if (this.currentWindowWidth < this.colMdMin) {
-        return String(Number(this.topicCloudSize) / 2)
+        return String(Number(this.cloudSize) / 2)
       } else {
-        return String(Number(this.topicCloudSize) / 3)
+        return String(Number(this.cloudSize) / 3)
       }
     },
     // eslint-disable-next-line
     emotionRatioWidth: function () {
       if (this.currentWindowWidth < this.colMdMin) {
-        return this.topicCloudSize
+        return this.cloudSize
       } else {
         return String(Number(this.currentWindowWidth / 4) - 50)
       }
@@ -306,7 +369,7 @@ export default {
     // eslint-disable-next-line
     emotionCloudWidth: function () {
       if (this.currentWindowWidth < this.colMdMin) {
-        return this.topicCloudSize
+        return this.cloudSize
       } else {
         return String(Number(this.currentWindowWidth / 4) - 140)
       }
@@ -314,11 +377,11 @@ export default {
     // eslint-disable-next-line
     selectedTweet: function () {
       if (this.focusEmotion === 'positive') {
-        return this.tweet.positive
+        return this.tweet[this.selectedWcId].positive
       } else if (this.focusEmotion === 'neutral') {
-        return this.tweet.neutral
+        return this.tweet[this.selectedWcId].neutral
       } else if (this.focusEmotion === 'negative') {
-        return this.tweet.negative
+        return this.tweet[this.selectedWcId].negative
       }
     }
   },
@@ -330,9 +393,16 @@ export default {
       this.currentWindowWidth = window.innerWidth
     })
   },
+  updated() {
+    if (!this.tbodyElem) {
+      this.tbodyElem = document.getElementById('tbody-tweet')
+    }
+    if (this.tbodyElem) {
+      this.tbodyElem.addEventListener('scroll', this.loadTweet)
+    }
+  },
   methods: {
     searchAnalyze(keyword, tweetNum) {
-      this.isOpen = true
       axios.get('/search_analyze').then((response) => {
         this.searchKeyword = this.keyword
         this.topicWord = response.data.topicWord
@@ -341,8 +411,7 @@ export default {
         this.emotionWord = response.data.emotionWord
         this.tweet = response.data.tweet
       })
-      this.topic_cloud_w = document.getElementById('topicCloud').style.maxWidth
-      this.topic_cloud_h = document.getElementById('topicCloud').style.maxHeight
+      this.isOpen = true
       this.focusEmotion = 'positive'
 
       this.$nextTick(() => {
@@ -351,13 +420,27 @@ export default {
         this.negativeTab = document.getElementById('negative-tab')
         this.clickPositiveTab()
         this.tbodyElem = document.getElementById('tbody-tweet')
-        this.tbodyElem.addEventListener('scroll', this.loadTweet)
       })
-
-      // this.tbodyElem = document.getElementById('tbody-tweet')
     },
     wordClickHandler(name, value, vm) {
       console.log('wordClickHandler', name, value, vm)
+    },
+
+    splitWc(wcId) {
+      if (this.topicWord.length < 4) {
+        axios.get('/split_wc_' + wcId).then((response) => {
+          this.topicWord = response.data.topicWord
+          this.emotionRatio = response.data.emotionRatio
+          this.emotionWord = response.data.emotionWord
+          this.tweet = response.data.tweet
+        })
+        this.clickWcEmotionButton(0)
+      }
+    },
+    clickWcEmotionButton(wcId) {
+      this.selectedWcId = wcId
+      this.displayWcEmotionIcon = [false, false, false, false]
+      this.displayWcEmotionIcon[wcId] = true
     },
     clickPositiveTab() {
       this.focusEmotion = 'positive'
@@ -387,18 +470,26 @@ export default {
       tabElem.style.background = bgColor
       tabElem.style.boxShadow = '0 0'
     },
+
     loadTweet() {
       if (
         this.tbodyElem.scrollHeight ===
         this.tbodyElem.clientHeight + this.tbodyElem.scrollTop
       ) {
+        var selectedWcTweet = this.tweet[this.selectedWcId]
         axios.get('/load_tweet_' + this.focusEmotion).then((response) => {
           if (this.focusEmotion === 'positive') {
-            this.tweet.positive = this.tweet.positive.concat(response.data)
+            selectedWcTweet.positive = selectedWcTweet.positive.concat(
+              response.data
+            )
           } else if (this.focusEmotion === 'neutral') {
-            this.tweet.neutral = this.tweet.neutral.concat(response.data)
+            selectedWcTweet.neutral = selectedWcTweet.neutral.concat(
+              response.data
+            )
           } else if (this.focusEmotion === 'negative') {
-            this.tweet.negative = this.tweet.negative.concat(response.data)
+            selectedWcTweet.negative = selectedWcTweet.negative.concat(
+              response.data
+            )
           }
         })
       }
@@ -419,6 +510,46 @@ export default {
   font-size: 1.3rem;
   margin: 30px;
   text-align: left;
+}
+.chart-caption-topic {
+  font-size: 1.3rem;
+  margin: 30px 30px 0 30px;
+  text-align: left;
+}
+.wc-region {
+  margin: 15px;
+}
+.wc-box {
+  position: relative;
+}
+.wc-box-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 22px 30px;
+  width: 1.5em;
+  color: green;
+}
+.wc-box-split {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 15px 30px;
+  color: white;
+}
+.wc-box-emotion {
+  position: absolute;
+  top: 0;
+  right: 6em;
+  margin: 15px 60px;
+  color: white;
+}
+.cloud-region {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 15px;
+  text-align: center;
 }
 .tweeted-time-chart {
   margin: 30px;
