@@ -23,7 +23,9 @@
               name="tweet_num"
               v-model="tweetNum"
             >
-              <option selected>500</option>
+              <option selected>100</option>
+              <!-- debug -->
+              <option>500</option>
               <option>1000</option>
               <option>2000</option>
             </select>
@@ -262,7 +264,7 @@ export default {
       trend: '',
       keyword: '',
       searchKeyword: '',
-      tweetNum: 500,
+      tweetNum: 100,
       isSpinner: true,
       spinnerColor: '#999',
       spinnerSize: '15px',
@@ -403,14 +405,21 @@ export default {
   },
   methods: {
     searchAnalyze(keyword, tweetNum) {
-      axios.get('/search_analyze').then((response) => {
-        this.searchKeyword = this.keyword
-        this.topicWord = response.data.topicWord
-        this.tweetedTime = response.data.tweetedTime
-        this.emotionRatio = response.data.emotionRatio
-        this.emotionWord = response.data.emotionWord
-        this.tweet = response.data.tweet
-      })
+      axios
+        .get('/search_analyze', {
+          params: {
+            keyword: this.keyword,
+            tweetNum: this.tweetNum
+          }
+        })
+        .then((response) => {
+          this.searchKeyword = this.keyword
+          this.topicWord = response.data.topicWord
+          this.tweetedTime = response.data.tweetedTime
+          this.emotionRatio = response.data.emotionRatio
+          this.emotionWord = response.data.emotionWord
+          this.tweet = response.data.tweet
+        })
       this.isOpen = true
       this.focusEmotion = 'positive'
 

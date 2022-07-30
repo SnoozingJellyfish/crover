@@ -11,10 +11,10 @@ plt.switch_backend('Agg')
 import numpy as np
 from wordcloud import WordCloud
 
-from crover.process.mlask_no_mecab import MLAskNoMecab
+from backend.mlask_no_mecab import MLAskNoMecab
 #from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
-from crover import LOCAL_ENV
+#from crover import LOCAL_ENV
 
 '''
 # メモリ使用量が大きいためasariは用いない
@@ -26,6 +26,15 @@ if not LOCAL_ENV:
 logger = logging.getLogger(__name__)
 
 def emotion_analyze_all(words, tweets, algo='mlask'):
+    logger.info('collect tweet including cluster word')
+    cluster_tweets = tweet_collect(words, tweets)
+    logger.info('start emotion analysis')
+    emotion_ratio, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo=algo)
+    logger.info('finish emotion analysis')
+    return emotion_ratio, emotion_tweet_dict, emotion_word
+
+
+def emotion_analyze_all_pre(words, tweets, algo='mlask'):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
     logger.info('emotion analyze')
@@ -74,7 +83,7 @@ def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90
     emotion_word = {}
 
     if algo == 'mlask':
-        with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
+        with open('backend/data/mlask_emotion_dictionary.pickle', 'rb') as f:
             mlask_emotion_dictionary = pickle.load(f)
         emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
         for tweet in cluster_tweets:
@@ -104,7 +113,7 @@ def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90
             df_cluster.loc[i, 'orientation'] = np.mean(emotion_analyzer.analyze(df_cluster['tweet'][i]))
 
     elif algo == 'asari':
-        with open('crover/data/mlask_emotion_dictionary.pickle', 'rb') as f:
+        with open('backend/data/mlask_emotion_dictionary.pickle', 'rb') as f:
             mlask_emotion_dictionary = pickle.load(f)
         emotion_analyzer = MLAskNoMecab(mlask_emotion_dictionary)
 
