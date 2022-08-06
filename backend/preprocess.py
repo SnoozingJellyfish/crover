@@ -1,5 +1,12 @@
-import copy
-from importlib.resources import Resource
+import imp
+from backend.emotion_analyze import emotion_analyze_all
+from flask_restful import Resource, reqparse
+from google.cloud import datastore, storage
+from sudachipy import dictionary as suda_dict
+from sudachipy import tokenizer
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+# from importlib.resources import Resource
 import os
 import re
 import io
@@ -7,32 +14,27 @@ import base64
 import datetime as dt
 import pickle
 import csv
-from time import time
+import copy
 import requests
 import json
 import logging
 import site
 import concurrent.futures
 import traceback
-import datetime as dt
 
 import numpy as np
 import matplotlib
+from flask import session
 
-from backend import LOCAL_ENV
+from backend.clustering import clustering
+
+# from backend import LOCAL_ENV
 matplotlib.rcParams['timezone'] = 'Asia/Tokyo'
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
 plt.rcParams["font.size"] = 18
-from sudachipy import tokenizer
-from sudachipy import dictionary as suda_dict
-from google.cloud import datastore, storage
-from flask_restful import Resource, reqparse
 
-from backend.emotion_analyze import emotion_analyze_all
 
-#from crover import LOCAL_ENV
-#from crover.process.util import download_from_cloud
+# from crover import LOCAL_ENV
+# from crover.process.util import download_from_cloud
 '''
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
@@ -42,23 +44,40 @@ else:
 '''
 
 LOCAL_ENV = True
+ONCE_TWEET_NUM = 15
+sess_info = {}  # global variable containing recent session information
 
 logger = logging.getLogger(__name__)
+
+if LOCAL_ENV:
+    with open('backend/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
+        dict_all_count = pickle.load(f)
+    with open('backend/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
+        # with open('backend/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
+        word2vec = pickle.load(f)
+else:
+    logger.info('start loading dict_all_count')
+    dict_all_count = download_from_cloud(storage.Client(), os.environ.get(
+                'BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
+    logger.info('finish loading dict_all_count')
 
 
 class NoKeywordError(Exception):
     """検索可能な文字が含まれないキーワードの場合のエラー"""
     pass
 
+
 class InvalidURLError(Exception):
     """Twitter APIにリクエストするURLが有効でない場合のエラー"""
     pass
 
 # Twitter APIで現在のトレンドを取得する
+
+
 class SearchTrend(Resource):
     def get(self):
         logger.info('get trend')
-        trend_num=5
+        trend_num = 5
         headers = create_headers()
         url = 'https://api.twitter.com/1.1/trends/place.json?id=23424856'
         trend_list = connect_to_endpoint(url, headers)[0]['trends']
@@ -70,6 +89,27 @@ class SearchTrend(Resource):
 # Twitter APIで入力したキーワードを含むツイートを取得しツイートと感情分析結果を返す
 class SearchAnalyze(Resource):
     def get(self):
+        global sess_info
+
+        # ツイートを取得しワード数をカウントする
+        session.permanent = True
+
+        # ユーザーの直前のセッションの情報を削除
+        if 'searched_at' in session and session['searched_at'] in sess_info:
+            del sess_info[session['searched_at']]
+
+        # セッションを区別するタイムスタンプを設定
+        session['searched_at'] = dt.datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        logger.info(f'session timestamp: {session["searched_at"]}')
+        searched_at_list = list(sess_info.keys())
+        logger.info('count of remembered session: ' + str(len(searched_at_list)))
+
+        # 記憶する直近のセッションを10個以内にする
+        if len(searched_at_list) > 10:
+            del sess_info[sorted(searched_at_list)[0]]
+        sess_info[session['searched_at']] = {}
+        sess_info_at = sess_info[session['searched_at']]
+
         logger.info('get tweet')
         parser = reqparse.RequestParser()
         parser.add_argument('keyword', type=str)
@@ -77,81 +117,253 @@ class SearchAnalyze(Resource):
         query_data = parser.parse_args()
         keyword = query_data['keyword']
         tweet_num = query_data['tweetNum']
+        sess_info_at['keyword'] = keyword
+        sess_info_at['tweet_num'] = tweet_num
         logger.info(f'keyword: {keyword}, tweet_num: {tweet_num}')
 
-        logger.info('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
-        dict_word_count, tweets_list, time_hist, time_label = scrape_tweet(keyword, tweet_num)
+        logger.info(
+            'all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
+        dict_word_count, tweets_list, time_hist, time_label = scrape_tweet(
+            keyword, tweet_num)
+        sess_info_at['tweets'] = tweets_list
+        sess_info_at['tweet_time'] = {'hist': time_hist, 'label': time_label}
         logger.info('finish scraping tweets')
-        if LOCAL_ENV:
-            with open('backend/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
-                dict_all_count = pickle.load(f)
-        else:
-            logger.info('start loading dict_all_count')
-            dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
-            logger.info('finish loading dict_all_count')
-            
+
         if tweet_num > 1000:
             ignore_word_count = 10
         else:
             ignore_word_count = 5
 
         word_num_in_cloud = 100  # ワードクラウドで表示する単語数
-        dict_word_count_rate = word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud, tweet_num, ignore_word_count)
-        
+        dict_word_count_rate = word_count_rate(
+            dict_word_count, dict_all_count, word_num_in_cloud, tweet_num, ignore_word_count)
+        sess_info_at['word_counts'] = list(dict_word_count_rate.items())
+        sess_info_at['cluster_to_words'] = [{0: dict_word_count_rate}]
+
         topic_word_list = []
         for k, v in dict_word_count_rate.items():
-            topic_word_list.append({ "text": k, "value": v })
+            topic_word_list.append({"text": k, "value": v})
 
-        emotion_ratio, emotion_tweet_dict, emotion_word = emotion_analyze_all(dict_word_count_rate.keys(), tweets_list)
+        emotion_ratio, emotion_tweet_dict, emotion_word = emotion_analyze_all(
+            dict_word_count_rate.keys(), tweets_list)
         emotion_word_list = []
         for k, v in emotion_word.items():
-            emotion_word_list.append({ "text": k, "value": v })
+            emotion_word_list.append({"text": k, "value": v})
+        sess_info_at['emotion_tweet'] = [[emotion_tweet_dict]]
+        sess_info_at['emotion_ratio'] = emotion_ratio[::-1]
+        sess_info_at['depth'] = 0
+
+        # クライアントに渡す先頭のツイートを抽出
+        isLoad = [{'positive': False, 'neutral': False, 'negative': False} for _ in range(4)]
+        sess_info_at['isLoad'] = [isLoad]
+        tweet = {}
+        for emotion in ['positive', 'neutral', 'negative']:
+            tweet[emotion] = {}
+            retention_tweet = sess_info_at['emotion_tweet'][0][0][emotion]
+
+            if ONCE_TWEET_NUM < len(retention_tweet):
+                tweet[emotion] = retention_tweet[:ONCE_TWEET_NUM]
+                isLoad[0][emotion] = True
+            else:
+                tweet[emotion] = retention_tweet
+                isLoad[0][emotion] = False
 
         result = {"topicWord": [topic_word_list],
-            "emotionWord": [
-            emotion_word_list
-            ],
-            "tweetedTime": {
-            "labels": time_label,
-            "datasets": [
-                {
-                "data": time_hist,
-                "backgroundColor": "dodgerblue",
-                "barPercentage": 1.2
-                }
-            ]
-            },
-            "emotionRatio": [
-            {
-                "labels": ["ネガティブ", "ニュートラル", "ポジティブ"],
-                "datasets": [
-                {
-                    "label": "Data One",
-                    "backgroundColor": ["#59a0f1", "#5bca78", "#e77181"],
-                    "data": emotion_ratio
-                }
-                ]
-            }
-            ],
-            "tweet": [
-            emotion_tweet_dict
-            ]
-        }
-        
+                  "emotionWord": [emotion_word_list],
+                  "tweetedTime": {
+                    "labels": time_label,
+                    "datasets": [
+                        {
+                            "data": time_hist,
+                            "backgroundColor": "dodgerblue",
+                            "barPercentage": 1.2
+                        }
+                    ]
+                  },
+                  "emotionRatio": [
+                    {
+                      "labels": ["ネガティブ", "ニュートラル", "ポジティブ"],
+                      "datasets": [
+                        {
+                          "label": "Data One",
+                          "backgroundColor": ["#59a0f1", "#5bca78", "#e77181"],
+                          "data": sess_info_at['emotion_ratio']
+                        }
+                      ]
+                    }
+                  ],
+                  "tweet": [tweet],
+                  "isLoad": isLoad
+                  }
+
+        sess_info_at['cluster_result'] = [result]
+
         return result
 
 
+# Twitter APIで入力したキーワードを含むツイートを取得しツイートと感情分析結果を返す
+class SplitWc(Resource):
+    def get(self):
+        logger.info('split word cloud')
+        sess_info_at = sess_info[session['searched_at']]
+        depth = sess_info_at['depth']
+        # 戻った状態で分割する時は以降の階層を削除
+        if len(sess_info_at['cluster_result']) > depth + 1:
+            del sess_info_at['cluster_result'][depth + 1:]
+            del sess_info_at['emotion_tweet'][depth + 1:]
+            del sess_info_at['isLoad'][depth + 1:]
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('wcId', type=int)
+        query_data = parser.parse_args()
+        wc_id = query_data['wcId']
+
+        # クラスターが1つだけ
+        if depth == 0:
+            # 既にベクトルが取得されている場合（戻って再び分割する場合）
+            if len(sess_info_at['cluster_to_words']) > 1:
+                pass  # TODO
+
+            if LOCAL_ENV:
+                top_word2vec = make_top_word2vec_dic(sess_info_at['cluster_to_words'][depth][wc_id])
+            else:
+                top_word2vec = make_top_word2vec_dic_datastore(sess_info_at['cluster_to_words'][depth][wc_id])
+            sess_info_at['top_word2vec'] = top_word2vec
+            sess_info_at['cluster_to_words'].append(clustering(top_word2vec))
+
+        # クラスターが複数
+        else:
+            clustered_words = sess_info_at['cluster_to_words'][depth]
+            if len(clustered_words) == 1:  # クラスターの単語が1つのときそのまま返す
+                pass  # TODO
+
+            part_word2vec = make_part_word2vec_dic(clustered_words[wc_id], sess_info_at['top_word2vec'])
+            split_cluster_to_words = clustering(part_word2vec)
+            pre_cluster_to_words = copy.deepcopy(clustered_words)
+            if len(sess_info_at['cluster_to_words']) == depth + 1:
+                sess_info_at['cluster_to_words'].append(copy.deepcopy(clustered_words))
+            else:
+                sess_info_at['cluster_to_words'][depth+1] = copy.deepcopy(clustered_words)
+            sess_info_at['cluster_to_words'][depth+1][wc_id] = split_cluster_to_words[0]
+            sess_info_at['cluster_to_words'][depth+1][wc_id+1] = split_cluster_to_words[1]
+
+            for i in range(wc_id+1, len(list(pre_cluster_to_words.keys()))):
+                sess_info_at['cluster_to_words'][depth+1][i+1] = pre_cluster_to_words[i]
+
+        sess_info_at['depth'] += 1
+        depth = sess_info_at['depth']
+        topic_word_list_list = []
+        emotion_word_list_list = []
+        emotion_ratio_list = []
+        tweet_list = []
+        cluster_to_words = sess_info_at['cluster_to_words'][sess_info_at['depth']]
+        sess_info_at['emotion_tweet'].append([])
+        sess_info_at['isLoad'].append([{'positive': False, 'neutral': False, 'negative': False} for _ in range(4)])
+
+        for i in range(len(cluster_to_words)):
+            topic_word_list_list.append([])
+            for k, v in cluster_to_words[i].items():
+                topic_word_list_list[-1].append({"text": k, "value": v})
+
+            emotion_ratio, emotion_tweet_dict, emotion_word = emotion_analyze_all(
+                cluster_to_words[i].keys(), sess_info_at['tweets'])
+            sess_info_at['emotion_tweet'][-1].append(emotion_tweet_dict)
+            emotion_ratio_list.append({
+                      "labels": ["ネガティブ", "ニュートラル", "ポジティブ"],
+                      "datasets": [
+                        {
+                          "label": "Data One",
+                          "backgroundColor": ["#59a0f1", "#5bca78", "#e77181"],
+                          "data": emotion_ratio[::-1]
+                        }
+                      ]
+                    })
+            emotion_word_list_list.append([])
+            for k, v in emotion_word.items():
+                emotion_word_list_list[-1].append({"text": k, "value": v})
+
+            tweet = {}
+            
+            for emotion in ['positive', 'neutral', 'negative']:
+                tweet[emotion] = {}
+                retention_tweet = emotion_tweet_dict[emotion]
+
+                if ONCE_TWEET_NUM < len(retention_tweet):
+                    tweet[emotion] = retention_tweet[:ONCE_TWEET_NUM]
+                    sess_info_at['isLoad'][depth][i][emotion] = True
+                else:
+                    tweet[emotion] = retention_tweet
+                    sess_info_at['isLoad'][depth][i][emotion] = False
+
+            tweet_list.append(tweet)
+            
+        result = {"topicWord": topic_word_list_list,
+                  "emotionWord": emotion_word_list_list,
+                  "emotionRatio": emotion_ratio_list,
+                  "tweet": tweet_list,
+                  "isLoad": sess_info_at['isLoad'][depth]
+                  }
+
+        sess_info_at['cluster_result'].append(result)
+
+        return result
 
 
+# EmotionBlock内の戻るボタンを押したときに1つ前の階層のクラスターを返す
+class BackCluster(Resource):
+    def get(self):
+        logger.info('back cluster')
+        sess_info_at = sess_info[session['searched_at']]
+        sess_info_at['depth'] -= 1
+        depth = sess_info_at['depth']
+
+        # クラスターが1つだけ
+        if depth == 0:
+            if "tweetedTime" in sess_info_at['cluster_result'][depth]:
+                del sess_info_at['cluster_result'][depth]["tweetedTime"]
+
+        return sess_info_at['cluster_result'][depth]
+
+
+# 感情分析済みのツイートを追加で返す
+class LoadTweet(Resource):
+    def get(self):
+        logger.info('load more tweet')
+        sess_info_at = sess_info[session['searched_at']]
+        depth = sess_info_at['depth']
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('wcId', type=int)
+        parser.add_argument('emotion', type=str)
+        parser.add_argument('tweetCnt', type=int)
+        query_data = parser.parse_args()
+        wc_id = query_data['wcId']
+        emotion = query_data['emotion']
+        tweet_cnt = query_data['tweetCnt']
+
+        retention_tweet = sess_info_at['emotion_tweet'][depth][wc_id][emotion]
+        if tweet_cnt + ONCE_TWEET_NUM < len(retention_tweet):
+            add_tweet = retention_tweet[tweet_cnt: tweet_cnt + ONCE_TWEET_NUM]
+            sess_info_at['isLoad'][depth][wc_id][emotion] = True
+            isLoad = True
+        else:
+            add_tweet = retention_tweet[tweet_cnt:]
+            sess_info_at['isLoad'][depth][wc_id][emotion] = False
+            isLoad = False
+
+        return {'addTweet': add_tweet, 'isLoadOne': isLoad}
 
 def preprocess_all(keyword, max_tweets, word_num_in_cloud):
-    logger.info('all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
+    logger.info(
+        'all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
 
-    dict_word_count, tweets_list, b64_time_hist = scrape_tweet(keyword, max_tweets)
+    dict_word_count, tweets_list, b64_time_hist = scrape_tweet(
+        keyword, max_tweets)
     logger.info('finish scraping tweets')
     if not LOCAL_ENV:
         logger.info('start loading dict_all_count')
-        dict_all_count = download_from_cloud(storage.Client(), os.environ.get('BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
+        dict_all_count = download_from_cloud(storage.Client(), os.environ.get(
+            'BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
         logger.info('finish loading dict_all_count')
     else:
         from crover import dict_all_count
@@ -160,10 +372,13 @@ def preprocess_all(keyword, max_tweets, word_num_in_cloud):
         ignore_word_count = 10
     else:
         ignore_word_count = 5
-    topic_word_list = word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud, max_tweets, ignore_word_count)
+    topic_word_list = word_count_rate(
+        dict_word_count, dict_all_count, word_num_in_cloud, max_tweets, ignore_word_count)
     return topic_word_list, tweets_list, b64_time_hist
 
 # 認証済みトークンのヘッダーを作成
+
+
 def create_headers():
     tokens = [os.environ.get("TWITTER_BEARER_TOKEN1"),
               os.environ.get("TWITTER_BEARER_TOKEN2"),
@@ -173,6 +388,8 @@ def create_headers():
     return headers
 
 # ツイートを取得するURLを作成
+
+
 def create_url(keyword, next_token_id=None, max_results=10):
     # リツイート、リプライ、公式アカウント、広告を除外
     query = f'query={keyword} -is:retweet -is:reply -is:verified lang:ja'
@@ -191,6 +408,8 @@ def create_url(keyword, next_token_id=None, max_results=10):
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 # リツイートを取得するURLを作成（リツイートはTwitter API v1.1でないと取得できない）
+
+
 def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=3000):
     if next_results:
         url = f'https://api.twitter.com/1.1/search/tweets.json{next_results}'
@@ -200,29 +419,34 @@ def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 # リツイートを取得
+
+
 def create_url_retweet_author(tweet, since_date=None, next_token_id=None, max_results=100):
     #url = f'https://api.twitter.com/1.1/statuses/retweeters/ids.json?id={tweet_id}&cursor={cursor}'
-    #query = f'query="{tweet}" is:retweet -is:reply since:{since_date}_00:00:00_JST'  # retweet
-    #query = f'query="{tweet}" is:retweet -is:reply'  # retweet
+    # query = f'query="{tweet}" is:retweet -is:reply since:{since_date}_00:00:00_JST'  # retweet
+    # query = f'query="{tweet}" is:retweet -is:reply'  # retweet
     #tweet_fields = "tweet.fields=author_id"
     #mrf = "max_results={}".format(max_results)
     #since = f"until={since_date}"
     if next_token_id:
         #next_token = 'next_token=' + next_token_id
-        #url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
-            #query, tweet_fields, mrf, next_token
-        #)
-        url = f'https://api.twitter.com/1.1/search/tweets.json{next_token_id}'  # v1.1
+        # url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
+        #query, tweet_fields, mrf, next_token
+        # )
+        # v1.1
+        url = f'https://api.twitter.com/1.1/search/tweets.json{next_token_id}'
     else:
-        #url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
-            #query, tweet_fields, mrf, since
-        #)
+        # url = "https://api.twitter.com/2/tweets/search/recent?{}&{}&{}&{}".format(
+        #query, tweet_fields, mrf, since
+        # )
         query = f'"{tweet}" since:{since_date}_03:00:00_JST'  # retweet
         url = f'https://api.twitter.com/1.1/search/tweets.json?q={query}&count={max_results}'
 
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
 # Twitter APIで情報を取得
+
+
 def connect_to_endpoint(url, headers):
     response = requests.request("GET", url, headers=headers)
     if response.status_code != 200:
@@ -233,6 +457,8 @@ def connect_to_endpoint(url, headers):
     return response.json()
 
 # ツイートの取得、クリーン、名詞抽出・カウント、
+
+
 def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
     headers = create_headers()
@@ -243,7 +469,8 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
 
     # regex to clean tweets
     regexes = [
-        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(
+            r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
         re.compile(" .*\.jp/.*$"),
         re.compile('@\S* '),
         re.compile('pic.twitter.*$'),
@@ -251,8 +478,10 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
         re.compile('[ 　]'),
         re.compile('\n')
     ]
-    URL_regex = re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
-    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
+    URL_regex = re.compile(
+        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
+    sign_regex = re.compile(
+        '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
 
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
@@ -297,10 +526,12 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
                 past_tweets.append(tweet_no_URL)
 
             try:
-                created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
+                created_at_UTC = dt.datetime.strptime(
+                    result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
             except IndexError:
                 continue
-            created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+            created_at = created_at_UTC.astimezone(
+                dt.timezone(dt.timedelta(hours=+9)))
             # time_list.append(created_at)
             time_array = np.append(time_array, created_at.timestamp())
 
@@ -319,7 +550,8 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
 
             # update noun count dictionary
             #logger.info('noun count')
-            dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+            dict_word_count, split_word = noun_count(
+                tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
             tweets_list.append([created_at, tweet_no_URL, split_word])
 
@@ -347,7 +579,8 @@ def scrape_tweet_pre(keyword, max_tweets, algo='sudachi'):
 
     # regex to clean tweets
     regexes = [
-        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(
+            r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
         re.compile(" .*\.jp/.*$"),
         re.compile('@\S* '),
         re.compile('pic.twitter.*$'),
@@ -355,9 +588,11 @@ def scrape_tweet_pre(keyword, max_tweets, algo='sudachi'):
         re.compile('[ 　]'),
         re.compile('\n')
     ]
-    URL_regex = re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
+    URL_regex = re.compile(
+        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
 
-    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
+    sign_regex = re.compile(
+        '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
 
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
@@ -394,10 +629,12 @@ def scrape_tweet_pre(keyword, max_tweets, algo='sudachi'):
 
         for j in range(len(result['data'])):
             try:
-                created_at_UTC = dt.datetime.strptime(result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
+                created_at_UTC = dt.datetime.strptime(
+                    result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
             except IndexError:
                 continue
-            created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+            created_at = created_at_UTC.astimezone(
+                dt.timezone(dt.timedelta(hours=+9)))
 
             tweet_text = result['data'][j]['text']
 
@@ -424,7 +661,8 @@ def scrape_tweet_pre(keyword, max_tweets, algo='sudachi'):
 
             # update noun count dictionary
             #logger.info('noun count')
-            dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+            dict_word_count, split_word = noun_count(
+                tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
             tweets_list.append([created_at, tweet_no_URL, split_word])
 
@@ -491,6 +729,8 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
     return dict_word_count, str(split_word)
 
 # ツイート日時のヒストグラムを作る
+
+
 def make_time_hist(time_array):
     hist, bins = np.histogram(time_array)
     time_label = ['' for _ in range(10)]
@@ -505,14 +745,17 @@ def make_time_hist(time_array):
         time_label[0] = dt.datetime.fromtimestamp(bins[0]).strftime('%H:%M')
         time_label[-1] = dt.datetime.fromtimestamp(bins[-1]).strftime('%H:%M')
     elif dif_bins < 60 * 30:
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d %H:%M')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d %H:%M')
         round_m = 10
-        round_start_m = int(np.round(float(time_label_start[-2:]) / round_m + 0.4) * round_m)  # 5分単位で繰り上げ
+        round_start_m = int(
+            np.round(float(time_label_start[-2:]) / round_m + 0.4) * round_m)  # 5分単位で繰り上げ
         round_start_h = int(time_label_start[-5:-3])
         if round_start_m == 60:
             round_start_h += 1
             round_start_m = 0
-        round_start_dt = dt.datetime.strptime(f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M')
+        round_start_dt = dt.datetime.strptime(
+            f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M')
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -521,16 +764,19 @@ def make_time_hist(time_array):
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
                 round_dt = round_dt + dt.timedelta(minutes=round_m)
-    
+
     elif dif_bins < 60 * 60:
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d %H:%M')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d %H:%M')
         round_m = 20
-        round_start_m = int(np.round(float(time_label_start[-2:]) / round_m + 0.4) * round_m)  # 10分単位で繰り上げ
+        round_start_m = int(
+            np.round(float(time_label_start[-2:]) / round_m + 0.4) * round_m)  # 10分単位で繰り上げ
         round_start_h = int(time_label_start[-5:-3])
         if round_start_m == 60:
             round_start_h += 1
             round_start_m = 0
-        round_start_dt = dt.datetime.strptime(f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M')
+        round_start_dt = dt.datetime.strptime(
+            f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M')
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -539,10 +785,12 @@ def make_time_hist(time_array):
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
                 round_dt = round_dt + dt.timedelta(minutes=round_m)
-    
+
     elif dif_bins < 60 * 60 * 3:
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d %H:00')
-        round_start_dt = dt.datetime.strptime(time_label_start, '%Y/%m/%d %H:%M')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d %H:00')
+        round_start_dt = dt.datetime.strptime(
+            time_label_start, '%Y/%m/%d %H:%M')
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
             bin_dt = dt.datetime.fromtimestamp(bin)
@@ -551,12 +799,14 @@ def make_time_hist(time_array):
                 time_label[i] = round_dt.strftime('%H:%M')
                 round_dt = round_dt + dt.timedelta(hours=1)
 
-
     elif dif_bins < 60 * 60 * 6:
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d %H:00')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d %H:00')
         round_h = 2
-        round_start_h = int(np.round(float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 2h単位で繰り上げ
-        round_start_dt = dt.datetime.strptime(f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
+        round_start_h = int(np.round(
+            float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 2h単位で繰り上げ
+        round_start_dt = dt.datetime.strptime(
+            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -567,10 +817,13 @@ def make_time_hist(time_array):
                 round_dt = round_dt + dt.timedelta(hours=round_h)
 
     elif dif_bins < 60 * 60 * 12:
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d %H:00')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d %H:00')
         round_h = 4
-        round_start_h = int(np.round(float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 4h単位で繰り上げ
-        round_start_dt = dt.datetime.strptime(f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
+        round_start_h = int(np.round(
+            float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 4h単位で繰り上げ
+        round_start_dt = dt.datetime.strptime(
+            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -581,10 +834,13 @@ def make_time_hist(time_array):
                 round_dt = round_dt + dt.timedelta(hours=round_h)
 
     elif dif_bins < 60 * 60 * 24:
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d %H:00')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d %H:00')
         round_h = 8
-        round_start_h = int(np.round(float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 8h単位で繰り上げ
-        round_start_dt = dt.datetime.strptime(f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
+        round_start_h = int(np.round(
+            float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 8h単位で繰り上げ
+        round_start_dt = dt.datetime.strptime(
+            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -595,8 +851,10 @@ def make_time_hist(time_array):
                 round_dt = round_dt + dt.timedelta(hours=round_h)
 
     else:  # 1日以上7日未満
-        time_label_start = dt.datetime.fromtimestamp(bins[0]).strftime('%Y/%m/%d 00:00')
-        round_start_dt = dt.datetime.strptime(time_label_start, '%Y/%m/%d %H:%M')
+        time_label_start = dt.datetime.fromtimestamp(
+            bins[0]).strftime('%Y/%m/%d 00:00')
+        round_start_dt = dt.datetime.strptime(
+            time_label_start, '%Y/%m/%d %H:%M')
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
             bin_dt = dt.datetime.fromtimestamp(bin)
@@ -668,9 +926,12 @@ def make_time_hist_pre(time_list):
 
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
+
+
 def word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=3):
     logger.info('------------ word count rate start --------------')
-    dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count = dict(
+        sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
 
     # 除外単語リストを取得
@@ -691,11 +952,13 @@ def word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud=20, max_t
 
         try:
             # 1以下のカウントはwordcloudで認識されないため最後に1を足す
-            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1) + 1
+            dict_word_count_rate[word] = float(
+                dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1) + 1
         except TypeError:
             continue
 
-    dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count_rate = dict(
+        sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
     extract_dict = {}
 
     # 相対出現頻度が高いワードからword_num_in_cloud個抽出
@@ -713,7 +976,8 @@ def word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud=20, max_t
 # （相対頻出度を計算する）
 def word_count_rate_pre(dict_word_count, dict_all_count, word_num_in_cloud=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=3):
     logger.info('------------ word count rate start --------------')
-    dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count = dict(
+        sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
 
     # 除外単語リストを取得
@@ -734,11 +998,13 @@ def word_count_rate_pre(dict_word_count, dict_all_count, word_num_in_cloud=20, m
 
         try:
             # 1以下のカウントはwordcloudで認識されないため最後に1を足す
-            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1) + 1
+            dict_word_count_rate[word] = float(
+                dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1) + 1
         except TypeError:
             continue
 
-    dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count_rate = dict(
+        sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
     extract_dict = {}
 
     # 相対出現頻度が高いワードからword_num_in_cloud個抽出
@@ -754,9 +1020,11 @@ def word_count_rate_pre(dict_word_count, dict_all_count, word_num_in_cloud=20, m
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
 def make_top_word2vec_dic(dict_word_count_rate):
-    logger.info('-------------- making dict_top_word2vec start -----------------\n')
+    logger.info(
+        '-------------- making dict_top_word2vec start -----------------\n')
 
-    dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
+    dict_top_word2vec = {'word': [], 'vec': [],
+                         'word_count_rate': [], 'not_dict_word': {}}
     all_word_list = list(word2vec.keys())
 
     for word in dict_word_count_rate.keys():
@@ -765,18 +1033,22 @@ def make_top_word2vec_dic(dict_word_count_rate):
         if word in all_word_list:
             dict_top_word2vec['word'].append(word)
             dict_top_word2vec['vec'].append(word2vec[word])
-            dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
+            dict_top_word2vec['word_count_rate'].append(
+                dict_word_count_rate[word])
         else:
             dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
-    logger.info('-------------- making dict_top_word2vec finish -----------------\n')
+    logger.info(
+        '-------------- making dict_top_word2vec finish -----------------\n')
     return dict_top_word2vec
 
 
 def make_top_word2vec_dic_datastore(dict_word_count_rate):
-    logger.info('-------------- making dict_top_word2vec start -----------------\n')
+    logger.info(
+        '-------------- making dict_top_word2vec start -----------------\n')
 
-    dict_top_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': {}}
+    dict_top_word2vec = {'word': [], 'vec': [],
+                         'word_count_rate': [], 'not_dict_word': {}}
     client = datastore.Client()
     keys = []
 
@@ -799,29 +1071,37 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate):
             dict_top_word2vec['word'].append(word)
             entity = entities[vec_exist_words.index(word)]
             dict_top_word2vec['vec'].append(np.array(entity['vec']))
-            dict_top_word2vec['word_count_rate'].append(dict_word_count_rate[word])
+            dict_top_word2vec['word_count_rate'].append(
+                dict_word_count_rate[word])
         else:
             logger.info('vec not exist: ' + word)
             dict_top_word2vec['not_dict_word'][word] = dict_word_count_rate[word]
 
-    logger.info('-------------- making dict_top_word2vec finish -----------------\n')
+    logger.info(
+        '-------------- making dict_top_word2vec finish -----------------\n')
 
     return dict_top_word2vec
 
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
-    logger.info('-------------- making dict_part_word2vec start -----------------\n')
 
-    dict_part_word2vec = {'word': [], 'vec': [], 'word_count_rate': [], 'not_dict_word': []}
+
+def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
+    logger.info(
+        '-------------- making dict_part_word2vec start -----------------\n')
+
+    dict_part_word2vec = {'word': [], 'vec': [],
+                          'word_count_rate': [], 'not_dict_word': []}
 
     for word in dict_word_count_rate.keys():
         logger.info(word)
         word_idx = top_word2vec['word'].index(word)
         dict_part_word2vec['word'].append(word)
         dict_part_word2vec['vec'].append(top_word2vec['vec'][word_idx])
-        dict_part_word2vec['word_count_rate'].append(top_word2vec['word_count_rate'][word_idx])
+        dict_part_word2vec['word_count_rate'].append(
+            top_word2vec['word_count_rate'][word_idx])
 
-    logger.info('-------------- making dict_part_word2vec finish -----------------\n')
+    logger.info(
+        '-------------- making dict_part_word2vec finish -----------------\n')
 
     return dict_part_word2vec
 
@@ -838,7 +1118,6 @@ def OKword(word, excluded_word, excluded_char):
     return True
 
 
-
 # リツイートの取得
 def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
     logger.info('-------------- scrape start -----------------\n')
@@ -848,7 +1127,8 @@ def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
     with open('crover/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
         excluded_tweet = f.read().split('\n')
 
-    URL_regex = re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
+    URL_regex = re.compile(
+        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
 
     # 先頭と末尾のスペースを除去し、間のスペースをORに変換する
     keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)
@@ -862,7 +1142,8 @@ def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
 
     for i in range(max_tweets // max_results):
         logger.info('start scraping')
-        url = create_url_retweet(keyword, next_results, max_results=max_results, min_retweets=min_retweets)
+        url = create_url_retweet(
+            keyword, next_results, max_results=max_results, min_retweets=min_retweets)
         try:
             result = connect_to_endpoint(url, headers)
         except:
@@ -896,7 +1177,8 @@ def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
 
             retweet.append({'tweet_id': res['id'], 'author': res['user']['name'],
                             'text': tweet_no_URL, 'count': res["retweet_count"]})
-            logger.info(f'retweet_count: {res["retweet_count"]}, {res["created_at"]}')
+            logger.info(
+                f'retweet_count: {res["retweet_count"]}, {res["created_at"]}')
 
         next_results = result['search_metadata']['next_results']
 
@@ -930,8 +1212,8 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
     retweet_OK = []
     for i, r in enumerate(retweet):
         # debug
-        #if i > 10:
-            #break
+        # if i > 10:
+        # break
 
         headers = create_headers()
         logger.info(f"{i+1} / {len(retweet)}, retweet count: {r['count']}")
@@ -964,13 +1246,13 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
             url = create_url_retweet_author(t, since_date, next_token_id)
             #result = connect_to_endpoint(url, headers)
 
-            #if 'data' in result:
+            # if 'data' in result:
             try:
                 result = connect_to_endpoint(url, headers)
                 k += 1
-            #else:
+            # else:
             except InvalidURLError:
-                #logger.info(traceback.format_exc())
+                # logger.info(traceback.format_exc())
                 t = stop_noun(t, tokenizer_obj, mode)
                 if t == ' ' or len(t) < 3:
                     logger.info(f"extract few string '{t}'")
@@ -983,11 +1265,11 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
                 logger.info(traceback.format_exc())
                 break
 
-            #for res in result['data']:
+            # for res in result['data']:
             for res in result['statuses']:
                 r['re_author'].append(res['user']['id'])
 
-            #if 'next_token' in result['meta']:
+            # if 'next_token' in result['meta']:
                 #next_token_id = result['meta']['next_token']
             # これ以上リツイートがない場合
             if 'next_results' in result['search_metadata']:
@@ -1005,19 +1287,6 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
     return retweet_OK
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 ##################### 以下使わない関数 ######################
 
 def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudachi'):
@@ -1028,7 +1297,8 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudach
 
     # regex to clean tweets
     regexes = [
-        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(
+            r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
         re.compile(" .*\.jp/.*$"),
         re.compile('@\S* '),
         re.compile('pic.twitter.*$'),
@@ -1036,7 +1306,8 @@ def scrape(keyword, max_tweets, since, until, checkpoint_cnt=10000, algo='sudach
         re.compile('[ 　]'),
         re.compile('\n')
     ]
-    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+    sign_regex = re.compile(
+        '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
 
     if algo == 'mecab':
         m = MeCab.Tagger("-Ochasen")
@@ -1095,6 +1366,8 @@ def scrape_next_tweets(max_results, keyword, headers, next_token_id):
 # マルチスレッド・コアでツイートの取得、クリーン、名詞抽出・カウント
 # マルチスレッドはリクエスト待ちでも速くならない
 # マルチコアはsudachipyでは無理
+
+
 def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
     bearer_token = auth()
@@ -1102,7 +1375,8 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
 
     # regex to clean tweets
     regexes = [
-        re.compile(r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+        re.compile(
+            r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
         re.compile(" .*\.jp/.*$"),
         re.compile('@\S* '),
         re.compile('pic.twitter.*$'),
@@ -1110,7 +1384,8 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
         re.compile('[ 　]'),
         re.compile('\n')
     ]
-    sign_regex = re.compile('[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
+    sign_regex = re.compile(
+        '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF。、ー～！？!?()（）]')
 
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
@@ -1118,7 +1393,8 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
         lib_path = site.getsitepackages()
         logger.info(lib_path)
         try:
-            tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
+            tokenizer_obj = suda_dict.Dictionary(
+                config_path='crover/data/sudachi.json', resource_dir=os.path.join(lib_path[0], 'sudachipy/resources')).create()
         except:
             tokenizer_obj = suda_dict.Dictionary(config_path='crover/data/sudachi.json',
                                                  resource_dir=os.path.join(lib_path[-1], 'sudachipy/resources')).create()
@@ -1132,8 +1408,9 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
     tweets = []
     tweets_info_tasks = []
     tweets_info_list = []
-    #with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor: # multi thread
-    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor: # multi core
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor: # multi thread
+    # multi core
+    with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
         for i in range(max_tweets // max_results + 1):
             if i == max_tweets // max_results:
                 max_results = max_tweets % max_results
@@ -1144,7 +1421,8 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
             #url = create_url(keyword, next_token_id, max_results)
             #result = connect_to_endpoint(url, headers)
 
-            tweets.append(executor.submit(scrape_next_tweets, max_results, keyword, headers, next_token_id))
+            tweets.append(executor.submit(scrape_next_tweets,
+                          max_results, keyword, headers, next_token_id))
 
             if i > 0:
                 tweets_info, dict_word_count = tweets_info_tasks[-1].result()
@@ -1152,7 +1430,8 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
                 tweets_info_list.extend(tweets_info)
 
             logger.info('start word count tweet')
-            tweets_info_tasks.append(executor.submit(word_count, tweets[-1].result(), regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
+            tweets_info_tasks.append(executor.submit(word_count, tweets[-1].result(
+            ), regexes, sign_regex, tokenizer_obj, mode, keyword, dict_word_count))
 
             result = tweets[-1].result()
             if 'next_token' in result['meta']:
@@ -1163,9 +1442,9 @@ def scrape_token_multi_thread(keyword, max_tweets, algo='sudachi'):
     tweets_info, dict_word_count = tweets_info_tasks[-1].result()
     #tweets_info = tweets_info_tasks[-1].result()
     tweets_info_list.extend(tweets_info)
-        #tweets_info_list = tweets_info_tasks[0].result()
-        #for i in range(1, len(tweets_info_tasks)):
-        #    tweets_info_list.extend(tweets_info_tasks[i].result())
+    #tweets_info_list = tweets_info_tasks[0].result()
+    # for i in range(1, len(tweets_info_tasks)):
+    #    tweets_info_list.extend(tweets_info_tasks[i].result())
     #tweets_info_list = [x.result() for x in tweets_info_tasks]
     logger.info('-------------- scrape finish -----------------\n')
 
@@ -1188,7 +1467,8 @@ def scrapeAll(output_name, max_tweets, until):
     for i in tqdm(range(max_tweets//10000)):
         dt_since = dt_until - timedelta
         keyword = all_hiragana[i % len(keyword_all)]
-        scrape(output_name, keyword, 10000, dt_since.strftime('%Y-%m-%d'), dt_until.strftime('%Y-%m-%d'))
+        scrape(output_name, keyword, 10000, dt_since.strftime(
+            '%Y-%m-%d'), dt_until.strftime('%Y-%m-%d'))
         dt_until -= timedelta
 
 
@@ -1201,7 +1481,8 @@ def word_count_old(result, regexes, sign_regex, tokenizer_obj, mode, keyword, di
                                                   '%Y-%m-%dT%H:%M:%S.%f%z')
         except IndexError:
             continue
-        created_at = created_at_UTC.astimezone(dt.timezone(dt.timedelta(hours=+9)))
+        created_at = created_at_UTC.astimezone(
+            dt.timezone(dt.timedelta(hours=+9)))
 
         tweet_text = result['data'][j]['text']
         # clean tweet
@@ -1210,14 +1491,17 @@ def word_count_old(result, regexes, sign_regex, tokenizer_obj, mode, keyword, di
 
         # update noun count dictionary
         # logger.info('noun count')
-        dict_word_count, split_word = noun_count(tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+        dict_word_count, split_word = noun_count(
+            tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
         tweets_info.append([created_at, result['data'][j]['text'], split_word])
 
     return tweets_info, dict_word_count
-    #return tweets_info
+    # return tweets_info
 
 # load all word count from datastore
+
+
 def word_count_rate_datastore(dict_word_count, top_word_num=20, max_tweets=100, ignore_word_count=5):
     print('------------ word count rate start --------------')
     client = datastore.Client()
@@ -1236,32 +1520,36 @@ def word_count_rate_datastore(dict_word_count, top_word_num=20, max_tweets=100, 
         count_exist_words.append(entity.key.name)
     print(count_exist_words)
 
-    dict_word_count = dict(sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count = dict(
+        sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
     dict_word_count_rate = {}
     for word in dict_word_count.keys():
         # 出現頻度の低い単語は無視
         if dict_word_count[word] < ignore_word_count:
             break
 
-        #if (word in dict_all_count.keys()):
+        # if (word in dict_all_count.keys()):
         if word in count_exist_words:
             all_count = entities[count_exist_words.index(word)]['count']
         else:
             all_count = 0
 
         try:
-            dict_word_count_rate[word] = float(dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1)
+            dict_word_count_rate[word] = float(
+                dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1)
         except TypeError:
             continue
 
-    dict_word_count_rate = dict(sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
+    dict_word_count_rate = dict(
+        sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
     i = 0
     extract_dict = {}
     word_rate_list = []
     for w in dict_word_count_rate.keys():
         if OKword(w):
             extract_dict[w] = dict_word_count_rate[w]
-            word_rate_list.append(WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
+            word_rate_list.append(
+                WordCount(word=w, relative_frequent_rate=dict_word_count_rate[w]))
             i += 1
             if i >= top_word_num:
                 break
@@ -1272,12 +1560,14 @@ def word_count_rate_datastore(dict_word_count, top_word_num=20, max_tweets=100, 
     print('------------ word count rate finish --------------')
     return extract_dict
 
+
 def sudachi_test():
     tokenizer_obj = suda_dict.Dictionary().create()
     mode = tokenizer.Tokenizer.SplitMode.C
     text = '吉岡里帆が赤いきつねを食べる。'
     for t in tokenizer_obj.tokenize(text, mode):
-        print(t.surface(), t.part_of_speech(), t.reading_form(), t.normalized_form())
+        print(t.surface(), t.part_of_speech(),
+              t.reading_form(), t.normalized_form())
 
 
 def make_sudachi_pickle(path, sudachiDataPath="sudachiData.pickle"):
@@ -1306,9 +1596,11 @@ def make_sudachi_pickle(path, sudachiDataPath="sudachiData.pickle"):
         while True:
             count += 1
             offset_list.append(f.tell())
-            if count % 100000 == 0: print(count, "/", maxCount)
+            if count % 100000 == 0:
+                print(count, "/", maxCount)
             line = f.readline()
-            if line == '': break
+            if line == '':
+                break
             line_list = line.split()
             word_list.append(line_list[0])
             ave_vec += np.array(line_list[-300:]).astype(np.float)

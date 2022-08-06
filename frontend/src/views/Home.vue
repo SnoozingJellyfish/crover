@@ -29,6 +29,11 @@ export default {
 .icon-title {
   width: 3rem;
   margin-right: 1rem;
+  /* vertical-align: middle; */
+}
+.icon-title-bs {
+  vertical-align: middle;
+  font-size: 1.3em;
 }
 .input-form {
   border-radius: 10px;

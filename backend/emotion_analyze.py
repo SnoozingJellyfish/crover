@@ -81,6 +81,7 @@ def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90
     emotion_count = {'POSITIVE': 0, 'mostly_POSITIVE': 0, 'NEUTRAL': 0, 'mostly_NEGATIVE': 0, 'NEGATIVE': 0}
     emotion_tweet = {'POSITIVE': [], 'mostly_POSITIVE': [], 'NEUTRAL': [], 'mostly_NEGATIVE': [], 'NEGATIVE': []}
     emotion_word = {}
+    font_size_ratio = 4
 
     if algo == 'mlask':
         with open('backend/data/mlask_emotion_dictionary.pickle', 'rb') as f:
@@ -97,9 +98,9 @@ def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90
                         if w[-1] == 'S':  # pymlaskのバグ
                             w = w[:-4]
                         if w in emotion_word.keys():
-                            emotion_word[w] += 1
+                            emotion_word[w] += 1 * font_size_ratio
                         else:
-                            emotion_word[w] = 1
+                            emotion_word[w] = 1 * font_size_ratio
 
                 emotion_count[result_dic['orientation']] += 1
                 emotion_tweet[result_dic['orientation']].append(tweet[1])

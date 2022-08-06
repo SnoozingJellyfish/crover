@@ -37,9 +37,9 @@ def clustering(top_word2vec, cluster_all=3, algo='ward'):
         for i in range(len(cluster_to_words)):
             cluster_to_words[i] = dict(sorted(cluster_to_words[i].items(), key=lambda x: x[1], reverse=True))
 
-        #dendrogram(link, labels=labels)
-        #plt.title('デンドログラム')
-        #plt.savefig('dendrogram.jpg')
+        # dendrogram(link, labels=labels)
+        # plt.title('デンドログラム')
+        # plt.savefig('dendrogram.jpg')
 
     logger.info('------------------- clustering finish ---------------------')
     return cluster_to_words

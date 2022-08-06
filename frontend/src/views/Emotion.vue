@@ -2,8 +2,15 @@
   <div id="emotion-block">
     <div class="feature-block">
       <div class="feature-title">
-        <h2><fa icon="face-meh" class="icon-title"></fa>感情分析</h2>
+        <h2>
+          <!--<span style="vertical-align: middle">
+            <fa icon="face-meh" class="icon-title"></fa></span
+          >-->
+          <i class="bi bi-emoji-neutral icon-title-bs"></i>
+          感情分析
+        </h2>
         キーワードを含むツイートの感情と、一緒にツイートされている言葉を調べる
+
         <div class="row">
           <div class="form-group col-lg-3 col-md-5 col-sm-6 col-xs-12">
             <input
@@ -65,16 +72,24 @@
         >-->
         <div class="topSlide result-region" v-if="isOpen">
           <pulse-loader
-            :loading="!isSpinner"
+            :loading="isSpinner"
             :color="spinnerColor"
             :size="spinnerSize"
             class="spinner"
           />
 
-          <div v-if="isSpinner">
+          <div v-if="!isSpinner">
             <div class="row">
               <div class="col-md-6 col-12">
                 <div class="chart-caption-topic">
+                  <i
+                    class="bi bi-arrow-left-circle-fill back-arrow"
+                    :style="backArrowStyle"
+                    @mouseover="focusBackArrow()"
+                    @mouseleave="blurBackArrow()"
+                    @click="backCluster()"
+                    id="back-arrow"
+                  ></i>
                   「{{ searchKeyword }}」と一緒に呟かれている言葉
                 </div>
 
@@ -99,11 +114,16 @@
                         :padding="5"
                         class="cloud-region"
                       />
+                      <!--
                       <fa
                         icon="face-meh"
                         class="icon-title wc-box-face"
                         v-show="displayWcEmotionIcon[wcId]"
-                      ></fa>
+                      ></fa>-->
+                      <i
+                        class="bi bi-emoji-neutral-fill wc-box-face-bs"
+                        v-show="displayWcEmotionIcon[wcId]"
+                      ></i>
                       <button
                         type="button"
                         class="btn btn-info wc-box-split mb-3 ml-1 mr-1"
@@ -229,9 +249,11 @@
                           {{ t }}
                         </td>
                       </tr>
+                      <!--
                       <tr>
                         <td></td>
                       </tr>
+                      -->
                     </tbody>
                   </table>
                 </div>
@@ -254,7 +276,6 @@ import 'chart.js/auto'
 import { Bar, Pie } from 'vue-chartjs'
 
 export default {
-  // components: { PulseLoader, VueD3Cloud, Bar, Pie },
   components: { PulseLoader, VueD3Cloud, Bar, Pie },
   mixins: [Openable],
   name: 'emotion-block',
@@ -268,6 +289,7 @@ export default {
       isSpinner: true,
       spinnerColor: '#999',
       spinnerSize: '15px',
+      backArrowElem: null,
       displayWcEmotionIcon: [true, false, false, false],
       displayWcButton: [false, false, false, false],
       displayWcEmotionButton: [false, true, true, true],
@@ -320,7 +342,12 @@ export default {
       neutralTabDefaultColor: '#5bca78',
       negativeTabDefaultColor: '#59a0f1',
       tbodyElem: null,
-      selectedTweetPre: []
+      isLoad: [
+        { positive: false, neutral: false, negative: false },
+        { positive: false, neutral: false, negative: false },
+        { positive: false, neutral: false, negative: false },
+        { positive: false, neutral: false, negative: false }
+      ]
     }
   },
   computed: {
@@ -330,6 +357,14 @@ export default {
         return 'col-md-6 col-12'
       } else {
         return 'col-12'
+      }
+    },
+    // eslint-disable-next-line
+    backArrowStyle: function () {
+      if (this.topicWord.length > 1) {
+        return { color: 'rgb(151, 151, 151)' }
+      } else {
+        return { color: 'rgb(222, 222, 222)' }
       }
     },
     // eslint-disable-next-line
@@ -396,15 +431,29 @@ export default {
     })
   },
   updated() {
+    if (!this.backArrowElem) {
+      this.backArrowElem = document.getElementById('back-arrow')
+    }
     if (!this.tbodyElem) {
       this.tbodyElem = document.getElementById('tbody-tweet')
     }
     if (this.tbodyElem) {
       this.tbodyElem.addEventListener('scroll', this.loadTweet)
     }
+    if (!this.positiveTab) {
+      this.positiveTab = document.getElementById('positive-tab')
+      this.neutralTab = document.getElementById('neutral-tab')
+      this.negativeTab = document.getElementById('negative-tab')
+      if (this.positiveTab) {
+        this.clickPositiveTab()
+      }
+    }
   },
   methods: {
     searchAnalyze(keyword, tweetNum) {
+      this.isSpinner = true
+      this.tbodyElem = null
+      this.backArrowElem = null
       axios
         .get('/search_analyze', {
           params: {
@@ -419,6 +468,8 @@ export default {
           this.emotionRatio = response.data.emotionRatio
           this.emotionWord = response.data.emotionWord
           this.tweet = response.data.tweet
+          this.isSpinner = false
+          this.isLoad = response.data.isLoad
         })
       this.isOpen = true
       this.focusEmotion = 'positive'
@@ -429,6 +480,8 @@ export default {
         this.negativeTab = document.getElementById('negative-tab')
         this.clickPositiveTab()
         this.tbodyElem = document.getElementById('tbody-tweet')
+        this.tbodyElem.addEventListener('scroll', this.loadTweet)
+        this.backArrowElem = document.getElementById('back-arrow-elem')
       })
     },
     wordClickHandler(name, value, vm) {
@@ -437,13 +490,21 @@ export default {
 
     splitWc(wcId) {
       if (this.topicWord.length < 4) {
-        axios.get('/split_wc_' + wcId).then((response) => {
-          this.topicWord = response.data.topicWord
-          this.emotionRatio = response.data.emotionRatio
-          this.emotionWord = response.data.emotionWord
-          this.tweet = response.data.tweet
-        })
+        axios
+          .get('/split_wc', {
+            params: {
+              wcId: wcId
+            }
+          })
+          .then((response) => {
+            this.topicWord = response.data.topicWord
+            this.emotionRatio = response.data.emotionRatio
+            this.emotionWord = response.data.emotionWord
+            this.tweet = response.data.tweet
+            this.isLoad = response.data.isLoad
+          })
         this.clickWcEmotionButton(0)
+        this.clickPositiveTab()
       }
     },
     clickWcEmotionButton(wcId) {
@@ -451,19 +512,48 @@ export default {
       this.displayWcEmotionIcon = [false, false, false, false]
       this.displayWcEmotionIcon[wcId] = true
     },
+    focusBackArrow() {
+      if (this.topicWord.length > 1) {
+        this.backArrowElem.style.color = 'rgb(140, 140, 140)'
+        this.backArrowElem.style.cursor = 'pointer'
+      } else {
+        this.backArrowElem.style.cursor = 'default'
+      }
+    },
+    blurBackArrow() {
+      if (this.topicWord.length > 1) {
+        this.backArrowElem.style.color = 'rgb(151, 151, 151)'
+      }
+    },
+    backCluster() {
+      if (this.topicWord.length > 1) {
+        axios.get('/back_cluster').then((response) => {
+          this.topicWord = response.data.topicWord
+          this.emotionRatio = response.data.emotionRatio
+          this.emotionWord = response.data.emotionWord
+          this.tweet = response.data.tweet
+          this.isLoad = response.data.isLoad
+        })
+        this.clickWcEmotionButton(0)
+        this.clickPositiveTab()
+      }
+    },
     clickPositiveTab() {
+      this.tbodyElem.scroll({ top: 0 })
       this.focusEmotion = 'positive'
       this.focusTab(this.positiveTab, 'rgb(240, 79, 100)', '#f1afb8')
       this.blurTab(this.neutralTab, this.neutralTabDefaultColor)
       this.blurTab(this.negativeTab, this.negativeTabDefaultColor)
     },
     clickNeutralTab() {
+      this.tbodyElem.scroll({ top: 0 })
       this.focusEmotion = 'neutral'
       this.blurTab(this.positiveTab, this.positiveTabDefaultColor)
       this.focusTab(this.neutralTab, 'rgb(44, 210, 88)', '#60dd81')
       this.blurTab(this.negativeTab, this.negativeTabDefaultColor)
     },
     clickNegativeTab() {
+      this.tbodyElem.scroll({ top: 0 })
       this.focusEmotion = 'negative'
       this.blurTab(this.positiveTab, this.positiveTabDefaultColor)
       this.blurTab(this.neutralTab, this.neutralTabDefaultColor)
@@ -483,24 +573,35 @@ export default {
     loadTweet() {
       if (
         this.tbodyElem.scrollHeight ===
-        this.tbodyElem.clientHeight + this.tbodyElem.scrollTop
+          this.tbodyElem.clientHeight + this.tbodyElem.scrollTop &&
+        this.isLoad[this.selectedWcId][this.focusEmotion]
       ) {
         var selectedWcTweet = this.tweet[this.selectedWcId]
-        axios.get('/load_tweet_' + this.focusEmotion).then((response) => {
-          if (this.focusEmotion === 'positive') {
-            selectedWcTweet.positive = selectedWcTweet.positive.concat(
-              response.data
-            )
-          } else if (this.focusEmotion === 'neutral') {
-            selectedWcTweet.neutral = selectedWcTweet.neutral.concat(
-              response.data
-            )
-          } else if (this.focusEmotion === 'negative') {
-            selectedWcTweet.negative = selectedWcTweet.negative.concat(
-              response.data
-            )
-          }
-        })
+        axios
+          .get('/load_tweet', {
+            params: {
+              wcId: this.selectedWcId,
+              emotion: this.focusEmotion,
+              tweetCnt: selectedWcTweet[this.focusEmotion].length
+            }
+          })
+          .then((response) => {
+            this.isLoad[this.selectedWcId][this.focusEmotion] =
+              response.data.isLoadOne
+            if (this.focusEmotion === 'positive') {
+              selectedWcTweet.positive = selectedWcTweet.positive.concat(
+                response.data.addTweet
+              )
+            } else if (this.focusEmotion === 'neutral') {
+              selectedWcTweet.neutral = selectedWcTweet.neutral.concat(
+                response.data.addTweet
+              )
+            } else if (this.focusEmotion === 'negative') {
+              selectedWcTweet.negative = selectedWcTweet.negative.concat(
+                response.data.addTweet
+              )
+            }
+          })
       }
     }
   }
@@ -508,6 +609,10 @@ export default {
 </script>
 
 <style scoped>
+.back-arrow {
+  font-size: 2em;
+  vertical-align: middle;
+}
 .trend-label {
   font-size: 1rem;
   margin: 1rem 2rem 0rem 0rem;
@@ -538,6 +643,15 @@ export default {
   margin: 22px 30px;
   width: 1.5em;
   color: green;
+}
+.wc-box-face-bs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 17px 30px;
+  font-size: 1.7em;
+  color: rgb(56, 167, 56);
+  vertical-align: middle;
 }
 .wc-box-split {
   position: absolute;
