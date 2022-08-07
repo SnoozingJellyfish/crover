@@ -1,3 +1,4 @@
+import os
 import datetime as dt
 
 import numpy as np
@@ -23,7 +24,9 @@ def index(path):
 
 if __name__ == '__main__':
     app.permanent_session_lifetime = dt.timedelta(minutes=5)
-    app.config['SECRET_KEY'] = str(np.random.randint(1000000, 9999999))
+    secret_key = os.urandom(24)
+    # app.config['SECRET_KEY'] = str(np.random.randint(1000000, 9999999))
+    app.secret_key = secret_key
     app.run()
 
 '''
