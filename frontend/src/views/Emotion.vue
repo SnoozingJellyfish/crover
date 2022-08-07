@@ -44,7 +44,7 @@
             <button
               type="button"
               class="btn btn-primary"
-              @click="searchAnalyze(keyword, tweetNum)"
+              @click="searchAnalyze()"
             >
               探す
             </button>
@@ -148,7 +148,11 @@
               <div class="col-md-6 col-12">
                 <div class="row">
                   <div class="col-12">
-                    <div class="chart-caption">ツイート数</div>
+                    <div class="chart-caption">
+                      <span>ツイート数</span>
+                      <!-- 「~一緒に呟かれている言葉」と高さを合わせるため -->
+                      <span class="back-arrow"> </span>
+                    </div>
                     <Bar
                       :chart-options="tweetedTimeOptions"
                       :chart-data="tweetedTime"
@@ -281,6 +285,8 @@ export default {
   name: 'emotion-block',
   data() {
     return {
+      backendErrorcode: 0,
+      emotionBlockElem: null,
       isOpen: false,
       trend: '',
       keyword: '',
@@ -423,6 +429,7 @@ export default {
     }
   },
   mounted() {
+    this.emotionBlockElem = document.getElementById('emotion-block')
     axios.get('/trend').then((response) => (this.trend = response.data))
     console.log(this.trend)
     this.currentWindowWidth = window.innerWidth
@@ -431,6 +438,9 @@ export default {
     })
   },
   updated() {
+    if (!this.emotionBlockElem) {
+      this.emotionBlockElem = document.getElementById('emotion-block')
+    }
     if (!this.backArrowElem) {
       this.backArrowElem = document.getElementById('back-arrow')
     }
@@ -450,10 +460,28 @@ export default {
     }
   },
   methods: {
-    searchAnalyze(keyword, tweetNum) {
+    searchAnalyze() {
+      // 特殊文字をスペースに変換
+      this.keyword = this.keyword.replace(
+        // eslint-disable-next-line
+        /[,<\.>\/\\;:\]\}\[\{\$=\^\~\*¥\|\+]/g,
+        ' '
+      )
+      // eslint-disable-next-line
+      this.keyword = this.keyword.replace(/[　]/g, ' ')
+      this.keyword = this.keyword.replace(/ +/g, ' ')
+      this.keyword = this.keyword.replace(/^ /g, '')
+      this.keyword = this.keyword.replace(/ $/g, '')
+      this.keyword = this.keyword.replace(/#+$/g, '')
+
+      // キーワードにスペース以外の文字が入力されていない場合は警告を出し検索しない
+      const noSpaceKeyword = this.keyword.replace(/[ ]/g, '')
+      if (noSpaceKeyword === '') {
+        alert('記号を含まないキーワードを入力してください。')
+        return
+      }
+
       this.isSpinner = true
-      this.tbodyElem = null
-      this.backArrowElem = null
       axios
         .get('/search_analyze', {
           params: {
@@ -462,6 +490,14 @@ export default {
           }
         })
         .then((response) => {
+          this.backendErrorcode = response.data.errorcode
+          if (this.backendErrorcode !== 0) {
+            this.isSpinner = false
+            alert('不正な文字を含まないキーワードを入力してください。')
+            return
+          }
+          this.tbodyElem = null
+          this.backArrowElem = null
           this.searchKeyword = this.keyword
           this.topicWord = response.data.topicWord
           this.tweetedTime = response.data.tweetedTime
@@ -471,8 +507,15 @@ export default {
           this.isSpinner = false
           this.isLoad = response.data.isLoad
         })
+      if (this.backendErrorcode !== 0) {
+        return
+      }
       this.isOpen = true
       this.focusEmotion = 'positive'
+      window.scrollTo({
+        top: this.emotionBlockElem.offsetTop,
+        behavior: 'auto'
+      })
 
       this.$nextTick(() => {
         this.positiveTab = document.getElementById('positive-tab')
@@ -610,7 +653,7 @@ export default {
 
 <style scoped>
 .back-arrow {
-  font-size: 2em;
+  font-size: 1.5em;
   vertical-align: middle;
 }
 .trend-label {

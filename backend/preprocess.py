@@ -27,6 +27,7 @@ import matplotlib
 from flask import session
 
 from backend.clustering import clustering
+from backend.util import download_from_cloud
 
 # from backend import LOCAL_ENV
 matplotlib.rcParams['timezone'] = 'Asia/Tokyo'
@@ -34,7 +35,7 @@ plt.rcParams["font.size"] = 18
 
 
 # from crover import LOCAL_ENV
-# from crover.process.util import download_from_cloud
+
 '''
 if LOCAL_ENV:
     from crover import dict_all_count, word2vec
@@ -43,8 +44,35 @@ else:
     plt.rcParams['font.family'] = 'IPAPGothic'
 '''
 
-LOCAL_ENV = True
+LOCAL_ENV = False
 ONCE_TWEET_NUM = 15
+# 除外するツイートのフレーズリストを取得
+with open('backend/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
+    EXCLUDED_TWEET = f.read().split('\n')
+
+# regex to clean tweets
+REGEXES = [
+    re.compile(
+        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
+    re.compile(" .*\.jp/.*$"),
+    re.compile('@\S* '),
+    re.compile('pic.twitter.*$'),
+    re.compile(' .*ニュース$'),
+    re.compile('[ 　]'),
+    re.compile('\n')
+]
+URL_REGEX = re.compile(
+    r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
+SIGN_REGEX = re.compile(
+    '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
+
+ALGO = 'sudachi'
+if ALGO == 'mecab':
+    TOKENIZER_OBJ = MeCab.Tagger("-Ochasen")
+elif ALGO == 'sudachi':
+    TOKENIZER_OBJ = suda_dict.Dictionary(dict_type='full').create()
+    SPLIT_MODE = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
+
 sess_info = {}  # global variable containing recent session information
 
 logger = logging.getLogger(__name__)
@@ -69,6 +97,11 @@ class NoKeywordError(Exception):
 
 class InvalidURLError(Exception):
     """Twitter APIにリクエストするURLが有効でない場合のエラー"""
+    pass
+
+
+class InvalidKeywordError(Exception):
+    """Twitter APIにリクエストするキーワードが有効でない場合のエラー"""
     pass
 
 # Twitter APIで現在のトレンドを取得する
@@ -123,8 +156,12 @@ class SearchAnalyze(Resource):
 
         logger.info(
             'all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
-        dict_word_count, tweets_list, time_hist, time_label = scrape_tweet(
-            keyword, tweet_num)
+        try:
+            dict_word_count, tweets_list, time_hist, time_label = scrape_tweet(
+                keyword, tweet_num)
+        except InvalidKeywordError:
+            return {"errorcode": 1}
+
         sess_info_at['tweets'] = tweets_list
         sess_info_at['tweet_time'] = {'hist': time_hist, 'label': time_label}
         logger.info('finish scraping tweets')
@@ -168,7 +205,8 @@ class SearchAnalyze(Resource):
                 tweet[emotion] = retention_tweet
                 isLoad[0][emotion] = False
 
-        result = {"topicWord": [topic_word_list],
+        result = {"errorcode": 0,
+                  "topicWord": [topic_word_list],
                   "emotionWord": [emotion_word_list],
                   "tweetedTime": {
                     "labels": time_label,
@@ -444,9 +482,8 @@ def create_url_retweet_author(tweet, since_date=None, next_token_id=None, max_re
 
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
+
 # Twitter APIで情報を取得
-
-
 def connect_to_endpoint(url, headers):
     response = requests.request("GET", url, headers=headers)
     if response.status_code != 200:
@@ -456,45 +493,18 @@ def connect_to_endpoint(url, headers):
             raise Exception(response.status_code, response.text)
     return response.json()
 
-# ツイートの取得、クリーン、名詞抽出・カウント、
 
-
+# ツイートの取得、クリーン、名詞抽出・カウント
 def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     print('-------------- scrape start -----------------\n')
     headers = create_headers()
 
-    # 除外するツイートのフレーズリストを取得
-    with open('backend/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
-        excluded_tweet = f.read().split('\n')
-
-    # regex to clean tweets
-    regexes = [
-        re.compile(
-            r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
-        re.compile(" .*\.jp/.*$"),
-        re.compile('@\S* '),
-        re.compile('pic.twitter.*$'),
-        re.compile(' .*ニュース$'),
-        re.compile('[ 　]'),
-        re.compile('\n')
-    ]
-    URL_regex = re.compile(
-        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
-    sign_regex = re.compile(
-        '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
-
-    if algo == 'mecab':
-        tokenizer_obj = MeCab.Tagger("-Ochasen")
-    elif algo == 'sudachi':
-        tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
-        mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
-
     # 先頭と末尾のスペース、末尾の#を除去し、間のスペースをORに変換する
-    keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)
+    # keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)  # フロント側で処理
     keyword = re.sub('[ 　]+', ' OR ', keyword)
-    keyword = re.sub('[#]+$', '', keyword)
-    if keyword == '':
-        raise NoKeywordError
+    # keyword = re.sub('[#]+$', '', keyword)  # フロント側で処理
+    # if keyword == '':
+    #     raise NoKeywordError  # フロント側で処理
 
     dict_word_count = {}
     next_token_id = None
@@ -513,13 +523,16 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
 
         logger.info('start scraping')
         url = create_url(keyword, next_token_id, max_results)
-        result = connect_to_endpoint(url, headers)
+        try:
+            result = connect_to_endpoint(url, headers)
+        except:
+            raise InvalidKeywordError
 
         logger.info('start word count tweet')
 
         for j in range(len(result['data'])):
             tweet_text = result['data'][j]['text']
-            tweet_no_URL = URL_regex.sub('', tweet_text)
+            tweet_no_URL = URL_REGEX.sub('', tweet_text)
             if tweet_no_URL in past_tweets:
                 continue
             else:
@@ -536,7 +549,7 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
             time_array = np.append(time_array, created_at.timestamp())
 
             # 特定フレーズを含むツイートを除外
-            for w in excluded_tweet:
+            for w in EXCLUDED_TWEET:
                 if w in tweet_text:
                     exclude_flag = True
                     break
@@ -545,13 +558,13 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
                 continue
 
             # clean tweet
-            #logger.info('clean tweet')
-            tweet_text = clean(tweet_text, regexes, sign_regex)
+            # logger.info('clean tweet')
+            tweet_text = clean(tweet_text, REGEXES, SIGN_REGEX)
 
             # update noun count dictionary
-            #logger.info('noun count')
+            # logger.info('noun count')
             dict_word_count, split_word = noun_count(
-                tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
+                tweet_text, dict_word_count, TOKENIZER_OBJ, SPLIT_MODE, keyword)
 
             tweets_list.append([created_at, tweet_no_URL, split_word])
 
@@ -656,11 +669,11 @@ def scrape_tweet_pre(keyword, max_tweets, algo='sudachi'):
                 continue
 
             # clean tweet
-            #logger.info('clean tweet')
+            # logger.info('clean tweet')
             tweet_text = clean(tweet_text, regexes, sign_regex)
 
             # update noun count dictionary
-            #logger.info('noun count')
+            # logger.info('noun count')
             dict_word_count, split_word = noun_count(
                 tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
 
