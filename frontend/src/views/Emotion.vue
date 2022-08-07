@@ -429,7 +429,7 @@ export default {
     }
   },
   mounted() {
-    this.emotionBlockElem = document.getElementById('emotion-block')
+    // this.emotionBlockElem = document.getElementById('emotion-block')
     axios.get('/trend').then((response) => (this.trend = response.data))
     console.log(this.trend)
     this.currentWindowWidth = window.innerWidth
@@ -438,9 +438,11 @@ export default {
     })
   },
   updated() {
+    /*
     if (!this.emotionBlockElem) {
       this.emotionBlockElem = document.getElementById('emotion-block')
     }
+    */
     if (!this.backArrowElem) {
       this.backArrowElem = document.getElementById('back-arrow')
     }
@@ -461,6 +463,7 @@ export default {
   },
   methods: {
     searchAnalyze() {
+      this.clickWcEmotionButton(0)
       // 特殊文字をスペースに変換
       this.keyword = this.keyword.replace(
         // eslint-disable-next-line
@@ -482,6 +485,8 @@ export default {
       }
 
       this.isSpinner = true
+      this.tbodyElem = null
+      this.backArrowElem = null
       axios
         .get('/search_analyze', {
           params: {
@@ -496,8 +501,7 @@ export default {
             alert('不正な文字を含まないキーワードを入力してください。')
             return
           }
-          this.tbodyElem = null
-          this.backArrowElem = null
+
           this.searchKeyword = this.keyword
           this.topicWord = response.data.topicWord
           this.tweetedTime = response.data.tweetedTime
@@ -512,10 +516,12 @@ export default {
       }
       this.isOpen = true
       this.focusEmotion = 'positive'
+      /*
       window.scrollTo({
         top: this.emotionBlockElem.offsetTop,
         behavior: 'auto'
       })
+      */
 
       this.$nextTick(() => {
         this.positiveTab = document.getElementById('positive-tab')
