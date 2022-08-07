@@ -1,40 +1,32 @@
-import pickle
-import logging
-# フォーマットを定義
-formatter = '%(levelname)s : %(asctime)s : %(message)s'
-# ログレベルを INFO に変更
-logging.basicConfig(level=logging.INFO, format=formatter)
-logger = logging.getLogger(__name__)
+import os
+import datetime as dt
 
 import numpy as np
-from flask import Flask
+from flask import Flask, render_template
+from flask_restful import Api
 
-#from views.views import view
-
-LOCAL_ENV = False
-
-if LOCAL_ENV:
-    with open('backend/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
-        dict_all_count = pickle.load(f)
-
-    with open('backend/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
-    #with open('backend/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
-        word2vec = pickle.load(f)
-
-
-
+from backend import preprocess
 
 
 def create_app():
-    #app = Flask(__name__)
-    app = Flask(__name__, static_folder='frontend/dist/static', template_folder='frontend/dist')
+    app = Flask(__name__)
 
-    app.config['DEBUG'] = LOCAL_ENV
-    app.config['SECRET_KEY'] = 'session_key_' + str(np.random.randint(100000, 999999))
+    app = Flask(__name__, static_folder='../frontend/dist/static', template_folder='../frontend/dist')
+    api = Api(app)
+    api.add_resource(preprocess.SearchTrend, '/trend')
+    api.add_resource(preprocess.SearchAnalyze, '/search_analyze')
+    api.add_resource(preprocess.SplitWc, '/split_wc')
+    api.add_resource(preprocess.LoadTweet, '/load_tweet')
+    api.add_resource(preprocess.BackCluster, '/back_cluster')
 
-    app.register_blueprint(view)
+    @app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
+    @app.route('/<path:path>')
+    def index(path):
+        return render_template('index.html')
+
+    app.permanent_session_lifetime = dt.timedelta(minutes=5)
+    secret_key = os.urandom(24)
+    # app.config['SECRET_KEY'] = str(np.random.randint(1000000, 9999999))
+    app.secret_key = secret_key
 
     return app
-
-
-
