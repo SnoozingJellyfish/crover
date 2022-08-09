@@ -97,10 +97,7 @@
   },
   "split_wc": {
     "topicWord": [
-      [
-        { "text": "夏", "value": 10 },
-        { "text": "梅雨", "value": 7 }
-      ],
+      [{ "text": "夏", "value": 10 }],
       [
         { "text": "与田祐希", "value": 15 },
         { "text": "3月のライオン", "value": 12 },

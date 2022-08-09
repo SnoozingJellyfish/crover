@@ -129,6 +129,7 @@
                         class="btn btn-info wc-box-split mb-3 ml-1 mr-1"
                         v-show="displayWcButton[wcId]"
                         @click="splitWc(wcId)"
+                        :disabled="disableSplit[wcId]"
                       >
                         意味で分ける
                       </button>
@@ -137,6 +138,7 @@
                         class="btn btn-info wc-box-emotion mb-3 ml-1 mr-1"
                         v-show="displayWcButton[wcId]"
                         @click="clickWcEmotionButton(wcId)"
+                        :disabled="disableEmotionAnalysis[wcId]"
                       >
                         感情分析
                       </button>
@@ -299,6 +301,8 @@ export default {
       displayWcEmotionIcon: [true, false, false, false],
       displayWcButton: [false, false, false, false],
       displayWcEmotionButton: [false, true, true, true],
+      disableSplit: [false, false, false, false],
+      disableEmotionAnalysis: [false, false, false, false],
       topicWcBgColor: ['#fff', '#fff', '#fff', '#fff'],
       selectedWcId: 0,
       topicWord: [],
@@ -464,6 +468,7 @@ export default {
   methods: {
     searchAnalyze() {
       this.clickWcEmotionButton(0)
+
       // 特殊文字をスペースに変換
       this.keyword = this.keyword.replace(
         // eslint-disable-next-line
@@ -510,6 +515,15 @@ export default {
           this.tweet = response.data.tweet
           this.isSpinner = false
           this.isLoad = response.data.isLoad
+
+          // 単語が1つだけの場合は分割ボタンを無効にする
+          for (var i = 0; i < this.topicWord.length; i++) {
+            if (this.topicWord[i].length === 1) {
+              this.disableSplit[i] = true
+            } else {
+              this.disableSplit[i] = false
+            }
+          }
         })
       if (this.backendErrorcode !== 0) {
         return
@@ -551,6 +565,15 @@ export default {
             this.emotionWord = response.data.emotionWord
             this.tweet = response.data.tweet
             this.isLoad = response.data.isLoad
+
+            // 単語が1つだけの場合は分割ボタンを無効にする
+            for (var i = 0; i < this.topicWord.length; i++) {
+              if (this.topicWord[i].length === 1) {
+                this.disableSplit[i] = true
+              } else {
+                this.disableSplit[i] = false
+              }
+            }
           })
         this.clickWcEmotionButton(0)
         this.clickPositiveTab()
@@ -560,6 +583,8 @@ export default {
       this.selectedWcId = wcId
       this.displayWcEmotionIcon = [false, false, false, false]
       this.displayWcEmotionIcon[wcId] = true
+      this.disableEmotionAnalysis = [false, false, false, false]
+      this.disableEmotionAnalysis[wcId] = true
     },
     focusBackArrow() {
       if (this.topicWord.length > 1) {

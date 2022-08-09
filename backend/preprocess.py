@@ -1,16 +1,7 @@
-import imp
-from backend.emotion_analyze import emotion_analyze_all
-from flask_restful import Resource, reqparse
-from google.cloud import datastore, storage
-from sudachipy import dictionary as suda_dict
-from sudachipy import tokenizer
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-# from importlib.resources import Resource
 import os
 import re
 import io
-import base64
+# import base64
 import datetime as dt
 import pickle
 import csv
@@ -23,26 +14,16 @@ import concurrent.futures
 import traceback
 
 import numpy as np
-import matplotlib
 from flask import session
+from flask_restful import Resource, reqparse
+from google.cloud import datastore, storage
+from sudachipy import dictionary as suda_dict
+from sudachipy import tokenizer
+# from importlib.resources import Resource
 
 from backend.clustering import clustering
 from backend.util import download_from_cloud
-
-# from backend import LOCAL_ENV
-matplotlib.rcParams['timezone'] = 'Asia/Tokyo'
-plt.rcParams["font.size"] = 18
-
-
-# from crover import LOCAL_ENV
-
-'''
-if LOCAL_ENV:
-    from crover import dict_all_count, word2vec
-    plt.rcParams['font.family'] = 'Hiragino Sans GB'
-else:
-    plt.rcParams['font.family'] = 'IPAPGothic'
-'''
+from backend.emotion_analyze import emotion_analyze_all
 
 #LOCAL_ENV = True
 LOCAL_ENV = False
@@ -78,15 +59,16 @@ sess_info = {}  # global variable containing recent session information
 
 logger = logging.getLogger(__name__)
 
+# 全ツイートからサンプリングした単語の頻出度の辞書を読み込む
 if LOCAL_ENV:
     with open('backend/data/all_1-200-000_word_count_sudachi.pickle', 'rb') as f:
-        dict_all_count = pickle.load(f)
+        DICT_ALL_COUNT = pickle.load(f)
     with open('backend/data/mecab_word2vec_dict_1d.pickle', 'rb') as f:
         # with open('backend/data/mecab_word2vec_dict_100d.pickle', 'rb') as f:
         word2vec = pickle.load(f)
 else:
     logger.info('start loading dict_all_count')
-    dict_all_count = download_from_cloud(storage.Client(), os.environ.get(
+    DICT_ALL_COUNT = download_from_cloud(storage.Client(), os.environ.get(
                 'BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
     logger.info('finish loading dict_all_count')
 
@@ -105,9 +87,8 @@ class InvalidKeywordError(Exception):
     """Twitter APIにリクエストするキーワードが有効でない場合のエラー"""
     pass
 
+
 # Twitter APIで現在のトレンドを取得する
-
-
 class SearchTrend(Resource):
     def get(self):
         logger.info('get trend')
@@ -123,6 +104,7 @@ class SearchTrend(Resource):
 # Twitter APIで入力したキーワードを含むツイートを取得しツイートと感情分析結果を返す
 class SearchAnalyze(Resource):
     def get(self):
+        logger.info('start search analysis')
         global sess_info
 
         # ツイートを取得しワード数をカウントする
@@ -155,8 +137,7 @@ class SearchAnalyze(Resource):
         sess_info_at['tweet_num'] = tweet_num
         logger.info(f'keyword: {keyword}, tweet_num: {tweet_num}')
 
-        logger.info(
-            'all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
+        logger.info('scraping and cleaning tweets, counting words,  analyzing emotion\n')
         try:
             dict_word_count, tweets_list, time_hist, time_label = scrape_tweet(
                 keyword, tweet_num)
@@ -174,7 +155,7 @@ class SearchAnalyze(Resource):
 
         word_num_in_cloud = 100  # ワードクラウドで表示する単語数
         dict_word_count_rate = word_count_rate(
-            dict_word_count, dict_all_count, word_num_in_cloud, tweet_num, ignore_word_count)
+            dict_word_count, DICT_ALL_COUNT, word_num_in_cloud, tweet_num, ignore_word_count)
         sess_info_at['word_counts'] = list(dict_word_count_rate.items())
         sess_info_at['cluster_to_words'] = [{0: dict_word_count_rate}]
 
@@ -188,12 +169,10 @@ class SearchAnalyze(Resource):
         for k, v in emotion_word.items():
             emotion_word_list.append({"text": k, "value": v})
         sess_info_at['emotion_tweet'] = [[emotion_tweet_dict]]
-        sess_info_at['emotion_ratio'] = emotion_ratio[::-1]
         sess_info_at['depth'] = 0
 
         # クライアントに渡す先頭のツイートを抽出
         isLoad = [{'positive': False, 'neutral': False, 'negative': False} for _ in range(4)]
-        sess_info_at['isLoad'] = [isLoad]
         tweet = {}
         for emotion in ['positive', 'neutral', 'negative']:
             tweet[emotion] = {}
@@ -205,6 +184,8 @@ class SearchAnalyze(Resource):
             else:
                 tweet[emotion] = retention_tweet
                 isLoad[0][emotion] = False
+
+        sess_info_at['isLoad'] = [isLoad]
 
         result = {"errorcode": 0,
                   "topicWord": [topic_word_list],
@@ -226,7 +207,7 @@ class SearchAnalyze(Resource):
                         {
                           "label": "Data One",
                           "backgroundColor": ["#59a0f1", "#5bca78", "#e77181"],
-                          "data": sess_info_at['emotion_ratio']
+                          "data": emotion_ratio[::-1]
                         }
                       ]
                     }
@@ -256,26 +237,19 @@ class SplitWc(Resource):
         parser.add_argument('wcId', type=int)
         query_data = parser.parse_args()
         wc_id = query_data['wcId']
+        clustered_words = sess_info_at['cluster_to_words'][depth]
 
         # クラスターが1つだけ
         if depth == 0:
-            # 既にベクトルが取得されている場合（戻って再び分割する場合）
-            if len(sess_info_at['cluster_to_words']) > 1:
-                pass  # TODO
-
             if LOCAL_ENV:
-                top_word2vec = make_top_word2vec_dic(sess_info_at['cluster_to_words'][depth][wc_id])
+                top_word2vec = make_top_word2vec_dic(clustered_words[wc_id])
             else:
-                top_word2vec = make_top_word2vec_dic_datastore(sess_info_at['cluster_to_words'][depth][wc_id])
+                top_word2vec = make_top_word2vec_dic_datastore(clustered_words[wc_id])
             sess_info_at['top_word2vec'] = top_word2vec
             sess_info_at['cluster_to_words'].append(clustering(top_word2vec))
 
         # クラスターが複数
         else:
-            clustered_words = sess_info_at['cluster_to_words'][depth]
-            if len(clustered_words) == 1:  # クラスターの単語が1つのときそのまま返す
-                pass  # TODO
-
             part_word2vec = make_part_word2vec_dic(clustered_words[wc_id], sess_info_at['top_word2vec'])
             split_cluster_to_words = clustering(part_word2vec)
             pre_cluster_to_words = copy.deepcopy(clustered_words)
@@ -415,9 +389,8 @@ def preprocess_all(keyword, max_tweets, word_num_in_cloud):
         dict_word_count, dict_all_count, word_num_in_cloud, max_tweets, ignore_word_count)
     return topic_word_list, tweets_list, b64_time_hist
 
+
 # 認証済みトークンのヘッダーを作成
-
-
 def create_headers():
     tokens = [os.environ.get("TWITTER_BEARER_TOKEN1"),
               os.environ.get("TWITTER_BEARER_TOKEN2"),
@@ -426,9 +399,8 @@ def create_headers():
     headers = {"Authorization": "Bearer {}".format(bearer_token)}
     return headers
 
+
 # ツイートを取得するURLを作成
-
-
 def create_url(keyword, next_token_id=None, max_results=10):
     # リツイート、リプライ、公式アカウント、広告を除外
     query = f'query={keyword} -is:retweet -is:reply -is:verified lang:ja'
