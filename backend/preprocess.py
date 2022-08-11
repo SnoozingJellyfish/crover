@@ -1,3 +1,5 @@
+import enum
+import imp
 import os
 import re
 import io
@@ -14,6 +16,7 @@ import concurrent.futures
 import traceback
 
 import numpy as np
+# import pytz
 from flask import session
 from flask_restful import Resource, reqparse
 from google.cloud import datastore, storage
@@ -54,6 +57,9 @@ if ALGO == 'mecab':
 elif ALGO == 'sudachi':
     TOKENIZER_OBJ = suda_dict.Dictionary(dict_type='full').create()
     SPLIT_MODE = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
+
+# TIMEZONE = pytz.timezone('Asia/Tokyo')
+TIMEZONE = dt.timezone(dt.timedelta(hours=9), 'JST')
 
 sess_info = {}  # global variable containing recent session information
 
@@ -273,13 +279,13 @@ class SplitWc(Resource):
         sess_info_at['emotion_tweet'].append([])
         sess_info_at['isLoad'].append([{'positive': False, 'neutral': False, 'negative': False} for _ in range(4)])
 
-        for i in range(len(cluster_to_words)):
+        for i, c in enumerate(cluster_to_words):
             topic_word_list_list.append([])
-            for k, v in cluster_to_words[i].items():
+            for k, v in c.items():
                 topic_word_list_list[-1].append({"text": k, "value": v})
 
             emotion_ratio, emotion_tweet_dict, emotion_word = emotion_analyze_all(
-                cluster_to_words[i].keys(), sess_info_at['tweets'])
+                c.keys(), sess_info_at['tweets'])
             sess_info_at['emotion_tweet'][-1].append(emotion_tweet_dict)
             emotion_ratio_list.append({
                       "labels": ["ネガティブ", "ニュートラル", "ポジティブ"],
@@ -296,7 +302,6 @@ class SplitWc(Resource):
                 emotion_word_list_list[-1].append({"text": k, "value": v})
 
             tweet = {}
-            
             for emotion in ['positive', 'neutral', 'negative']:
                 tweet[emotion] = {}
                 retention_tweet = emotion_tweet_dict[emotion]
@@ -358,36 +363,13 @@ class LoadTweet(Resource):
         if tweet_cnt + ONCE_TWEET_NUM < len(retention_tweet):
             add_tweet = retention_tweet[tweet_cnt: tweet_cnt + ONCE_TWEET_NUM]
             sess_info_at['isLoad'][depth][wc_id][emotion] = True
-            isLoad = True
+            isLoadOne = True
         else:
             add_tweet = retention_tweet[tweet_cnt:]
             sess_info_at['isLoad'][depth][wc_id][emotion] = False
-            isLoad = False
+            isLoadOne = False
 
-        return {'addTweet': add_tweet, 'isLoadOne': isLoad}
-
-def preprocess_all(keyword, max_tweets, word_num_in_cloud):
-    logger.info(
-        'all preprocesses will be done. \n(scrape and cleaning tweets, counting words, making word2vec dictionary)\n')
-
-    dict_word_count, tweets_list, b64_time_hist = scrape_tweet(
-        keyword, max_tweets)
-    logger.info('finish scraping tweets')
-    if not LOCAL_ENV:
-        logger.info('start loading dict_all_count')
-        dict_all_count = download_from_cloud(storage.Client(), os.environ.get(
-            'BUCKET_NAME'), os.environ.get('DICT_ALL_COUNT'))
-        logger.info('finish loading dict_all_count')
-    else:
-        from crover import dict_all_count
-
-    if max_tweets > 1000:
-        ignore_word_count = 10
-    else:
-        ignore_word_count = 5
-    topic_word_list = word_count_rate(
-        dict_word_count, dict_all_count, word_num_in_cloud, max_tweets, ignore_word_count)
-    return topic_word_list, tweets_list, b64_time_hist
+        return {'addTweet': add_tweet, 'isLoadOne': isLoadOne}
 
 
 # 認証済みトークンのヘッダーを作成
@@ -418,9 +400,8 @@ def create_url(keyword, next_token_id=None, max_results=10):
 
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
+
 # リツイートを取得するURLを作成（リツイートはTwitter API v1.1でないと取得できない）
-
-
 def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=3000):
     if next_results:
         url = f'https://api.twitter.com/1.1/search/tweets.json{next_results}'
@@ -429,9 +410,8 @@ def create_url_retweet(keyword, next_results=None, max_results=10, min_retweets=
         url = f'https://api.twitter.com/1.1/search/tweets.json?q={query}&count={max_results}'
     return url.replace('#', '%23')  # ハッシュタグをURLエンコーディング
 
+
 # リツイートを取得
-
-
 def create_url_retweet_author(tweet, since_date=None, next_token_id=None, max_results=100):
     #url = f'https://api.twitter.com/1.1/statuses/retweeters/ids.json?id={tweet_id}&cursor={cursor}'
     # query = f'query="{tweet}" is:retweet -is:reply since:{since_date}_00:00:00_JST'  # retweet
@@ -512,12 +492,13 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
                 past_tweets.append(tweet_no_URL)
 
             try:
-                created_at_UTC = dt.datetime.strptime(
+                # created_at_UTC = dt.datetime.strptime(
+                created_at = dt.datetime.strptime(
                     result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
             except IndexError:
                 continue
-            created_at = created_at_UTC.astimezone(
-                dt.timezone(dt.timedelta(hours=+9)))
+            # created_at = created_at_UTC.astimezone(
+            #    dt.timezone(dt.timedelta(hours=+9)))
             # time_list.append(created_at)
             time_array = np.append(time_array, created_at.timestamp())
 
@@ -552,117 +533,6 @@ def scrape_tweet(keyword, max_tweets, algo='sudachi'):
     logger.info('-------------- scrape finish -----------------\n')
 
     return dict_word_count, tweets_list, time_hist, time_label
-
-
-# ツイートの取得、クリーン、名詞抽出・カウント、
-def scrape_tweet_pre(keyword, max_tweets, algo='sudachi'):
-    print('-------------- scrape start -----------------\n')
-    headers = create_headers()
-
-    # 除外するツイートのフレーズリストを取得
-    with open('crover/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
-        excluded_tweet = f.read().split('\n')
-
-    # regex to clean tweets
-    regexes = [
-        re.compile(
-            r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)"),
-        re.compile(" .*\.jp/.*$"),
-        re.compile('@\S* '),
-        re.compile('pic.twitter.*$'),
-        re.compile(' .*ニュース$'),
-        re.compile('[ 　]'),
-        re.compile('\n')
-    ]
-    URL_regex = re.compile(
-        r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
-
-    sign_regex = re.compile(
-        '[^0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）]')
-
-    if algo == 'mecab':
-        tokenizer_obj = MeCab.Tagger("-Ochasen")
-    elif algo == 'sudachi':
-        tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
-        mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
-
-    # 先頭と末尾のスペース、末尾の#を除去し、間のスペースをORに変換する
-    keyword = re.sub('^[ 　]+|[ 　]+$', '', keyword)
-    keyword = re.sub('[ 　]+', ' OR ', keyword)
-    keyword = re.sub('[#]+$', '', keyword)
-    if keyword == '':
-        raise NoKeywordError
-
-    dict_word_count = {}
-    next_token_id = None
-    max_results = 100  # 1度のリクエストで取得するツイート数
-    exclude_flag = False
-    tweets_list = []
-    past_tweets = []
-    time_list = []
-
-    for i in range(max_tweets // max_results + 1):
-        if i == max_tweets // max_results:
-            max_results = max_tweets % max_results
-            if max_results < 10:
-                break
-
-        logger.info('start scraping')
-        url = create_url(keyword, next_token_id, max_results)
-        result = connect_to_endpoint(url, headers)
-
-        logger.info('start word count tweet')
-
-        for j in range(len(result['data'])):
-            try:
-                created_at_UTC = dt.datetime.strptime(
-                    result['data'][j]['created_at'][:-1] + "+0000", '%Y-%m-%dT%H:%M:%S.%f%z')
-            except IndexError:
-                continue
-            created_at = created_at_UTC.astimezone(
-                dt.timezone(dt.timedelta(hours=+9)))
-
-            tweet_text = result['data'][j]['text']
-
-            tweet_no_URL = URL_regex.sub('', tweet_text)
-            if tweet_no_URL in past_tweets:
-                continue
-            else:
-                past_tweets.append(tweet_no_URL)
-
-            time_list.append(created_at)
-
-            # 特定フレーズを含むツイートを除外
-            for w in excluded_tweet:
-                if w in tweet_text:
-                    exclude_flag = True
-                    break
-            if exclude_flag:
-                exclude_flag = False
-                continue
-
-            # clean tweet
-            # logger.info('clean tweet')
-            tweet_text = clean(tweet_text, regexes, sign_regex)
-
-            # update noun count dictionary
-            # logger.info('noun count')
-            dict_word_count, split_word = noun_count(
-                tweet_text, dict_word_count, tokenizer_obj, mode, keyword)
-
-            tweets_list.append([created_at, tweet_no_URL, split_word])
-
-        if 'next_token' in result['meta']:
-            next_token_id = result['meta']['next_token']
-        else:
-            break
-
-    # ツイート日時のヒストグラムを作る
-    b64_time_hist = make_time_hist(time_list)
-
-    logger.info('-------------- scrape finish -----------------\n')
-
-    return dict_word_count, tweets_list, b64_time_hist
 
 
 # 正規表現でツイート中の不要文字を除去する
@@ -714,25 +584,24 @@ def noun_count(text, dict_word_count, tokenizer_obj, mode=None, keyword=None, al
 
     return dict_word_count, str(split_word)
 
+
 # ツイート日時のヒストグラムを作る
-
-
 def make_time_hist(time_array):
     hist, bins = np.histogram(time_array)
     time_label = ['' for _ in range(10)]
     dif_bins = bins[-1] - bins[0]
 
     if dif_bins < 60:
-        time_label_end_dt = dt.datetime.fromtimestamp(bins[-1])
+        time_label_end_dt = dt.datetime.fromtimestamp(bins[-1], tz=TIMEZONE)
         time_label[-1] = time_label_end_dt.strftime('%H:%M')
         time_label_start_dt = time_label_end_dt - dt.timedelta(minutes=1)
         time_label[0] = time_label_start_dt.strftime('%H:%M')
     elif dif_bins < 60 * 10:
-        time_label[0] = dt.datetime.fromtimestamp(bins[0]).strftime('%H:%M')
-        time_label[-1] = dt.datetime.fromtimestamp(bins[-1]).strftime('%H:%M')
+        time_label[0] = dt.datetime.fromtimestamp(bins[0], tz=TIMEZONE).strftime('%H:%M')
+        time_label[-1] = dt.datetime.fromtimestamp(bins[-1], tz=TIMEZONE).strftime('%H:%M')
     elif dif_bins < 60 * 30:
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d %H:%M')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:%M')
         round_m = 10
         round_start_m = int(
             np.round(float(time_label_start[-2:]) / round_m + 0.4) * round_m)  # 5分単位で繰り上げ
@@ -745,7 +614,7 @@ def make_time_hist(time_array):
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
@@ -753,7 +622,7 @@ def make_time_hist(time_array):
 
     elif dif_bins < 60 * 60:
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d %H:%M')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:%M')
         round_m = 20
         round_start_m = int(
             np.round(float(time_label_start[-2:]) / round_m + 0.4) * round_m)  # 10分単位で繰り上げ
@@ -766,7 +635,7 @@ def make_time_hist(time_array):
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
@@ -774,12 +643,12 @@ def make_time_hist(time_array):
 
     elif dif_bins < 60 * 60 * 3:
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d %H:00')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:00')
         round_start_dt = dt.datetime.strptime(
             time_label_start, '%Y/%m/%d %H:%M')
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
@@ -787,7 +656,7 @@ def make_time_hist(time_array):
 
     elif dif_bins < 60 * 60 * 6:
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d %H:00')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:00')
         round_h = 2
         round_start_h = int(np.round(
             float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 2h単位で繰り上げ
@@ -796,7 +665,7 @@ def make_time_hist(time_array):
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
@@ -804,7 +673,7 @@ def make_time_hist(time_array):
 
     elif dif_bins < 60 * 60 * 12:
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d %H:00')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:00')
         round_h = 4
         round_start_h = int(np.round(
             float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 4h単位で繰り上げ
@@ -813,7 +682,7 @@ def make_time_hist(time_array):
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
@@ -821,7 +690,7 @@ def make_time_hist(time_array):
 
     elif dif_bins < 60 * 60 * 24:
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d %H:00')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:00')
         round_h = 8
         round_start_h = int(np.round(
             float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 8h単位で繰り上げ
@@ -830,7 +699,7 @@ def make_time_hist(time_array):
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%H:%M')
@@ -838,12 +707,12 @@ def make_time_hist(time_array):
 
     else:  # 1日以上7日未満
         time_label_start = dt.datetime.fromtimestamp(
-            bins[0]).strftime('%Y/%m/%d 00:00')
+            bins[0], tz=TIMEZONE).strftime('%Y/%m/%d 00:00')
         round_start_dt = dt.datetime.strptime(
             time_label_start, '%Y/%m/%d %H:%M')
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
-            bin_dt = dt.datetime.fromtimestamp(bin)
+            bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
             td = bin_dt - round_dt
             if td.days >= 0:
                 time_label[i] = round_dt.strftime('%m/%d')
@@ -853,67 +722,8 @@ def make_time_hist(time_array):
     return hist, time_label
 
 
-# ツイート日時のヒストグラムを作る
-def make_time_hist_pre(time_list):
-    mpl_date = mdates.date2num(time_list)
-    fig, ax = plt.subplots(1, 1, figsize=(6.0, 6.0))
-    ax.hist(mpl_date, rwidth=0.95, color='dodgerblue')
-    ax.yaxis.set_label_coords(0, 1.05)
-    td = time_list[0] - time_list[-1]
-
-    if td.days > 5:  # 3day~
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=2))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-    elif td.days > 2:  # 3day~5day
-        ax.xaxis.set_major_locator(mdates.DayLocator())
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d'))
-    elif td.days > 0:  # 1~2 days
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:00'))
-    elif td.seconds // (3600 * 12) > 0:  # 12~24 hours
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
-    elif td.seconds // (3600 * 6) > 0:  # 6~12 hours
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
-    elif td.seconds // (3600 * 2) > 0:  # 2~6 hours
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:00'))
-    elif td.seconds // (3600 * 1) > 0:  # 1~2 hours
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=30))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    elif td.seconds // 1800 > 0:  # 30~60 minutes
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=10))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    elif td.seconds // 600 > 0:  # 10~30 minutes
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=5))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    elif td.seconds // 300 > 0:  # 5~10 minutes
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=2))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    else:  # ~5 minutes
-        ax.xaxis.set_major_locator(mdates.MinuteLocator(interval=1))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-
-    #ax.set_ylabel("ツイート", fontsize=24, rotation=0)
-    ax.grid(which="major", axis="y", alpha=1)
-    ax.set_axisbelow(True)
-    plt.subplots_adjust(left=0.15, right=0.9, bottom=0.1, top=0.95)
-    plt.gca().spines['right'].set_visible(False)
-    plt.gca().spines['left'].set_visible(False)
-    plt.gca().spines['top'].set_visible(False)
-    ax.tick_params(bottom=False, left=False, right=False, top=False)
-    buf = io.BytesIO()
-    plt.savefig(buf)
-    qr_b64str = base64.b64encode(buf.getvalue()).decode("utf-8")
-    b64_time_hist = "data:image/png;base64,{}".format(qr_b64str)
-
-    return b64_time_hist
-
 # 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
 # （相対頻出度を計算する）
-
-
 def word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=3):
     logger.info('------------ word count rate start --------------')
     dict_word_count = dict(

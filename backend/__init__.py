@@ -1,7 +1,7 @@
 import os
 import datetime as dt
 
-import numpy as np
+# import numpy as np
 from flask import Flask, render_template
 from flask_restful import Api
 
