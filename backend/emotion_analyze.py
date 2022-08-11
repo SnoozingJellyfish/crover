@@ -1,4 +1,3 @@
-
 import copy
 from pprint import pprint
 import io
@@ -6,15 +5,15 @@ import base64
 import logging
 import pickle
 
-import matplotlib.pyplot as plt
-plt.switch_backend('Agg')
+# import matplotlib.pyplot as plt
+# plt.switch_backend('Agg')
 import numpy as np
-from wordcloud import WordCloud
+# from wordcloud import WordCloud
 
 from backend.mlask_no_mecab import MLAskNoMecab
-#from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
+# from transformers import pipeline,AutoTokenizer,BertTokenizer,AutoModelForSequenceClassification,BertJapaneseTokenizer, BertForMaskedLM
 
-#from crover import LOCAL_ENV
+# from crover import LOCAL_ENV
 
 '''
 # メモリ使用量が大きいためasariは用いない
@@ -25,6 +24,8 @@ if not LOCAL_ENV:
 
 logger = logging.getLogger(__name__)
 
+
+# 感情ワードを含むツイートを抽出し感情分析する
 def emotion_analyze_all(words, tweets, algo='mlask'):
     logger.info('collect tweet including cluster word')
     cluster_tweets = tweet_collect(words, tweets)
@@ -33,26 +34,6 @@ def emotion_analyze_all(words, tweets, algo='mlask'):
     logger.info('finish emotion analysis')
     return emotion_ratio, emotion_tweet_dict, emotion_word
 
-
-def emotion_analyze_all_pre(words, tweets, algo='mlask'):
-    logger.info('collect tweet including cluster word')
-    cluster_tweets = tweet_collect(words, tweets)
-    logger.info('emotion analyze')
-    '''
-    if LOCAL_ENV:
-        algo = 'mlask'
-    else:
-        algo = 'asari'
-    '''
-    emotion_elem, emotion_tweet_dict, emotion_word = emotion_analyze(cluster_tweets, algo=algo)
-    logger.info('make pie chart')
-
-    if len(emotion_word) == 0:
-        b64_figure = 'none'
-    else:
-        b64_figure = make_emotion_wordcloud(emotion_word)
-
-    return emotion_elem, b64_figure, emotion_tweet_dict
 
 # クラスタリングされた単語を含むツイートを取得する
 def tweet_collect(words, tweets):
@@ -187,12 +168,15 @@ def emotion_analyze(cluster_tweets, algo='asari', max_word=50, posi_conf_th=0.90
                           'negative': emotion_tweet['NEGATIVE'] + emotion_tweet['mostly_NEGATIVE']
                           }
 
-    emotion_elem = [(emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // len(cluster_tweets),
-                    emotion_count['NEUTRAL'] * 100 // len(cluster_tweets),
-                    100 - (emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // len(cluster_tweets) - emotion_count['NEUTRAL'] * 100 // len(cluster_tweets)]
+    tweet_num = len(cluster_tweets) + 1
+    emotion_elem = [(emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // tweet_num,
+                    emotion_count['NEUTRAL'] * 100 // tweet_num,
+                    100 - (emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE']) * 100 // tweet_num - emotion_count['NEUTRAL'] * 100 // tweet_num]
 
     return emotion_elem, emotion_tweet_dict, extract_emotion_word
 
+
+################## 不使用の関数 #####################
 
 def make_emotion_pie_chart(emotion_count):
     x = np.array([emotion_count['POSITIVE'] + emotion_count['mostly_POSITIVE'], emotion_count['NEUTRAL'], emotion_count['NEGATIVE'] + emotion_count['mostly_NEGATIVE']])

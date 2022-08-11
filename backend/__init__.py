@@ -5,7 +5,7 @@ import datetime as dt
 from flask import Flask, render_template
 from flask_restful import Api
 
-from backend import preprocess
+from backend import view
 
 
 def create_app():
@@ -13,11 +13,11 @@ def create_app():
 
     app = Flask(__name__, static_folder='../frontend/dist/static', template_folder='../frontend/dist')
     api = Api(app)
-    api.add_resource(preprocess.SearchTrend, '/trend')
-    api.add_resource(preprocess.SearchAnalyze, '/search_analyze')
-    api.add_resource(preprocess.SplitWc, '/split_wc')
-    api.add_resource(preprocess.LoadTweet, '/load_tweet')
-    api.add_resource(preprocess.BackCluster, '/back_cluster')
+    api.add_resource(view.SearchTrend, '/trend')
+    api.add_resource(view.SearchAnalyze, '/search_analyze')
+    api.add_resource(view.SplitWc, '/split_wc')
+    api.add_resource(view.LoadTweet, '/load_tweet')
+    api.add_resource(view.BackCluster, '/back_cluster')
 
     @app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
     @app.route('/<path:path>')
@@ -30,3 +30,4 @@ def create_app():
     app.secret_key = secret_key
 
     return app
+    

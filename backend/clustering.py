@@ -1,10 +1,9 @@
-
 import pickle
 import io
-import base64
+# import base64
 import logging
 
-from wordcloud import WordCloud
+# from wordcloud import WordCloud
 from scipy.cluster.hierarchy import linkage, dendrogram, fcluster, cut_tree
 from collections import defaultdict
 
@@ -43,6 +42,9 @@ def clustering(top_word2vec, cluster_all=3, algo='ward'):
 
     logger.info('------------------- clustering finish ---------------------')
     return cluster_to_words
+
+
+################## 不使用の関数 #####################
 
 
 # クラスターをさらにクラスタリングする（k-means法用）

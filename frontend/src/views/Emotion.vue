@@ -518,7 +518,7 @@ export default {
 
           // 単語が1つだけの場合は分割ボタンを無効にする
           for (var i = 0; i < this.topicWord.length; i++) {
-            if (this.topicWord[i].length === 1) {
+            if (this.topicWord[i].length === 1 || this.topicWord.length === 4) {
               this.disableSplit[i] = true
             } else {
               this.disableSplit[i] = false
@@ -568,7 +568,10 @@ export default {
 
             // 単語が1つだけの場合は分割ボタンを無効にする
             for (var i = 0; i < this.topicWord.length; i++) {
-              if (this.topicWord[i].length === 1) {
+              if (
+                this.topicWord[i].length === 1 ||
+                this.topicWord.length === 4
+              ) {
                 this.disableSplit[i] = true
               } else {
                 this.disableSplit[i] = false

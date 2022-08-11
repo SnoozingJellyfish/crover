@@ -1,8 +1,6 @@
-import enum
-import imp
 import os
 import re
-import io
+# import io
 # import base64
 import datetime as dt
 import pickle
@@ -279,13 +277,13 @@ class SplitWc(Resource):
         sess_info_at['emotion_tweet'].append([])
         sess_info_at['isLoad'].append([{'positive': False, 'neutral': False, 'negative': False} for _ in range(4)])
 
-        for i, c in enumerate(cluster_to_words):
+        for i in range(len(cluster_to_words)):  # cluster_to_wordsはリストではなくintをキーにした辞書のためenumerateできない
             topic_word_list_list.append([])
-            for k, v in c.items():
+            for k, v in cluster_to_words[i].items():
                 topic_word_list_list[-1].append({"text": k, "value": v})
 
             emotion_ratio, emotion_tweet_dict, emotion_word = emotion_analyze_all(
-                c.keys(), sess_info_at['tweets'])
+                cluster_to_words[i].keys(), sess_info_at['tweets'])
             sess_info_at['emotion_tweet'][-1].append(emotion_tweet_dict)
             emotion_ratio_list.append({
                       "labels": ["ネガティブ", "ニュートラル", "ポジティブ"],
@@ -610,7 +608,7 @@ def make_time_hist(time_array):
             round_start_h += 1
             round_start_m = 0
         round_start_dt = dt.datetime.strptime(
-            f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M')
+            f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -631,7 +629,7 @@ def make_time_hist(time_array):
             round_start_h += 1
             round_start_m = 0
         round_start_dt = dt.datetime.strptime(
-            f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M')
+            f'{time_label_start[:-5]}{round_start_h}:{round_start_m}', '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -645,7 +643,7 @@ def make_time_hist(time_array):
         time_label_start = dt.datetime.fromtimestamp(
             bins[0], tz=TIMEZONE).strftime('%Y/%m/%d %H:00')
         round_start_dt = dt.datetime.strptime(
-            time_label_start, '%Y/%m/%d %H:%M')
+            time_label_start, '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
             bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
@@ -661,7 +659,7 @@ def make_time_hist(time_array):
         round_start_h = int(np.round(
             float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 2h単位で繰り上げ
         round_start_dt = dt.datetime.strptime(
-            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
+            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -678,7 +676,7 @@ def make_time_hist(time_array):
         round_start_h = int(np.round(
             float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 4h単位で繰り上げ
         round_start_dt = dt.datetime.strptime(
-            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
+            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -695,7 +693,7 @@ def make_time_hist(time_array):
         round_start_h = int(np.round(
             float(time_label_start[-5:-3]) / round_h + 0.4) * round_h)  # 8h単位で繰り上げ
         round_start_dt = dt.datetime.strptime(
-            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M')
+            f'{time_label_start[:-5]}{round_start_h}:00', '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
 
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
@@ -709,7 +707,7 @@ def make_time_hist(time_array):
         time_label_start = dt.datetime.fromtimestamp(
             bins[0], tz=TIMEZONE).strftime('%Y/%m/%d 00:00')
         round_start_dt = dt.datetime.strptime(
-            time_label_start, '%Y/%m/%d %H:%M')
+            time_label_start, '%Y/%m/%d %H:%M').astimezone(TIMEZONE)
         round_dt = round_start_dt
         for i, bin in enumerate(bins[1:]):
             bin_dt = dt.datetime.fromtimestamp(bin, tz=TIMEZONE)
@@ -734,52 +732,6 @@ def word_count_rate(dict_word_count, dict_all_count, word_num_in_cloud=20, max_t
     with open('backend/data/word_list/excluded_word.txt', 'r', encoding='utf-8') as f:
         excluded_word = f.read().split('\n')
     with open('backend/data/word_list/excluded_char.txt', 'r', encoding='utf-8') as f:
-        excluded_char = f.read().split('\n')
-
-    for word in dict_word_count.keys():
-        # 出現頻度の低い単語は無視
-        if dict_word_count[word] < ignore_word_count:
-            break
-
-        if (word in dict_all_count.keys()):
-            all_count = dict_all_count[word]
-        else:
-            all_count = 0
-
-        try:
-            # 1以下のカウントはwordcloudで認識されないため最後に1を足す
-            dict_word_count_rate[word] = float(
-                dict_word_count[word]) / (float(all_count)/(1000000/max_tweets) + 1) + 1
-        except TypeError:
-            continue
-
-    dict_word_count_rate = dict(
-        sorted(dict_word_count_rate.items(), key=lambda x: x[1], reverse=True))
-    extract_dict = {}
-
-    # 相対出現頻度が高いワードからword_num_in_cloud個抽出
-    for w in dict_word_count_rate.keys():
-        if OKword(w, excluded_word, excluded_char) and len(w) < word_length and dict_word_count_rate[w] > thre_word_count_rate:
-            extract_dict[w] = dict_word_count_rate[w]
-            if len(extract_dict) >= word_num_in_cloud:
-                break
-
-    logger.info('------------ word count rate finish --------------')
-    return extract_dict
-
-
-# 特定キーワードと同時にツイートされる名詞のカウント数を、全てのツイートにおける名詞のカウント数で割る
-# （相対頻出度を計算する）
-def word_count_rate_pre(dict_word_count, dict_all_count, word_num_in_cloud=20, max_tweets=100, ignore_word_count=5, word_length=20, thre_word_count_rate=3):
-    logger.info('------------ word count rate start --------------')
-    dict_word_count = dict(
-        sorted(dict_word_count.items(), key=lambda x: x[1], reverse=True))
-    dict_word_count_rate = {}
-
-    # 除外単語リストを取得
-    with open('crover/data/word_list/excluded_word.txt', 'r', encoding='utf-8') as f:
-        excluded_word = f.read().split('\n')
-    with open('crover/data/word_list/excluded_char.txt', 'r', encoding='utf-8') as f:
         excluded_char = f.read().split('\n')
 
     for word in dict_word_count.keys():
@@ -878,9 +830,8 @@ def make_top_word2vec_dic_datastore(dict_word_count_rate):
 
     return dict_top_word2vec
 
+
 # word_count_rate（相対頻出度）の大きい単語にword2vecを当てはめる
-
-
 def make_part_word2vec_dic(dict_word_count_rate, top_word2vec):
     logger.info(
         '-------------- making dict_part_word2vec start -----------------\n')
