@@ -93,7 +93,7 @@
                   「{{ searchKeyword }}」と一緒に呟かれている言葉
                 </div>
 
-                <div class="row wc-region">
+                <div class="row">
                   <div
                     v-for="(tw, wcId) in topicWord"
                     v-bind:key="wcId"
@@ -174,12 +174,13 @@
                         width: emotionRatioWidth + 'px',
                         height: emotionRatioHeight + 'px'
                       }"
+                      id="emotion-ratio-chart-id"
                     />
                   </div>
 
                   <div class="col-md-6 col-12">
                     <div class="chart-caption">感情ワード</div>
-                    <div class="wc-region">
+                    <div>
                       <vue-d3-cloud
                         :data="emotionWord[selectedWcId]"
                         :fontSizeMapper="fontSizeMapper"
@@ -380,14 +381,17 @@ export default {
     // eslint-disable-next-line
     cloudSize: function () {
       if (this.currentWindowWidth < this.colMdMin) {
-        return String(this.currentWindowWidth - 140)
+        return String(this.currentWindowWidth - 82)
       } else {
         return String(Number(this.currentWindowWidth / 2) - 140)
       }
     },
     // eslint-disable-next-line
     topicCloudSize: function () {
-      if (this.topicWord.length === 1) {
+      if (
+        this.topicWord.length === 1 ||
+        this.currentWindowWidth < this.colMdMin
+      ) {
         return this.cloudSize
       } else {
         return this.cloudSize / 2
@@ -406,19 +410,21 @@ export default {
       if (this.currentWindowWidth < this.colMdMin) {
         return this.cloudSize
       } else {
-        return String(Number(this.currentWindowWidth / 4) - 50)
+        // return String(Number(this.currentWindowWidth / 4) - 60)
+        return String((Number(this.emotionCloudWidth) * 3) / 4)
       }
     },
     // eslint-disable-next-line
     emotionRatioHeight: function () {
-      return String(Number(this.emotionRatioWidth) - 100)
+      // return String(Number(this.emotionRatioWidth) - 100)
+      return String((Number(this.emotionCloudWidth) * 3) / 4)
     },
     // eslint-disable-next-line
     emotionCloudWidth: function () {
       if (this.currentWindowWidth < this.colMdMin) {
         return this.cloudSize
       } else {
-        return String(Number(this.currentWindowWidth / 4) - 140)
+        return String(Number(this.currentWindowWidth / 4) - 65)
       }
     },
     // eslint-disable-next-line
@@ -462,6 +468,25 @@ export default {
       this.negativeTab = document.getElementById('negative-tab')
       if (this.positiveTab) {
         this.clickPositiveTab()
+      }
+    }
+    var resultElems = document.getElementsByClassName('result-region')
+    if (resultElems) {
+      for (var i = 0; i < resultElems.length; i++) {
+        if (window.innerWidth < this.colMdMin) {
+          resultElems[i].style.padding = '0' // スマホ画面
+        } else {
+          resultElems[i].style.padding = '15px'
+        }
+      }
+    }
+
+    var emotionRatioElem = document.getElementById('emotion-ratio-chart-id')
+    if (emotionRatioElem) {
+      if (window.innerWidth < this.colMdMin) {
+        emotionRatioElem.style.margin = '0 auto 0 auto' // スマホ画面
+      } else {
+        emotionRatioElem.style.margin = '80 auto 0 auto'
       }
     }
   },
@@ -691,41 +716,31 @@ export default {
   vertical-align: middle;
 }
 .trend-label {
-  font-size: 1rem;
-  margin: 1rem 2rem 0rem 0rem;
+  font-size: 1em;
+  margin: 1.5em 2rem 0rem 0rem;
+  vertical-align: super;
 }
 .trend-button {
-  margin: 0.8rem 1rem 0rem 0rem;
+  margin: 0rem 1rem 0rem 0rem;
 }
 .chart-caption {
   font-size: 1.3rem;
-  margin: 30px;
+  margin: 15px;
   text-align: left;
 }
 .chart-caption-topic {
   font-size: 1.3rem;
-  margin: 30px 30px 0 30px;
+  margin: 15px 15px 0 15px;
   text-align: left;
-}
-.wc-region {
-  margin: 15px;
 }
 .wc-box {
   position: relative;
 }
-.wc-box-face {
-  position: absolute;
-  top: 0;
-  left: 0;
-  margin: 22px 30px;
-  width: 1.5em;
-  color: green;
-}
 .wc-box-face-bs {
   position: absolute;
   top: 0;
-  left: 0;
-  margin: 17px 30px;
+  left: 15px;
+  margin: 17px 15px;
   font-size: 1.7em;
   color: rgb(56, 167, 56);
   vertical-align: middle;
@@ -752,11 +767,15 @@ export default {
   text-align: center;
 }
 .tweeted-time-chart {
-  margin: 30px;
+  margin: 15px;
 }
+
 .emotion-ratio-chart {
-  margin: 30px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 50px;
 }
+
 .tab-positive {
   color: white;
   background-color: #e77181;
@@ -770,7 +789,7 @@ export default {
   background-color: #59a0f1;
 }
 .emotion-table {
-  margin: 30px;
+  margin: 15px;
 }
 
 tbody.tweet {

@@ -13,6 +13,30 @@ export default {
   components: {
     AboutBlock,
     EmotionBlock
+  },
+  data() {
+    return {
+      colMdMin: 768
+    }
+  },
+  mounted() {
+    var titleElems = document.getElementsByClassName('feature-title')
+    for (var i = 0; i < titleElems.length; i++) {
+      if (window.innerWidth < this.colMdMin) {
+        titleElems[i].style.padding = '20px' // スマホ画面
+      } else {
+        titleElems[i].style.padding = '40px'
+      }
+    }
+
+    var resultElems = document.getElementsByClassName('result-region')
+    for (i = 0; i < resultElems.length; i++) {
+      if (window.innerWidth < this.colMdMin) {
+        resultElems[i].style.padding = '0' // スマホ画面
+      } else {
+        resultElems[i].style.padding = '15px'
+      }
+    }
   }
 }
 </script>
@@ -24,7 +48,6 @@ export default {
 
 .feature-title {
   text-align: left;
-  padding: 40px 40px 40px 40px;
 }
 .icon-title {
   width: 3rem;
