@@ -208,8 +208,12 @@
                     aria-controls="home"
                     aria-selected="true"
                     @click="clickPositiveTab()"
-                    >ポジティブ</a
-                  >
+                    ><i
+                      class="bi bi-emoji-smile tab-icon"
+                      v-if="currentWindowWidth < colMdMin"
+                    ></i>
+                    <span v-else>ポジティブ</span>
+                  </a>
                 </li>
                 <li class="nav-item">
                   <a
@@ -221,7 +225,11 @@
                     aria-controls="profile"
                     aria-selected="false"
                     @click="clickNeutralTab()"
-                    >ニュートラル</a
+                    ><i
+                      class="bi bi-emoji-neutral tab-icon"
+                      v-if="currentWindowWidth < colMdMin"
+                    ></i>
+                    <span v-else>ニュートラル</span></a
                   >
                 </li>
                 <li class="nav-item">
@@ -234,7 +242,11 @@
                     aria-controls="contact"
                     aria-selected="false"
                     @click="clickNegativeTab()"
-                    >ネガティブ</a
+                    ><i
+                      class="bi bi-emoji-frown tab-icon"
+                      v-if="currentWindowWidth < colMdMin"
+                    ></i>
+                    <span v-else>ネガティブ</span></a
                   >
                 </li>
               </ul>
@@ -250,7 +262,7 @@
                         <td
                           class="tweetline"
                           :style="{
-                            width: String(currentWindowWidth - 170) + 'px'
+                            width: String(emotionTableWidth) + 'px'
                           }"
                         >
                           {{ t }}
@@ -435,6 +447,14 @@ export default {
         return this.tweet[this.selectedWcId].neutral
       } else if (this.focusEmotion === 'negative') {
         return this.tweet[this.selectedWcId].negative
+      }
+    },
+    // eslint-disable-next-line
+    emotionTableWidth: function () {
+      if (this.currentWindowWidth < this.colMdMin) {
+        return this.currentWindowWidth - 100
+      } else {
+        return this.currentWindowWidth - 170
       }
     }
   },
@@ -674,8 +694,9 @@ export default {
 
     loadTweet() {
       if (
-        this.tbodyElem.scrollHeight ===
-          this.tbodyElem.clientHeight + this.tbodyElem.scrollTop &&
+        this.tbodyElem.scrollHeight -
+          (this.tbodyElem.clientHeight + this.tbodyElem.scrollTop) <
+          100 &&
         this.isLoad[this.selectedWcId][this.focusEmotion]
       ) {
         var selectedWcTweet = this.tweet[this.selectedWcId]
@@ -787,6 +808,10 @@ export default {
 .tab-negative {
   color: white;
   background-color: #59a0f1;
+}
+.tab-icon {
+  color: white;
+  font-size: 1.5em;
 }
 .emotion-table {
   margin: 15px;
