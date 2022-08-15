@@ -168,8 +168,10 @@
                     />
                   </div>
 
-                  <div class="col-md-6 col-12" id="emotion-select-id">
-                    <div class="chart-caption">ツイート感情割合</div>
+                  <div class="col-md-6 col-12">
+                    <div class="chart-caption" id="emotion-select-id">
+                      ツイート感情割合
+                    </div>
                     <Pie
                       :chart-options="emotionRatioOptions"
                       :chart-data="emotionRatio[selectedWcId]"
