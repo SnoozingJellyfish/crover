@@ -57,7 +57,7 @@
           v-bind:key="t"
           @click="keyword = t"
           type="button"
-          class="btn btn-outline-primary trend-button mb-3 ml-1 mr-1"
+          class="btn btn-outline-primary trend-button"
         >
           {{ t }}
         </button>
@@ -70,7 +70,11 @@
           @before-leave="beforeLeave"
           @leave="leave"
         >-->
-        <div class="topSlide result-region" v-if="isOpen">
+        <div
+          class="topSlide result-region"
+          id="emotion-result-id"
+          v-if="isOpen"
+        >
           <pulse-loader
             :loading="isSpinner"
             :color="spinnerColor"
@@ -164,8 +168,8 @@
                     />
                   </div>
 
-                  <div class="col-md-6 col-12">
-                    <div class="chart-caption">ツイート割合</div>
+                  <div class="col-md-6 col-12" id="emotion-select-id">
+                    <div class="chart-caption">ツイート感情割合</div>
                     <Pie
                       :chart-options="emotionRatioOptions"
                       :chart-data="emotionRatio[selectedWcId]"
@@ -208,10 +212,7 @@
                     aria-controls="home"
                     aria-selected="true"
                     @click="clickPositiveTab()"
-                    ><i
-                      class="bi bi-emoji-smile tab-icon"
-                      v-if="currentWindowWidth < colMdMin"
-                    ></i>
+                    ><i class="bi bi-emoji-smile tab-icon" v-if="isMobile"></i>
                     <span v-else>ポジティブ</span>
                   </a>
                 </li>
@@ -227,7 +228,7 @@
                     @click="clickNeutralTab()"
                     ><i
                       class="bi bi-emoji-neutral tab-icon"
-                      v-if="currentWindowWidth < colMdMin"
+                      v-if="isMobile"
                     ></i>
                     <span v-else>ニュートラル</span></a
                   >
@@ -242,10 +243,7 @@
                     aria-controls="contact"
                     aria-selected="false"
                     @click="clickNegativeTab()"
-                    ><i
-                      class="bi bi-emoji-frown tab-icon"
-                      v-if="currentWindowWidth < colMdMin"
-                    ></i>
+                    ><i class="bi bi-emoji-frown tab-icon" v-if="isMobile"></i>
                     <span v-else>ネガティブ</span></a
                   >
                 </li>
@@ -300,8 +298,9 @@ export default {
   name: 'emotion-block',
   data() {
     return {
+      navbarHeight: 0,
       backendErrorcode: 0,
-      emotionBlockElem: null,
+      emotionResultElem: null,
       isOpen: false,
       trend: '',
       keyword: '',
@@ -310,6 +309,7 @@ export default {
       isSpinner: true,
       spinnerColor: '#999',
       spinnerSize: '15px',
+      doneSearch: false,
       backArrowElem: null,
       displayWcEmotionIcon: [true, false, false, false],
       displayWcButton: [false, false, false, false],
@@ -344,6 +344,7 @@ export default {
       },
       barChartW: 10,
       barChartH: 3,
+      emotionSelectElem: null,
       emotionRatio: [],
       emotionRatioOptions: {
         responsive: true,
@@ -375,6 +376,10 @@ export default {
   },
   computed: {
     // eslint-disable-next-line
+    isMobile: function () {
+      return this.currentWindowWidth < this.colMdMin
+    },
+    // eslint-disable-next-line
     topicWordColClass: function () {
       if (this.topicWord.length > 1) {
         return 'col-md-6 col-12'
@@ -392,7 +397,7 @@ export default {
     },
     // eslint-disable-next-line
     cloudSize: function () {
-      if (this.currentWindowWidth < this.colMdMin) {
+      if (this.isMobile) {
         return String(this.currentWindowWidth - 82)
       } else {
         return String(Number(this.currentWindowWidth / 2) - 140)
@@ -400,10 +405,7 @@ export default {
     },
     // eslint-disable-next-line
     topicCloudSize: function () {
-      if (
-        this.topicWord.length === 1 ||
-        this.currentWindowWidth < this.colMdMin
-      ) {
+      if (this.topicWord.length === 1 || this.isMobile) {
         return this.cloudSize
       } else {
         return this.cloudSize / 2
@@ -411,7 +413,7 @@ export default {
     },
     // eslint-disable-next-line
     tweetedTimeHeight: function () {
-      if (this.currentWindowWidth < this.colMdMin) {
+      if (this.isMobile) {
         return String(Number(this.cloudSize) / 2)
       } else {
         return String(Number(this.cloudSize) / 3)
@@ -419,7 +421,7 @@ export default {
     },
     // eslint-disable-next-line
     emotionRatioWidth: function () {
-      if (this.currentWindowWidth < this.colMdMin) {
+      if (this.isMobile) {
         return this.cloudSize
       } else {
         // return String(Number(this.currentWindowWidth / 4) - 60)
@@ -433,7 +435,7 @@ export default {
     },
     // eslint-disable-next-line
     emotionCloudWidth: function () {
-      if (this.currentWindowWidth < this.colMdMin) {
+      if (this.isMobile) {
         return this.cloudSize
       } else {
         return String(Number(this.currentWindowWidth / 4) - 65)
@@ -451,28 +453,36 @@ export default {
     },
     // eslint-disable-next-line
     emotionTableWidth: function () {
-      if (this.currentWindowWidth < this.colMdMin) {
-        return this.currentWindowWidth - 100
+      if (this.isMobile) {
+        return this.currentWindowWidth - 90
       } else {
         return this.currentWindowWidth - 170
       }
     }
   },
   mounted() {
-    // this.emotionBlockElem = document.getElementById('emotion-block')
+    this.emotionResultElem = document.getElementById('emotion-result-id')
     axios.get('/trend').then((response) => (this.trend = response.data))
     console.log(this.trend)
     this.currentWindowWidth = window.innerWidth
     window.addEventListener('resize', () => {
       this.currentWindowWidth = window.innerWidth
     })
+    this.navbarHeight =
+      document.getElementsByClassName('navbar')[0].clientHeight
   },
   updated() {
-    /*
-    if (!this.emotionBlockElem) {
-      this.emotionBlockElem = document.getElementById('emotion-block')
+    if (!this.emotionResultElem) {
+      this.emotionResultElem = document.getElementById('emotion-result-id')
     }
-    */
+    if (this.emotionResultElem && this.doneSearch) {
+      window.scrollTo({
+        top: this.emotionResultElem.offsetTop - this.navbarHeight,
+        behavior: 'auto'
+      })
+      this.doneSearch = false
+    }
+
     if (!this.backArrowElem) {
       this.backArrowElem = document.getElementById('back-arrow')
     }
@@ -493,7 +503,7 @@ export default {
     var resultElems = document.getElementsByClassName('result-region')
     if (resultElems) {
       for (var i = 0; i < resultElems.length; i++) {
-        if (window.innerWidth < this.colMdMin) {
+        if (this.isMobile) {
           resultElems[i].style.padding = '0' // スマホ画面
         } else {
           resultElems[i].style.padding = '15px'
@@ -503,16 +513,19 @@ export default {
 
     var emotionRatioElem = document.getElementById('emotion-ratio-chart-id')
     if (emotionRatioElem) {
-      if (window.innerWidth < this.colMdMin) {
+      if (this.isMobile) {
         emotionRatioElem.style.margin = '0 auto 0 auto' // スマホ画面
       } else {
         emotionRatioElem.style.margin = '80 auto 0 auto'
       }
     }
+    if (!this.emotionSelectElem) {
+      this.emotionSelectElem = document.getElementById('emotion-select-id')
+    }
   },
   methods: {
     searchAnalyze() {
-      this.clickWcEmotionButton(0)
+      this.selectWcEmotion(0)
 
       // 特殊文字をスペースに変換
       this.keyword = this.keyword.replace(
@@ -560,6 +573,7 @@ export default {
           this.tweet = response.data.tweet
           this.isSpinner = false
           this.isLoad = response.data.isLoad
+          this.doneSearch = true
 
           // 単語が1つだけの場合は分割ボタンを無効にする
           for (var i = 0; i < this.topicWord.length; i++) {
@@ -575,12 +589,6 @@ export default {
       }
       this.isOpen = true
       this.focusEmotion = 'positive'
-      /*
-      window.scrollTo({
-        top: this.emotionBlockElem.offsetTop,
-        behavior: 'auto'
-      })
-      */
 
       this.$nextTick(() => {
         this.positiveTab = document.getElementById('positive-tab')
@@ -588,7 +596,9 @@ export default {
         this.negativeTab = document.getElementById('negative-tab')
         this.clickPositiveTab()
         this.tbodyElem = document.getElementById('tbody-tweet')
-        this.tbodyElem.addEventListener('scroll', this.loadTweet)
+        if (this.tbodyElem) {
+          this.tbodyElem.addEventListener('scroll', this.loadTweet)
+        }
         this.backArrowElem = document.getElementById('back-arrow-elem')
       })
     },
@@ -623,16 +633,27 @@ export default {
               }
             }
           })
-        this.clickWcEmotionButton(0)
+        this.selectWcEmotion(0)
         this.clickPositiveTab()
       }
     },
-    clickWcEmotionButton(wcId) {
+    selectWcEmotion(wcId) {
       this.selectedWcId = wcId
       this.displayWcEmotionIcon = [false, false, false, false]
       this.displayWcEmotionIcon[wcId] = true
       this.disableEmotionAnalysis = [false, false, false, false]
       this.disableEmotionAnalysis[wcId] = true
+    },
+    clickWcEmotionButton(wcId) {
+      this.selectWcEmotion(wcId)
+      if (this.emotionSelectElem) {
+        if (this.isMobile) {
+          window.scrollTo({
+            top: this.emotionSelectElem.offsetTop - this.navbarHeight,
+            behavior: 'auto'
+          })
+        }
+      }
     },
     focusBackArrow() {
       if (this.topicWord.length > 1) {
@@ -656,16 +677,18 @@ export default {
           this.tweet = response.data.tweet
           this.isLoad = response.data.isLoad
         })
-        this.clickWcEmotionButton(0)
+        this.selectWcEmotion(0)
         this.clickPositiveTab()
       }
     },
     clickPositiveTab() {
-      this.tbodyElem.scroll({ top: 0 })
-      this.focusEmotion = 'positive'
-      this.focusTab(this.positiveTab, 'rgb(240, 79, 100)', '#f1afb8')
-      this.blurTab(this.neutralTab, this.neutralTabDefaultColor)
-      this.blurTab(this.negativeTab, this.negativeTabDefaultColor)
+      if (this.tbodyElem) {
+        this.tbodyElem.scroll({ top: 0 })
+        this.focusEmotion = 'positive'
+        this.focusTab(this.positiveTab, 'rgb(240, 79, 100)', '#f1afb8')
+        this.blurTab(this.neutralTab, this.neutralTabDefaultColor)
+        this.blurTab(this.negativeTab, this.negativeTabDefaultColor)
+      }
     },
     clickNeutralTab() {
       this.tbodyElem.scroll({ top: 0 })
@@ -696,7 +719,7 @@ export default {
       if (
         this.tbodyElem.scrollHeight -
           (this.tbodyElem.clientHeight + this.tbodyElem.scrollTop) <
-          100 &&
+          50 &&
         this.isLoad[this.selectedWcId][this.focusEmotion]
       ) {
         var selectedWcTweet = this.tweet[this.selectedWcId]
@@ -738,11 +761,11 @@ export default {
 }
 .trend-label {
   font-size: 1em;
-  margin: 1.5em 2rem 0rem 0rem;
-  vertical-align: super;
+  margin: 1.5em 0.5rem 0rem 0rem;
+  vertical-align: sub;
 }
 .trend-button {
-  margin: 0rem 1rem 0rem 0rem;
+  margin: 0.25em;
 }
 .chart-caption {
   font-size: 1.3rem;

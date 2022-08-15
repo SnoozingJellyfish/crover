@@ -1,7 +1,54 @@
 <template>
   <div class="home-page">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#"
+          ><img
+            src="@/assets/crover_logo_3leaf_rgb.png"
+            alt="crover_logo"
+            width="80"
+        /></a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarScroll"
+          aria-controls="navbarScroll"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarScroll">
+          <ul
+            class="navbar-nav me-auto my-2 my-lg-0 navbar-nav-scroll"
+            style="--bs-scroll-height: 100px"
+          >
+            <!-- emotion analysis -->
+            <li class="nav-item">
+              <a
+                class="nav-link"
+                data-toggle="tab"
+                href="#home"
+                role="tab"
+                aria-controls="home"
+                aria-selected="true"
+                @click="clickEmotionNav()"
+                >Emotion</a
+              >
+            </li>
+            <!-- network graph -->
+            <li class="nav-item">
+              <a class="nav-link" href="#">Network</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- コンテンツ -->
     <about-block />
-    <emotion-block />
+    <emotion-block id="emotion-block-id" />
   </div>
 </template>
 
@@ -16,10 +63,18 @@ export default {
   },
   data() {
     return {
-      colMdMin: 768
+      colMdMin: 768,
+      emotionBlockElem: null,
+      navbarHeight: 0
     }
   },
   mounted() {
+    this.navbarHeight =
+      document.getElementsByClassName('navbar')[0].clientHeight
+    document.body.style.paddingTop = String(this.navbarHeight) + 'px'
+
+    this.emotionBlockElem = document.getElementById('emotion-block-id')
+
     var titleElems = document.getElementsByClassName('feature-title')
     for (var i = 0; i < titleElems.length; i++) {
       if (window.innerWidth < this.colMdMin) {
@@ -28,14 +83,12 @@ export default {
         titleElems[i].style.padding = '40px'
       }
     }
-
-    var resultElems = document.getElementsByClassName('result-region')
-    for (i = 0; i < resultElems.length; i++) {
-      if (window.innerWidth < this.colMdMin) {
-        resultElems[i].style.padding = '0' // スマホ画面
-      } else {
-        resultElems[i].style.padding = '15px'
-      }
+  },
+  methods: {
+    clickEmotionNav() {
+      window.scrollTo({
+        top: this.emotionBlockElem.offsetTop - this.navbarHeight
+      })
     }
   }
 }
@@ -66,6 +119,7 @@ export default {
 .result-region {
   background-color: #fff;
   border-radius: 10px;
+  margin: 15px 0 0 0;
 }
 
 .topSlide {

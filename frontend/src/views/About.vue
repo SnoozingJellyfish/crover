@@ -62,7 +62,18 @@ export default {
   mixins: [Openable],
   data() {
     return {
-      isOpen: false
+      isOpen: false,
+      colMdMin: 768
+    }
+  },
+  mounted() {
+    var aboutToggleElems = document.getElementsByClassName('about-toggle')
+    for (var i = 0; i < aboutToggleElems.length; i++) {
+      if (window.innerWidth < this.colMdMin) {
+        aboutToggleElems[i].style.padding = '0 30px 0 0'
+      } else {
+        aboutToggleElems[i].style.padding = '0 60px 0 0'
+      }
     }
   }
 }
@@ -70,9 +81,8 @@ export default {
 
 <style scoped>
 .about-toggle {
-  color: blue;
+  color: mediumblue;
   cursor: pointer;
-  padding: 0rem 5rem 0rem 0rem;
 }
 .about-align {
   text-align: right;
