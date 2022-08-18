@@ -1,77 +1,64 @@
 <template>
-  <div id="emotion-block">
+  <div id="network-block">
     <div class="feature-block">
       <div class="feature-title">
         <h2>
-          <!--<span style="vertical-align: middle">
-            <fa icon="face-meh" class="icon-title"></fa></span
-          >-->
-          <!--<i class="bi bi-emoji-neutral icon-title-bs"></i>-->
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 496 512"
-            class="icon-title-emotion"
+            viewBox="0 0 512 512"
+            class="icon-title-network"
           >
-            <!-- Font Awesome Pro 5.15.4 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) -->
+            <!--! Font Awesome Pro 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. -->
             <path
-              d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm0 448c-110.3 0-200-89.7-200-200S137.7 56 248 56s200 89.7 200 200-89.7 200-200 200zm-80-216c17.7 0 32-14.3 32-32s-14.3-32-32-32-32 14.3-32 32 14.3 32 32 32zm160-64c-17.7 0-32 14.3-32 32s14.3 32 32 32 32-14.3 32-32-14.3-32-32-32zm8 144H160c-13.2 0-24 10.8-24 24s10.8 24 24 24h176c13.2 0 24-10.8 24-24s-10.8-24-24-24z"
+              d="M380.6 365.6C401.1 379.9 416 404.3 416 432C416 476.2 380.2 512 336 512C291.8 512 256 476.2 256 432C256 423.6 257.3 415.4 259.7 407.8L114.1 280.4C103.8 285.3 92.21 288 80 288C35.82 288 0 252.2 0 208C0 163.8 35.82 128 80 128C101.9 128 121.7 136.8 136.2 151.1L320 77.52C321.3 34.48 356.6 0 400 0C444.2 0 480 35.82 480 80C480 117.9 453.7 149.6 418.4 157.9L380.6 365.6zM156.3 232.2L301.9 359.6C306.9 357.3 312.1 355.4 317.6 354.1L355.4 146.4C351.2 143.6 347.4 140.4 343.8 136.9L159.1 210.5C159.7 218 158.5 225.3 156.3 232.2V232.2z"
             />
           </svg>
-          感情分析
+          ネットワーク分析
         </h2>
-        キーワードを含むツイートの感情と、一緒にツイートされている言葉を調べる
+        リツイート数の多いツイートの関係性を調べる
 
         <div class="row">
-          <div class="form-group col-lg-3 col-md-5 col-sm-6 col-xs-12">
-            <input
-              type="text"
+          <div class="form-group col-lg-2 col-md-3 col-sm-6 col-6">
+            <select
               class="form-control input-form"
               id="InputWord"
               name="keyword"
-              placeholder="キーワード"
               v-model="keyword"
-              required
-            />
-          </div>
-          <div class="form-group col-xl-1 col-md-2 col-sm-3 col-4">
-            <select
-              class="form-control input-form"
-              id="TweetNum"
-              name="tweet_num"
-              v-model="tweetNum"
             >
-              <option selected>100</option>
-              <!-- debug -->
-              <option>500</option>
-              <option>1000</option>
-              <option>2000</option>
+              <option v-for="k in keywordList" :key="k">
+                {{ k }}
+              </option>
             </select>
           </div>
-          <div class="form-group col-lg-1 col-md-2 col-sm-2 col-4">
-            <label for="TweetNum" class="col-form-label">ツイート</label>
+          <div class="form-group col-lg-2 col-md-3 col-sm-6 col-6">
+            <label for="TweetNum" class="col-form-label"
+              >に関するツイート</label
+            >
           </div>
+
+          <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+            <Datepicker
+              v-model="dateRange"
+              :maxDate="new Date()"
+              :enableTimePicker="false"
+              range
+            />
+          </div>
+
+          <div class="form-group col-8 d-grid" v-if="isMobile"></div>
+
           <div class="form-group col-lg-1 col-md-3 col-sm-2 col-4 d-grid">
             <button
               type="button"
               class="btn btn-primary"
-              @click="searchAnalyze()"
+              @click="analyzeNetwork()"
             >
               探す
             </button>
+            <!--</div>-->
           </div>
         </div>
 
-        <label class="trend-label"> 今のトレンド </label>
-        <button
-          v-for="t in trend"
-          v-bind:key="t"
-          @click="keyword = t"
-          type="button"
-          class="btn btn-outline-primary trend-button"
-        >
-          {{ t }}
-        </button>
-        <br />
         <!--
         <transition
           name="topSlide"
@@ -80,9 +67,10 @@
           @before-leave="beforeLeave"
           @leave="leave"
         >-->
+
         <div
           class="topSlide result-region"
-          id="emotion-result-id"
+          id="network-result-id"
           v-if="isOpen"
         >
           <pulse-loader
@@ -94,108 +82,32 @@
 
           <div v-if="!isSpinner">
             <div class="row">
-              <div class="col-md-6 col-12">
+              <div class="col-md-8 col-12">
                 <div class="chart-caption-topic">
-                  <i
-                    class="bi bi-arrow-left-circle-fill back-arrow"
-                    :style="backArrowStyle"
-                    @mouseover="focusBackArrow()"
-                    @mouseleave="blurBackArrow()"
-                    @click="backCluster()"
-                    id="back-arrow"
-                  ></i>
-                  「{{ searchKeyword }}」と一緒に呟かれている言葉
-                </div>
-
-                <div class="row">
-                  <div
-                    v-for="(tw, wcId) in topicWord"
-                    v-bind:key="wcId"
-                    :class="topicWordColClass"
-                  >
-                    <div
-                      class="wc-box"
-                      @mouseover="displayWcButton[wcId] = true"
-                      @mouseleave="displayWcButton[wcId] = false"
-                    >
-                      <vue-d3-cloud
-                        :data="tw"
-                        :fontSizeMapper="fontSizeMapper"
-                        :width="topicCloudSize"
-                        :height="topicCloudSize"
-                        :font="'Noto Sans JP'"
-                        :colors="topicCloudColor"
-                        :padding="5"
-                        class="cloud-region"
-                      />
-                      <!--
-                      <fa
-                        icon="face-meh"
-                        class="icon-title wc-box-face"
-                        v-show="displayWcEmotionIcon[wcId]"
-                      ></fa>-->
-                      <i
-                        class="bi bi-emoji-neutral-fill wc-box-face-bs"
-                        v-show="displayWcEmotionIcon[wcId]"
-                      ></i>
-                      <button
-                        type="button"
-                        class="btn btn-info wc-box-split mb-3 ml-1 mr-1"
-                        v-show="displayWcButton[wcId]"
-                        @click="splitWc(wcId)"
-                        :disabled="disableSplit[wcId]"
-                      >
-                        意味で分ける
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-info wc-box-emotion mb-3 ml-1 mr-1"
-                        v-show="displayWcButton[wcId]"
-                        @click="clickWcEmotionButton(wcId)"
-                        :disabled="disableEmotionAnalysis[wcId]"
-                      >
-                        感情分析
-                      </button>
-                    </div>
-                  </div>
+                  「{{ keyword }}」と一緒に呟かれている言葉
                 </div>
               </div>
 
-              <div class="col-md-6 col-12">
+              <div class="col-md-4 col-12">
                 <div class="row">
                   <div class="col-12">
-                    <div class="chart-caption">
-                      <span>ツイート数</span>
-                      <!-- 「~一緒に呟かれている言葉」と高さを合わせるため -->
-                      <span class="back-arrow"> </span>
+                    <div class="chart-caption">全体ワード</div>
+                    <div>
+                      <vue-d3-cloud
+                        :data="emotionWord[selectedWcId]"
+                        :fontSizeMapper="fontSizeMapper"
+                        :width="emotionCloudWidth"
+                        :height="emotionCloudWidth"
+                        :font="'Noto Sans JP'"
+                        :colors="emotionCloudColor"
+                        :padding="5"
+                        class="cloud-region"
+                      />
                     </div>
-                    <Bar
-                      :chart-options="tweetedTimeOptions"
-                      :chart-data="tweetedTime"
-                      :width="cloudSize"
-                      :height="tweetedTimeHeight"
-                      class="tweeted-time-chart"
-                    />
                   </div>
 
-                  <div class="col-md-6 col-12">
-                    <div class="chart-caption" id="emotion-select-id">
-                      ツイート感情割合
-                    </div>
-                    <Pie
-                      :chart-options="emotionRatioOptions"
-                      :chart-data="emotionRatio[selectedWcId]"
-                      class="emotion-ratio-chart"
-                      :style="{
-                        width: emotionRatioWidth + 'px',
-                        height: emotionRatioHeight + 'px'
-                      }"
-                      id="emotion-ratio-chart-id"
-                    />
-                  </div>
-
-                  <div class="col-md-6 col-12">
-                    <div class="chart-caption">感情ワード</div>
+                  <div class="col-12">
+                    <div class="chart-caption">グループワード</div>
                     <div>
                       <vue-d3-cloud
                         :data="emotionWord[selectedWcId]"
@@ -212,82 +124,6 @@
                 </div>
               </div>
             </div>
-            <div class="emotion-table">
-              <ul class="nav nav-justified" id="myTab" role="tablist">
-                <li class="nav-item">
-                  <a
-                    class="nav-link active tab-positive"
-                    id="positive-tab"
-                    data-toggle="tab"
-                    href="#home"
-                    role="tab"
-                    aria-controls="home"
-                    aria-selected="true"
-                    @click="clickPositiveTab()"
-                    ><i class="bi bi-emoji-smile tab-icon" v-if="isMobile"></i>
-                    <span v-else>ポジティブ</span>
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link tab-neutral"
-                    id="neutral-tab"
-                    data-toggle="tab"
-                    href="#profile"
-                    role="tab"
-                    aria-controls="profile"
-                    aria-selected="false"
-                    @click="clickNeutralTab()"
-                    ><i
-                      class="bi bi-emoji-neutral tab-icon"
-                      v-if="isMobile"
-                    ></i>
-                    <span v-else>ニュートラル</span></a
-                  >
-                </li>
-                <li class="nav-item">
-                  <a
-                    class="nav-link tab-negative"
-                    id="negative-tab"
-                    data-toggle="tab"
-                    href="#contact"
-                    role="tab"
-                    aria-controls="contact"
-                    aria-selected="false"
-                    @click="clickNegativeTab()"
-                    ><i class="bi bi-emoji-frown tab-icon" v-if="isMobile"></i>
-                    <span v-else>ネガティブ</span></a
-                  >
-                </li>
-              </ul>
-              <div class="tab-content" id="myTabContent">
-                <div
-                  class="tab-pane fade show active"
-                  role="tabpanel"
-                  aria-labelledby="positive-tab"
-                >
-                  <table class="table table-striped">
-                    <tbody class="tweet" id="tbody-tweet">
-                      <tr v-for="t in selectedTweet" :key="t" class="tweetline">
-                        <td
-                          class="tweetline"
-                          :style="{
-                            width: String(emotionTableWidth) + 'px'
-                          }"
-                        >
-                          {{ t }}
-                        </td>
-                      </tr>
-                      <!--
-                      <tr>
-                        <td></td>
-                      </tr>
-                      -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
         <!--</transition>-->
@@ -297,25 +133,32 @@
 </template>
 
 <script>
+import { ref } from 'vue'
 import axios from 'axios'
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 import { Openable } from './util'
 import VueD3Cloud from './VueD3Cloud.vue'
 import 'chart.js/auto'
 import { Bar, Pie } from 'vue-chartjs'
+import Datepicker from '@vuepic/vue-datepicker'
+import '@vuepic/vue-datepicker/dist/main.css'
+import { format } from 'date-fns'
 
 export default {
-  components: { PulseLoader, VueD3Cloud, Bar, Pie },
+  // components: { PulseLoader, VueD3Cloud, Bar, Pie },
+  components: { Datepicker },
   mixins: [Openable],
-  name: 'emotion-block',
+  name: 'network-block',
   data() {
     return {
       navbarHeight: 0,
       backendErrorcode: 0,
       emotionResultElem: null,
       isOpen: false,
-      trend: '',
+      keywordList: [],
       keyword: '',
+      dateRange: [],
+      datePickerFormat: '',
       searchKeyword: '',
       tweetNum: 100,
       isSpinner: true,
@@ -330,7 +173,7 @@ export default {
       disableEmotionAnalysis: [false, false, false, false],
       topicWcBgColor: ['#fff', '#fff', '#fff', '#fff'],
       selectedWcId: 0,
-      topicWord: [],
+      wholeWord: [],
       emotionWord: [],
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
       topicCloudColor: ['navy'],
@@ -383,7 +226,8 @@ export default {
         { positive: false, neutral: false, negative: false },
         { positive: false, neutral: false, negative: false },
         { positive: false, neutral: false, negative: false }
-      ]
+      ],
+      tempdate: null
     }
   },
   computed: {
@@ -391,6 +235,7 @@ export default {
     isMobile: function () {
       return this.currentWindowWidth < this.colMdMin
     },
+
     // eslint-disable-next-line
     topicWordColClass: function () {
       if (this.topicWord.length > 1) {
@@ -473,8 +318,18 @@ export default {
     }
   },
   mounted() {
+    var endDate = new Date()
+    var startDate = new Date(new Date().setDate(endDate.getDate() - 7))
+    this.dateRange = [startDate, endDate]
+
     this.emotionResultElem = document.getElementById('emotion-result-id')
-    axios.get('/trend').then((response) => (this.trend = response.data))
+    axios.get('/init_retweet').then((response) => {
+      this.keywordList = response.data.keywordList
+      this.keyword = this.keywordList[0]
+      this.startDate = response.data.startDate
+      this.endDate = response.data.endDate
+    })
+
     console.log(this.trend)
     this.currentWindowWidth = window.innerWidth
     window.addEventListener('resize', () => {
@@ -536,83 +391,29 @@ export default {
     }
   },
   methods: {
-    searchAnalyze() {
-      this.selectWcEmotion(0)
-
-      // 特殊文字をスペースに変換
-      this.keyword = this.keyword.replace(
-        // eslint-disable-next-line
-        /[,<\.>\/\\;:\]\}\[\{\$=\^\~\*¥\|\+]/g,
-        ' '
-      )
-      // eslint-disable-next-line
-      this.keyword = this.keyword.replace(/[　]/g, ' ')
-      this.keyword = this.keyword.replace(/ +/g, ' ')
-      this.keyword = this.keyword.replace(/^ /g, '')
-      this.keyword = this.keyword.replace(/ $/g, '')
-      this.keyword = this.keyword.replace(/#+$/g, '')
-
-      // キーワードにスペース以外の文字が入力されていない場合は警告を出し検索しない
-      const noSpaceKeyword = this.keyword.replace(/[ ]/g, '')
-      if (noSpaceKeyword === '') {
-        alert('記号を含まないキーワードを入力してください。')
-        return
-      }
-
+    analyzeNetwork() {
       this.isSpinner = true
-      this.tbodyElem = null
-      this.backArrowElem = null
+      var startDateStr = format(dateRange[0], 'yyyy-MM-dd')
+      var endDateStr = format(dateRange[1], 'yyyy-MM-dd')
       axios
-        .get('/search_analyze', {
+        .get('/analyze_network', {
           params: {
             keyword: this.keyword,
-            tweetNum: this.tweetNum
+            startDate: startDateStr,
+            endDate: endDateStr
           }
         })
         .then((response) => {
-          this.backendErrorcode = response.data.errorcode
-          if (this.backendErrorcode !== 0) {
-            this.isSpinner = false
-            alert('不正な文字を含まないキーワードを入力してください。')
-            return
-          }
-
-          this.searchKeyword = this.keyword
-          this.topicWord = response.data.topicWord
-          this.tweetedTime = response.data.tweetedTime
-          this.emotionRatio = response.data.emotionRatio
-          this.emotionWord = response.data.emotionWord
+          this.wholeWord = response.data.wholeWord
+          this.groupWord = response.data.groupWord
           this.tweet = response.data.tweet
           this.isSpinner = false
-          this.isLoad = response.data.isLoad
           this.doneSearch = true
-
-          // 単語が1つだけの場合は分割ボタンを無効にする
-          for (var i = 0; i < this.topicWord.length; i++) {
-            if (this.topicWord[i].length === 1 || this.topicWord.length === 4) {
-              this.disableSplit[i] = true
-            } else {
-              this.disableSplit[i] = false
-            }
-          }
         })
       if (this.backendErrorcode !== 0) {
         return
       }
       this.isOpen = true
-      this.focusEmotion = 'positive'
-
-      this.$nextTick(() => {
-        this.positiveTab = document.getElementById('positive-tab')
-        this.neutralTab = document.getElementById('neutral-tab')
-        this.negativeTab = document.getElementById('negative-tab')
-        this.clickPositiveTab()
-        this.tbodyElem = document.getElementById('tbody-tweet')
-        if (this.tbodyElem) {
-          this.tbodyElem.addEventListener('scroll', this.loadTweet)
-        }
-        this.backArrowElem = document.getElementById('back-arrow-elem')
-      })
     },
     wordClickHandler(name, value, vm) {
       console.log('wordClickHandler', name, value, vm)
@@ -767,21 +568,9 @@ export default {
 </script>
 
 <style scoped>
-.icon-title-emotion {
+.icon-title-network {
   width: 1.5em;
-  vertical-align: -0.4em;
-}
-.back-arrow {
-  font-size: 1.5em;
-  vertical-align: middle;
-}
-.trend-label {
-  font-size: 1em;
-  margin: 1.5em 0.5rem 0rem 0rem;
-  vertical-align: sub;
-}
-.trend-button {
-  margin: 0.25em;
+  vertical-align: -0.35em;
 }
 .chart-caption {
   font-size: 1.3rem;

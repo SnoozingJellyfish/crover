@@ -49,23 +49,27 @@
     <!-- コンテンツ -->
     <about-block />
     <emotion-block id="emotion-block-id" />
+    <network-block id="network-block-id" />
   </div>
 </template>
 
 <script>
 import AboutBlock from './About.vue'
 import EmotionBlock from './Emotion.vue'
+import NetworkBlock from './Network.vue'
 export default {
   name: 'home-page',
   components: {
     AboutBlock,
-    EmotionBlock
+    EmotionBlock,
+    NetworkBlock
   },
   data() {
     return {
       colMdMin: 768,
       emotionBlockElem: null,
-      navbarHeight: 0
+      navbarHeight: 0,
+      titleElems: null
     }
   },
   mounted() {
@@ -75,12 +79,12 @@ export default {
 
     this.emotionBlockElem = document.getElementById('emotion-block-id')
 
-    var titleElems = document.getElementsByClassName('feature-title')
-    for (var i = 0; i < titleElems.length; i++) {
+    this.titleElems = document.getElementsByClassName('feature-title')
+    for (var i = 0; i < this.titleElems.length; i++) {
       if (window.innerWidth < this.colMdMin) {
-        titleElems[i].style.padding = '20px' // スマホ画面
+        this.titleElems[i].style.padding = '20px' // スマホ画面
       } else {
-        titleElems[i].style.padding = '40px'
+        this.titleElems[i].style.padding = '40px'
       }
     }
   },

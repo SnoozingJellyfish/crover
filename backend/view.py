@@ -26,8 +26,8 @@ from backend.clustering import clustering
 from backend.util import download_from_cloud
 from backend.emotion_analyze import emotion_analyze_all
 
-#LOCAL_ENV = True
-LOCAL_ENV = False
+LOCAL_ENV = True
+#LOCAL_ENV = False
 ONCE_TWEET_NUM = 15
 # 除外するツイートのフレーズリストを取得
 with open('backend/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
