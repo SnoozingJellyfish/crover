@@ -222,7 +222,7 @@ def datastore_upload_retweet_manual():
 
 def make_retweet_list(keyword, start_date, end_date):
     retweet_dict = {}
-    with open('crover/data/test_retweet_info.json', 'r') as f:
+    with open('backend/data/test_retweet_info.json', 'r') as f:
         retweet_info = json.load(f)
 
     for date_str in retweet_info[keyword].keys():

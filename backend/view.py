@@ -25,9 +25,10 @@ from sudachipy import tokenizer
 from backend.clustering import clustering
 from backend.util import download_from_cloud
 from backend.emotion_analyze import emotion_analyze_all
+from backend.retweet_network import analyze_network, get_retweet_keyword
 
-LOCAL_ENV = True
-#LOCAL_ENV = False
+#LOCAL_ENV = True
+LOCAL_ENV = False
 ONCE_TWEET_NUM = 15
 # 除外するツイートのフレーズリストを取得
 with open('backend/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
@@ -368,6 +369,30 @@ class LoadTweet(Resource):
             isLoadOne = False
 
         return {'addTweet': add_tweet, 'isLoadOne': isLoadOne}
+
+
+# 収集済みのリツイートキーワードを取得
+class InitRetweet(Resource):
+    def get(self):
+        return get_retweet_keyword(LOCAL_ENV)
+
+
+# リツイートネットワークを作成
+class AnalyzeNetwork(Resource):
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('keyword', type=str)
+        parser.add_argument('startDate', type=str)
+        parser.add_argument('endDate', type=str)
+        query_data = parser.parse_args()
+        keyword = query_data['keyword']
+        start_date = query_data['startDate']
+        end_date = query_data['endDate']
+
+        graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
+        whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
+
+        return {"graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
 
 
 # 認証済みトークンのヘッダーを作成
@@ -946,6 +971,43 @@ def stop_noun(text, tokenizer_obj, mode):
                 text = text[:text.rfind(str(w))]
 
     return ''
+
+
+def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
+    whole_word_count = {}
+    group_word_count = [{} for _ in range(group_num)]
+
+    for r in retweet:
+        whole_word_count, _ = noun_count(r['text'], whole_word_count,
+                                         TOKENIZER_OBJ, SPLIT_MODE, keyword)
+        group_word_count[r['group']], _ = noun_count(r['text'], group_word_count[r['group']],
+                                                     TOKENIZER_OBJ, SPLIT_MODE, keyword)
+
+    whole_word = word_count_rate(whole_word_count,
+                                 DICT_ALL_COUNT, word_num_in_cloud=20,
+                                 max_tweets=len(retweet),
+                                 thre_word_count_rate=0,
+                                 ignore_word_count=0)
+
+    whole_word_list = []
+    for k, v in whole_word.items():
+        whole_word_list.append({"text": k, "value": v})
+
+    group_word_list = []
+    for i in range(group_num):
+        group_word_list.append([])
+        group_word = word_count_rate(group_word_count[i],
+                                     DICT_ALL_COUNT, word_num_in_cloud=20,
+                                     max_tweets=len(retweet),
+                                     thre_word_count_rate=0,
+                                     ignore_word_count=0)
+
+        for k, v in group_word.items():
+            group_word_list[-1].append({"text": k, "value": v})
+
+    group_word_list.append([{ "text": "", "value": 1 }])
+
+    return whole_word_list, group_word_list
 
 
 # リツイートしたユーザーIDを取得する

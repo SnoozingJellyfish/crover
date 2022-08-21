@@ -18,6 +18,8 @@ def create_app():
     api.add_resource(view.SplitWc, '/split_wc')
     api.add_resource(view.LoadTweet, '/load_tweet')
     api.add_resource(view.BackCluster, '/back_cluster')
+    api.add_resource(view.InitRetweet, '/init_retweet')
+    api.add_resource(view.AnalyzeNetwork, '/analyze_network')
 
     @app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
     @app.route('/<path:path>')
@@ -30,4 +32,3 @@ def create_app():
     app.secret_key = secret_key
 
     return app
-    

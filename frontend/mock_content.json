@@ -417,7 +417,54 @@
   "load_tweet_negative": ["追加ネガティブツイート1", "追加ネガティブツイート2"],
   "init_retweet": {
     "keywordList": ["コロナ", "ウクライナ"],
-    "startDate": "2022/08/08",
-    "endDate": "2022/08/17"
+    "startDateList": ["2022/02/01", "2022/01/02"],
+    "minDateList": ["2022/02/01", "2022/01/02"],
+    "maxDateList": ["2022/02/02", "2022/01/03"]
+  },
+  "analyze_network": {
+    "graph": {
+      "nodes": [
+        {
+          "id": "0",
+          "group": 0,
+          "author": "author0",
+          "tweet": "tweet0",
+          "count": 1000
+        },
+        {
+          "id": "1",
+          "group": 1,
+          "author": "author1",
+          "tweet": "tweet1",
+          "count": 2000
+        },
+        {
+          "id": "2",
+          "group": 2,
+          "author": "author2",
+          "tweet": "tweet2",
+          "count": 3000
+        }
+      ],
+      "links": [
+        { "source": "2", "target": "0", "value": 1 },
+        { "source": "0", "target": "1", "value": 1 },
+        { "source": "1", "target": "2", "value": 1 }
+      ]
+    },
+    "wholeWord": [
+      { "text": "夏", "value": 10 },
+      { "text": "プール", "value": 7 },
+      { "text": "山", "value": 15 }
+    ],
+    "groupWord": [
+      [{ "text": "夏", "value": 10 }],
+      [
+        { "text": "プール", "value": 7 },
+        { "text": "山", "value": 15 }
+      ],
+      [{ "text": "台風", "value": 10 }],
+      [{ "text": "", "value": 1 }]
+    ]
   }
 }

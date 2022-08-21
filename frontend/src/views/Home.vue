@@ -29,9 +29,8 @@
               <a
                 class="nav-link"
                 data-toggle="tab"
-                href="#home"
+                href="#emotion"
                 role="tab"
-                aria-controls="home"
                 aria-selected="true"
                 @click="clickEmotionNav()"
                 >Emotion</a
@@ -39,7 +38,15 @@
             </li>
             <!-- network graph -->
             <li class="nav-item">
-              <a class="nav-link" href="#">Network</a>
+              <a
+                class="nav-link"
+                data-toggle="tab"
+                href="#network"
+                role="tab"
+                aria-selected="true"
+                @click="clickNetworkNav()"
+                >Network</a
+              >
             </li>
           </ul>
         </div>
@@ -68,6 +75,7 @@ export default {
     return {
       colMdMin: 768,
       emotionBlockElem: null,
+      networkBlockElem: null,
       navbarHeight: 0,
       titleElems: null
     }
@@ -78,6 +86,7 @@ export default {
     document.body.style.paddingTop = String(this.navbarHeight) + 'px'
 
     this.emotionBlockElem = document.getElementById('emotion-block-id')
+    this.networkBlockElem = document.getElementById('network-block-id')
 
     this.titleElems = document.getElementsByClassName('feature-title')
     for (var i = 0; i < this.titleElems.length; i++) {
@@ -92,6 +101,11 @@ export default {
     clickEmotionNav() {
       window.scrollTo({
         top: this.emotionBlockElem.offsetTop - this.navbarHeight
+      })
+    },
+    clickNetworkNav() {
+      window.scrollTo({
+        top: this.networkBlockElem.offsetTop - this.navbarHeight
       })
     }
   }

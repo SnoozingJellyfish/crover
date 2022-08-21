@@ -11,7 +11,7 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import { FontAwesomeIcon } from '@/plugins/font-awesome'
 import Axios from 'axios'
-Axios.defaults.baseURL = 'http://localhost:3000' // mockサーバーを設定
+// Axios.defaults.baseURL = 'http://localhost:3000' // mockサーバーを設定
 
 createApp(App)
   .use(store)

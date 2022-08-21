@@ -36,6 +36,7 @@
     "vue-chartjs": "^4.1.1",
     "vue-d3-barchart": "^0.0.28",
     "vue-d3-cloud": "^0.2.0",
+    "vue-network-d3": "^0.1.2",
     "vue-router": "^4.0.3",
     "vue-spinner": "^1.0.4",
     "vue-wordcloud": "^1.1.1",

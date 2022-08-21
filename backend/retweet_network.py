@@ -9,11 +9,14 @@ from networkx.algorithms import community
 import matplotlib.pyplot as plt
 from google.cloud import datastore, storage
 
+from backend.util import make_retweet_list
+'''
 from crover import LOCAL_ENV
 from crover.process.preprocess import tokenizer, suda_dict, \
     noun_count, word_count_rate
 from crover.process.clustering import make_word_cloud
 from crover.process.util import download_from_cloud, make_retweet_list
+
 
 if LOCAL_ENV:
     from crover import dict_all_count
@@ -21,6 +24,7 @@ if LOCAL_ENV:
     plt.rcParams['font.family'] = 'Hiragino Sans GB'
 else:
     plt.rcParams['font.family'] = 'IPAPGothic'
+'''
 
 logger = logging.getLogger(__name__)
 
@@ -29,25 +33,24 @@ DATE_KIND = "retweeted_date"
 TWEET_KIND = 'retweeted_tweet'
 
 
-def get_retweet_keyword(ignore_day=7):
+def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
     # debug用
     if LOCAL_ENV:
         # 収集済みリツイートキーワード
-        re_keyword = {'keyword': ['テスト-コロナ', 'テスト-地震'],
-                      'default_start_date': ['2022/01/01', '2022/01/02'],
-                      'limit_start_date': ['2022/01/01', '2022/01/02'],
-                      'limit_end_date': ['2022/01/02', '2022/01/03']}
+        re_keyword = {'keywordList': ['テスト-コロナ', 'テスト-地震'],
+                      'startDateList': ['2022/01/01', '2022/01/02'],
+                      'minDateList': ['2022/01/01', '2022/01/02'],
+                      'maxDateList': ['2022/01/02', '2022/01/03']}
         return re_keyword
-
 
     # release用
     client = datastore.Client()
     logger.info('get retweet keyword and date')
 
-    re_keyword = {'keyword': [],
-                  'default_start_date': [],
-                  'limit_start_date': [],
-                  'limit_end_date': []}
+    re_keyword = {'keywordList': [],
+                  'startDateList': [],
+                  'minDateList': [],
+                  'maxDateList': []}
 
     keyword_query = client.query(kind=KEYWORD_KIND)
     keyword_entities = list(keyword_query.fetch())
@@ -82,17 +85,76 @@ def get_retweet_keyword(ignore_day=7):
         default_start_date = default_start_date_dt.strftime('%Y/%m/%d')
 
         keyword = keyword_entity.key.name
-        re_keyword['keyword'].append(keyword)
+        re_keyword['keywordList'].append(keyword)
         logger.info(f'date of retweet keyword- {keyword}')
-        re_keyword['default_start_date'].append(default_start_date)
-        re_keyword['limit_start_date'].append(start_date)
-        re_keyword['limit_end_date'].append(end_date)
+        re_keyword['startDateList'].append(default_start_date)
+        re_keyword['minDateList'].append(start_date)
+        re_keyword['maxDateList'].append(end_date)
 
     return re_keyword
 
 
 # datastoreからリツイートを取得しネットワークを生成する
-def analyze_network(keyword, start_date, end_date, sim_thre=0.03):
+def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=False):
+    logger.info('analyze network')
+    start_date = int(start_date.replace('-', ''))
+    end_date = int(end_date.replace('-', ''))
+
+    retweet_dict = {}
+
+    if LOCAL_ENV:
+        retweet_dict = make_retweet_list(keyword, start_date, end_date)
+    else:
+        # datastoreからリツイートを取得する
+        client = datastore.Client()
+        keyword_entity = client.get(client.key(KEYWORD_KIND, keyword))
+
+        # リツイートされたツイートとリツイートした人をダウンロード
+        date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
+        date_entities = list(date_query.fetch())
+        for date_entity in date_entities:
+            date = int(date_entity.key.name.replace('/', ''))
+
+            # 範囲外の日付の場合はスキップ
+            if date < start_date or date > end_date:
+                continue
+
+            tweet_query = client.query(kind=TWEET_KIND, ancestor=date_entity.key)
+            tweet_entities = list(tweet_query.fetch())
+
+            for tweet_entity in tweet_entities:
+                tweet_id_str = str(tweet_entity['tweet_id'])
+                if tweet_id_str in retweet_dict:
+                    retweet_elem = retweet_dict[tweet_id_str]
+                    retweet_elem['count'] = max((retweet_elem['count'], tweet_entity['count']))
+                    retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
+                                                           np.array(tweet_entity['re_author'])))
+                else:
+                    retweet_dict[tweet_id_str] = {'tweet_id': tweet_entity['tweet_id'],
+                                                  'author': tweet_entity['author'],
+                                                  'text': tweet_entity['text'],
+                                                  'count': tweet_entity['count'],
+                                                  're_author': tweet_entity['re_author']}
+
+    retweet = list(retweet_dict.values())
+
+    # リツイート間のユーザー類似度を算出する
+    edge = author_similarity(retweet, sim_thre)
+
+    # 閾値以上の類似度のユーザー間を繋いだグラフを作る
+    g, cmap_idx = sim_graph(edge, retweet)
+
+    # d3.jsでグラフを描画するためのjson用dictを作る
+    graph_dict = make_graph_dict(edge, retweet, cmap_idx)
+
+    # 頻出単語のワードクラウドを作成する
+    group_num = max(cmap_idx) + 1
+
+    return graph_dict, keyword, retweet, group_num
+
+
+# datastoreからリツイートを取得しネットワークを生成する
+def analyze_network_pre(keyword, start_date, end_date, sim_thre=0.03):
     logger.info('analyze network')
     start_date = int(start_date.replace('/', ''))
     end_date = int(end_date.replace('/', ''))
@@ -191,8 +253,8 @@ def sim_graph(edge, retweet, level=3):
     for i, c in enumerate(itertools.islice(comp, level)):
         communities.append(c)
     last_level = i
-    color = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'brown', 'pink', 'skyblue', 'olive']
-    cmap = []
+    # color = ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'brown', 'pink', 'skyblue', 'olive']
+    # cmap = []
     cmap_idx = []
 
     for node in G:
@@ -201,13 +263,13 @@ def sim_graph(edge, retweet, level=3):
                 cmap_idx.append(i)
                 # cmap.append(color[i])
 
-    pos = nx.spring_layout(G, k=0.9)
+    # pos = nx.spring_layout(G, k=0.9)
     # nx.draw_networkx(G, pos)
-    black_edges = list(G.edges())
-    node_size = [d["count"] // 20 for (n, d) in G.nodes(data=True)]
+    # black_edges = list(G.edges())
+    # node_size = [d["count"] // 20 for (n, d) in G.nodes(data=True)]
     # nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=cmap)
-    nx.draw_networkx_edges(G, pos, edgelist=black_edges, width=0.2)
-    nx.draw_networkx_labels(G, pos)
+    # nx.draw_networkx_edges(G, pos, edgelist=black_edges, width=0.2)
+    # nx.draw_networkx_labels(G, pos)
 
     return G, cmap_idx
 
