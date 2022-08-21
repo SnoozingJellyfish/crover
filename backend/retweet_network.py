@@ -72,7 +72,8 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
         # 一番最近の収集日が今日よりignore_day日前の場合スキップ
         dif_today_end = dt.datetime.now() - end_date_dt
         if dif_today_end.days > ignore_day:
-            continue
+            # continue
+            pass
 
         td = end_date_dt - start_date_dt
         # 一番最近の収集日から7日前をデフォルト開始日とする
@@ -151,67 +152,6 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=Fals
     group_num = max(cmap_idx) + 1
 
     return graph_dict, keyword, retweet, group_num
-
-
-# datastoreからリツイートを取得しネットワークを生成する
-def analyze_network_pre(keyword, start_date, end_date, sim_thre=0.03):
-    logger.info('analyze network')
-    start_date = int(start_date.replace('/', ''))
-    end_date = int(end_date.replace('/', ''))
-
-    retweet_dict = {}
-
-    if LOCAL_ENV:
-        retweet_dict = make_retweet_list(keyword, start_date, end_date)
-    else:
-        # datastoreからリツイートを取得する
-        client = datastore.Client()
-        keyword_entity = client.get(client.key(KEYWORD_KIND, keyword))
-
-        # リツイートされたツイートとリツイートした人をダウンロード
-        date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
-        date_entities = list(date_query.fetch())
-        for date_entity in date_entities:
-            date = int(date_entity.key.name.replace('/', ''))
-
-            # 範囲外の日付の場合はスキップ
-            if date < start_date or date > end_date:
-                continue
-
-            tweet_query = client.query(kind=TWEET_KIND, ancestor=date_entity.key)
-            tweet_entities = list(tweet_query.fetch())
-
-            for tweet_entity in tweet_entities:
-                tweet_id_str = str(tweet_entity['tweet_id'])
-                if tweet_id_str in retweet_dict:
-                    retweet_elem = retweet_dict[tweet_id_str]
-                    retweet_elem['count'] = max((retweet_elem['count'], tweet_entity['count']))
-                    retweet_elem['re_author'] = np.hstack((retweet_elem['re_author'],
-                                                           np.array(tweet_entity['re_author'])))
-                else:
-                    retweet_dict[tweet_id_str] = {'tweet_id': tweet_entity['tweet_id'],
-                                              'author': tweet_entity['author'],
-                                              'text': tweet_entity['text'],
-                                              'count': tweet_entity['count'],
-                                              're_author': tweet_entity['re_author']}
-
-    retweet = list(retweet_dict.values())
-
-    # リツイート間のユーザー類似度を算出する
-    edge = author_similarity(retweet, sim_thre)
-
-    # 閾値以上の類似度のユーザー間を繋いだグラフを作る
-    g, cmap_idx = sim_graph(edge, retweet)
-
-    # d3.jsでグラフを描画するためのjson用dictを作る
-    graph_dict = make_graph_dict(edge, retweet, cmap_idx)
-
-    # 頻出単語のワードクラウドを作成する
-    group_num = max(cmap_idx) + 1
-    word_clouds_figure = make_word_cloud_node(keyword, retweet, group_num)
-    graph = {'graph_dict': graph_dict, 'word_cloud': word_clouds_figure}
-
-    return graph
 
 
 # リツイート間のユーザー類似度を算出する
