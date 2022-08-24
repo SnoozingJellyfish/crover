@@ -1003,7 +1003,7 @@ def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
                                      ignore_word_count=0)
 
         for k, v in group_word.items():
-            group_word_list[-1].append({"text": k, "value": v})
+            group_word_list[-1].append({"text": k, "value": 2 * v})
 
     group_word_list.append([{ "text": "", "value": 1 }])
 

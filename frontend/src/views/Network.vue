@@ -85,15 +85,7 @@
                 <div class="chart-caption-topic" id="network-result">
                   「{{ keyword }}」と一緒に呟かれているツイート
                 </div>
-                <div class="network-region wc-box" id="network_graph">
-                  <!--
-                  <svg
-                    width="300"
-                    height="300"
-                    id="network-svg"
-                    style="background-color: #eee"
-                  ></svg>
-                  -->
+                <div class="network-region wc-box" id="network-graph">
                   <network
                     :nodeList="graphData['nodes']"
                     :linkList="graphData['links']"
@@ -106,7 +98,7 @@
                   ></network>
                   <!-- カーソルを合わせたときに表示する情報領域-->
                   <div id="tweet-content" class="tweet-content-class">
-                    <h2></h2>
+                    <h4></h4>
                     <p></p>
                   </div>
                 </div>
@@ -200,9 +192,8 @@ export default {
       currentWindowWidth: 0,
       colMdMin: 768,
       tweet: {},
-      networkResultElem: null,
-      svgWidth: 400,
-      svgHeight: 400,
+      networkGraphElem: null,
+      networkRegionElem: null,
       graphData: {},
       nodeData: {},
       tweetContentElem: null,
@@ -224,6 +215,14 @@ export default {
       }
     },
     // eslint-disable-next-line
+    tweetContentWidth: function () {
+      if (this.isMobile) {
+        return 130
+      } else {
+        return 200
+      }
+    },
+    // eslint-disable-next-line
     cloudSize: function () {
       if (this.isMobile) {
         return this.networkRegionSize
@@ -242,7 +241,6 @@ export default {
       (this.selectedKeywordId = retweetKeywordElem.selectedIndex)
     axios.get('/init_retweet').then((response) => {
       this.keywordList = response.data.keywordList
-      console.log(response.data.minDateList)
 
       for (var i = 0; i < this.keywordList.length; i++) {
         var d = response.data.minDateList[i]
@@ -255,21 +253,12 @@ export default {
         var maxDate = new Date(d.substr(0, 4), maxMonth, d.substr(8, 2))
         this.maxDateList.push(maxDate)
 
-        /*
-        var startDate = new Date(new Date().setDate(maxDate.getDate() - 7))
-        console.log(new Date().setDate(maxDate.getDate() - 7))
-        console.log(startDate)
-        if (minDate > startDate) {
-          startDate = minDate
-        }
-        */
         d = response.data.startDateList[i]
         var startMonth = String(Number(d.substr(5, 2)) - 1)
         var startDate = new Date(d.substr(0, 4), startMonth, d.substr(8, 2))
 
         this.dateRange.push([startDate, maxDate])
       }
-
       this.selectedKeywordId = 0
     })
 
@@ -283,6 +272,9 @@ export default {
   updated() {
     if (!this.tweetContentElem) {
       this.tweetContentElem = document.getElementById('tweet-content')
+    }
+    if (!this.networkGraphElem) {
+      this.networkGraphElem = document.getElementById('network-graph')
     }
     if (!this.networkResultElem) {
       this.networkResultElem = document.getElementById('network-result')
@@ -355,18 +347,27 @@ export default {
       console.log('wordClickHandler', name, value, vm)
     },
     hoverNode(e, eDict) {
-      console.log(eDict)
       this.nodeData = eDict
       this.selectedGroupColor = this.colorScale[eDict.group]
       this.tweetContentElem = d3.select('#tweet-content')
+      if (
+        eDict.x + 30 + this.tweetContentWidth < // padding の20pxをプラス
+        this.networkGraphElem.offsetLeft + this.networkRegionSize
+      ) {
+        var tweetContentLeft = eDict.x + 10
+      } else {
+        tweetContentLeft = eDict.x - 10 - this.tweetContentWidth
+      }
+
       this.tweetContentElem
-        .style('left', eDict.x + 10 + 'px')
+        .style('left', tweetContentLeft + 'px')
         .style('top', eDict.y + 10 + 'px')
+        .style('width', this.tweetContentWidth + 'px')
         .style('z-index', 0)
         .style('opacity', 1)
 
       this.tweetContentElem
-        .select('h2')
+        .select('h4')
         .style('border-bottom', '2px solid ' + this.selectedGroupColor)
         .style('margin-right', '0px')
         .text(eDict.author)

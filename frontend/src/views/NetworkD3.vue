@@ -55,7 +55,7 @@
               :class="`${node[nodeTypeKey]} ${
                 node.showText ? 'selected' : ''
               } node element`"
-              :r="nodeSize"
+              :r="Math.sqrt(node['count'] / 50)"
             ></circle>
             <text
               v-show="node.showText"
@@ -324,7 +324,7 @@ export default {
     },
     svgMouseover(e) {
       if (e.target.nodeName === 'circle') {
-        console.log(e)
+        // console.log(e)
         // e.target.attr('fill', 'red')
         d3.select(e.target).attr('fill', 'red')
         if (this.pinned.length === 0) {
