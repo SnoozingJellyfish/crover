@@ -299,9 +299,14 @@ export default {
       })
 
       // 初始化 zoom
-      this.zoom.scaleExtent([0.1, 4]).on('zoom', this.zoomed)
+      // this.zoom.scaleExtent([0.1, 4]).on('zoom', this.zoomed)
+      // eslint-disable-next-line
+      this.zoom.scaleExtent([0.1, 4]).on('zoom', function (d) {
+        d3.select('svg').attr('transform', d.transform)
+      })
 
-      d3.select('svg').call(this.zoom).on('dblclick.zoom', null)
+      // d3.select('svg').call(this.zoom).on('dblclick.zoom', null)
+      d3.select('svg').call(this.zoom)
     },
     clickLink(e) {
       this.$emit('clickLink', e, e.target.__data__)
@@ -428,6 +433,7 @@ export default {
       this.selection.links = []
     },
     zoomed() {
+      /*
       // 缩放中：以鼠标所在的位置为中心
       d3.select('#container').attr(
         'transform',
@@ -439,6 +445,10 @@ export default {
           d3.event.transform.k +
           ')'
       )
+      */
+      console.log('zoom')
+      // d3.select('#container').attr('transform', d3.event.transform)
+      d3.select('svg').attr('transform', d3.event.transform)
     },
     drag(simulation) {
       function dragstarted(d) {

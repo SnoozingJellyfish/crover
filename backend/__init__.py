@@ -20,6 +20,7 @@ def create_app():
     api.add_resource(view.BackCluster, '/back_cluster')
     api.add_resource(view.InitRetweet, '/init_retweet')
     api.add_resource(view.AnalyzeNetwork, '/analyze_network')
+    api.add_resource(view.RunCollectRetweetJob, '/run_collect_retweet_job')
 
     @app.route('/', defaults={'path': ''}, methods=['GET', 'POST'])
     @app.route('/<path:path>')
@@ -28,7 +29,6 @@ def create_app():
 
     app.permanent_session_lifetime = dt.timedelta(minutes=5)
     secret_key = os.urandom(24)
-    # app.config['SECRET_KEY'] = str(np.random.randint(1000000, 9999999))
     app.secret_key = secret_key
 
     return app

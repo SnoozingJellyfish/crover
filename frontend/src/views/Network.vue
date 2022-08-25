@@ -85,7 +85,7 @@
                 <div class="chart-caption-topic" id="network-result">
                   「{{ keyword }}」と一緒に呟かれているツイート
                 </div>
-                <div class="network-region wc-box" id="network-graph">
+                <div class="network-region" id="network-graph">
                   <network
                     :nodeList="graphData['nodes']"
                     :linkList="graphData['links']"
@@ -145,6 +145,11 @@
         <!--</transition>-->
       </div>
     </div>
+    <!-- カーソルを合わせたときに表示する情報領域-->
+    <div id="tweet-content" class="tweet-content-class">
+      <h4></h4>
+      <p></p>
+    </div>
   </div>
 </template>
 
@@ -191,7 +196,6 @@ export default {
       fontSizeMapper: (word) => Math.log2(word.value) * 10,
       currentWindowWidth: 0,
       colMdMin: 768,
-      tweet: {},
       networkGraphElem: null,
       networkRegionElem: null,
       graphData: {},
@@ -217,7 +221,7 @@ export default {
     // eslint-disable-next-line
     tweetContentWidth: function () {
       if (this.isMobile) {
-        return 130
+        return this.networkRegionSize - 30
       } else {
         return 200
       }
@@ -323,18 +327,16 @@ export default {
           }
         })
         .then((response) => {
+          this.backendErrorcode = response.data.errorcode
+          if (this.backendErrorcode !== 0) {
+            this.isSpinner = false
+            alert('エラーが発生しました。')
+            return
+          }
           this.wholeWord = response.data.wholeWord
           this.groupWord = response.data.groupWord
           this.isSpinner = false
-
           this.selectedGroup = this.groupWord.length - 1
-
-          // 事前に描画したグラフをクリア
-          /*
-          var graphElem = d3.select('#network_graph').selectAll('g')
-          console.log(graphElem)
-          graphElem.remove()
-          */
           this.graphData = response.data.graph
           this.doneSearch = true
         })
@@ -350,18 +352,23 @@ export default {
       this.nodeData = eDict
       this.selectedGroupColor = this.colorScale[eDict.group]
       this.tweetContentElem = d3.select('#tweet-content')
-      if (
-        eDict.x + 30 + this.tweetContentWidth < // padding の20pxをプラス
-        this.networkGraphElem.offsetLeft + this.networkRegionSize
-      ) {
-        var tweetContentLeft = eDict.x + 10
+      if (this.isMobile) {
+        var tweetContentLeft = 10
       } else {
-        tweetContentLeft = eDict.x - 10 - this.tweetContentWidth
+        if (
+          eDict.x + 30 + this.tweetContentWidth < // padding の20pxをプラス
+          this.networkGraphElem.offsetLeft + this.networkRegionSize
+        ) {
+          tweetContentLeft = eDict.x + 10
+        } else {
+          tweetContentLeft = eDict.x - 10 - this.tweetContentWidth
+        }
       }
 
       this.tweetContentElem
         .style('left', tweetContentLeft + 'px')
         .style('top', eDict.y + 10 + 'px')
+        .style('bottom', null)
         .style('width', this.tweetContentWidth + 'px')
         .style('z-index', 0)
         .style('opacity', 1)
@@ -372,8 +379,21 @@ export default {
         .style('margin-right', '0px')
         .text(eDict.author)
       this.tweetContentElem.select('p').text(eDict.tweet)
-
       this.selectedGroup = eDict.group
+
+      if (!this.isMobile) {
+        this.$nextTick(() => {
+          var tweetContentElemTemp = document.getElementById('tweet-content')
+          if (
+            window.pageYOffset +
+              tweetContentElemTemp.getBoundingClientRect().height +
+              eDict.y >
+            this.networkGraphElem.offsetTop + this.networkRegionSize
+          ) {
+            this.tweetContentElem.style('bottom', 10 + 'px').style('top', null)
+          }
+        })
+      }
     },
     houtNode(e, eDict) {
       this.tweetContentElem.style('opacity', 0)
@@ -401,6 +421,7 @@ export default {
 .network-region {
   border-radius: 10px;
   margin: 15px;
+  position: relative;
 }
 .tweet-content-class {
   position: absolute;
@@ -409,32 +430,6 @@ export default {
   border-radius: 10px;
   border: solid gray;
   opacity: 0;
-}
-.wc-box {
-  position: relative;
-}
-.wc-box-face-bs {
-  position: absolute;
-  top: 0;
-  left: 15px;
-  margin: 17px 15px;
-  font-size: 1.7em;
-  color: rgb(56, 167, 56);
-  vertical-align: middle;
-}
-.wc-box-split {
-  position: absolute;
-  top: 0;
-  right: 0;
-  margin: 15px 30px;
-  color: white;
-}
-.wc-box-emotion {
-  position: absolute;
-  top: 0;
-  right: 6em;
-  margin: 15px 60px;
-  color: white;
 }
 .cloud-region {
   background-color: #fff;

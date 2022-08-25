@@ -25,7 +25,7 @@ from sudachipy import tokenizer
 from backend.clustering import clustering
 from backend.util import download_from_cloud
 from backend.emotion_analyze import emotion_analyze_all
-from backend.retweet_network import analyze_network, get_retweet_keyword
+from backend.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet
 
 #LOCAL_ENV = True
 LOCAL_ENV = False
@@ -91,6 +91,38 @@ class InvalidURLError(Exception):
 class InvalidKeywordError(Exception):
     """Twitter APIにリクエストするキーワードが有効でない場合のエラー"""
     pass
+
+
+class RunCollectRetweetJob(Resource):
+    def get(self):
+        logger.info('running collect retweet scheduler')
+        parser = reqparse.RequestParser()
+        parser.add_argument('keyword', type=str)
+        query_data = parser.parse_args()
+        keyword = query_data['keyword'].split(',')
+        logger.info(f'keyword: {str(keyword)}')
+
+        jst_delta = dt.timedelta(hours=9)
+        JST = dt.timezone(jst_delta, 'JST')
+        yesterday_dt = dt.datetime.now(JST) - dt.timedelta(days=1)
+        since_date = yesterday_dt.strftime('%Y-%m-%d')
+        yesterday = yesterday_dt.strftime('%Y/%m/%d')
+
+        for i in range(len(keyword) // 2):
+            k = keyword[i*2]
+            # リツイートを取得する
+            retweet = scrape_retweet(k, min_retweets=int(keyword[i*2 + 1]))
+            if len(retweet) == 0:
+                break
+            # リツイートしたユーザーを取得する
+            retweet = get_retweet_author(retweet, since_date)
+            if len(retweet) == 0:
+                break
+
+            # リツイート情報をdatastoreに保存する
+            datastore_upload_retweet(k, yesterday, retweet)
+
+        return '', 200
 
 
 # Twitter APIで現在のトレンドを取得する
@@ -389,10 +421,13 @@ class AnalyzeNetwork(Resource):
         start_date = query_data['startDate']
         end_date = query_data['endDate']
 
-        graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
-        whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
+        try:
+            graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
+            whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
+        except:
+            return {"errorcode": 1}
 
-        return {"graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
+        return {"errorcode": 0, "graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
 
 
 # 認証済みトークンのヘッダーを作成

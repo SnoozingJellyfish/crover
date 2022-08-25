@@ -116,7 +116,6 @@ export default {
 .feature-block {
   background-color: #eee;
 }
-
 .feature-title {
   text-align: left;
 }
