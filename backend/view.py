@@ -931,10 +931,6 @@ def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
     logger.info('-------------- scrape start -----------------\n')
     headers = create_headers()
 
-    # 除外するツイートのフレーズリストを取得
-    with open('crover/data/word_list/excluded_tweet.txt', 'r', encoding='utf-8') as f:
-        excluded_tweet = f.read().split('\n')
-
     URL_regex = re.compile(
         r"(https?|ftp)(:\/\/[-_\.!~*\'()a-zA-Z0-9;\/?:\@&=\+\$,%#]+)")
 
@@ -969,7 +965,7 @@ def scrape_retweet(keyword, min_retweets=1500, max_tweets=1000):
             tweet_text = res['text']
 
             # 特定フレーズを含むツイートを除外
-            for w in excluded_tweet:
+            for w in EXCLUDED_TWEET:
                 if w in tweet_text:
                     exclude_flag = True
                     break
@@ -1049,8 +1045,6 @@ def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
 # リツイートしたユーザーIDを取得する
 def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retweet_cnt=200, max_trial=30):
     logger.info('get retweet user\n')
-    tokenizer_obj = suda_dict.Dictionary(dict_type='full').create()
-    mode = tokenizer.Tokenizer.SplitMode.C  # 最も長い分割ルール
     sign_regex = re.compile(
         '[^\r\n0-9０-９a-zA-Zａ-ｚＡ-Ｚ\u3041-\u309F\u30A1-\u30FF\u2E80-\u2FDF\u3005-\u3007\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF。、ー～！？!?()（）【】]')
 
@@ -1072,7 +1066,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
             logger.info(f"extract few string '{r['text']}'")
             continue
 
-        t = stop_noun(t, tokenizer_obj, mode)
+        t = stop_noun(t, TOKENIZER_OBJ, SPLIT_MODE)
 
         t = sign_regex.sub(' ', t)
         t = re.sub('[ 　]+', ' ', t)
@@ -1098,7 +1092,7 @@ def get_retweet_author(retweet, since_date, max_scrape_retweet=2000, thre_retwee
             # else:
             except InvalidURLError:
                 # logger.info(traceback.format_exc())
-                t = stop_noun(t, tokenizer_obj, mode)
+                t = stop_noun(t, TOKENIZER_OBJ, SPLIT_MODE)
                 if t == ' ' or len(t) < 3:
                     logger.info(f"extract few string '{t}'")
                     break
