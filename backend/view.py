@@ -15,7 +15,7 @@ import traceback
 
 import numpy as np
 # import pytz
-from flask import session
+from flask import session, request
 from flask_restful import Resource, reqparse
 from google.cloud import datastore, storage
 from sudachipy import dictionary as suda_dict
@@ -94,12 +94,13 @@ class InvalidKeywordError(Exception):
 
 
 class RunCollectRetweetJob(Resource):
-    def get(self):
+    def post(self):
         logger.info('running collect retweet scheduler')
-        parser = reqparse.RequestParser()
-        parser.add_argument('keyword', type=str)
-        query_data = parser.parse_args()
-        keyword = query_data['keyword'].split(',')
+        # parser = reqparse.RequestParser()
+        # parser.add_argument('keyword', type=str)
+        # query_data = parser.parse_args()
+        # keyword = query_data['keyword'].split(',')
+        keyword = request.get_data(as_text=True).split(',')
         logger.info(f'keyword: {str(keyword)}')
 
         jst_delta = dt.timedelta(hours=9)

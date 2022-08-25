@@ -40,8 +40,6 @@
               name="tweet_num"
               v-model="tweetNum"
             >
-              <option selected>100</option>
-              <!-- debug -->
               <option>500</option>
               <option>1000</option>
               <option>2000</option>
