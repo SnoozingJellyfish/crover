@@ -97,7 +97,7 @@
             <div class="row">
               <div class="col-md-6 col-12">
                 <div class="chart-caption-topic" id="network-result">
-                  「{{ keyword }}」と一緒に呟かれているツイート
+                  「{{ searchKeyword }}」と一緒に呟かれているツイート
                 </div>
                 <div class="network-region" id="network-graph">
                   <network
@@ -194,6 +194,7 @@ export default {
       isOpen: false,
       isShowHelp: false,
       keywordList: [],
+      searchKeyword: '',
       startDateList: [],
       minDateList: [],
       maxDateList: [],
@@ -356,6 +357,7 @@ export default {
             alert('エラーが発生しました。')
             return
           }
+          this.searchKeyword = this.keyword
           this.wholeWord = response.data.wholeWord
           this.groupWord = response.data.groupWord
           this.isSpinner = false
@@ -407,6 +409,7 @@ export default {
       if (!this.isMobile) {
         this.$nextTick(() => {
           var tweetContentElemTemp = document.getElementById('tweet-content')
+          this.networkGraphElem = document.getElementById('network-graph')
           if (
             window.pageYOffset +
               tweetContentElemTemp.getBoundingClientRect().height +
