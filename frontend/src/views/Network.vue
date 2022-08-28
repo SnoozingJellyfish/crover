@@ -15,7 +15,21 @@
           </svg>
           ネットワーク分析
         </h2>
-        リツイート数の多いツイートの関係性を調べる
+        よくリツイートされたツイートの関係性を調べる
+        <i
+          class="bi bi-question-circle icon-help"
+          @mouseover="isShowHelp = true"
+          @mouseleave="isShowHelp = false"
+        ></i>
+        <div
+          class="help-caption"
+          v-show="isShowHelp"
+          :style="{ width: helpCaptionSize + 'px' }"
+        >
+          よくリツイートされたツイートが丸で表示されます。
+          <br />リツイートされた回数が多いほど大きな丸になります。
+          <br />線でつながった2つのツイートは同じユーザーにリツイートされることが多く、関連性が高いです。
+        </div>
 
         <div class="row">
           <div class="form-group col-lg-2 col-md-3 col-sm-6 col-6">
@@ -107,7 +121,7 @@
               <div class="col-md-3 col-12">
                 <div class="row">
                   <div class="col-12">
-                    <div class="chart-caption">全体ワード</div>
+                    <div class="chart-caption">全体頻出ワード</div>
                     <div>
                       <vue-d3-cloud
                         :data="wholeWord"
@@ -123,7 +137,7 @@
                   </div>
 
                   <div class="col-12">
-                    <div class="chart-caption">グループワード</div>
+                    <div class="chart-caption">グループ頻出ワード</div>
                     <div>
                       <vue-d3-cloud
                         :data="groupWord[selectedGroup]"
@@ -178,6 +192,7 @@ export default {
       navbarHeight: 0,
       backendErrorcode: 0,
       isOpen: false,
+      isShowHelp: false,
       keywordList: [],
       startDateList: [],
       minDateList: [],
@@ -209,6 +224,14 @@ export default {
     // eslint-disable-next-line
     isMobile: function () {
       return this.currentWindowWidth < this.colMdMin
+    },
+    // eslint-disable-next-line
+    helpCaptionSize: function () {
+      if (this.isMobile) {
+        return String(this.currentWindowWidth - 50)
+      } else {
+        return String(Number(this.currentWindowWidth / 2) - 140)
+      }
     },
     // eslint-disable-next-line
     networkRegionSize: function () {

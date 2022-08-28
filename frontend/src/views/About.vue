@@ -34,10 +34,10 @@
         <br />
         <h2>お問い合わせ・開発参加</h2>
         <a href="https://twitter.com/snooze_jelly"
-          >https://twitter.com/snooze_jelly</a
+          ><i class="bi bi-twitter"></i> https://twitter.com/snooze_jelly</a
         ><br />
         <a href="https://github.com/SnoozingJellyfish/crover"
-          >アプリソースコード（GitHub）</a
+          ><i class="bi bi-github"></i> GitHub</a
         ><br />
         <br />
         <h2>License</h2>
@@ -81,7 +81,7 @@ export default {
 
 <style scoped>
 .about-toggle {
-  color: mediumblue;
+  color: royalblue;
   cursor: pointer;
 }
 .about-align {

@@ -72,8 +72,8 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
         # 一番最近の収集日が今日よりignore_day日前の場合スキップ
         dif_today_end = dt.datetime.now() - end_date_dt
         if dif_today_end.days > ignore_day:
-            # continue
-            pass
+            continue
+            # pass  # for debug
 
         td = end_date_dt - start_date_dt
         # 一番最近の収集日から7日前をデフォルト開始日とする

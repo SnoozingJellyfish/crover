@@ -74,6 +74,7 @@ export default {
   data() {
     return {
       colMdMin: 768,
+      aboutElem: null,
       emotionBlockElem: null,
       networkBlockElem: null,
       navbarHeight: 0,
@@ -84,6 +85,13 @@ export default {
     this.navbarHeight =
       document.getElementsByClassName('navbar')[0].clientHeight
     document.body.style.paddingTop = String(this.navbarHeight) + 'px'
+
+    this.aboutElem = document.getElementsByClassName('about-block')[0]
+    if (window.innerWidth < this.colMdMin) {
+      this.aboutElem.style.padding = '0 20px 0 20px' // スマホ画面
+    } else {
+      this.aboutElem.style.padding = '0 40px 0 40px'
+    }
 
     this.emotionBlockElem = document.getElementById('emotion-block-id')
     this.networkBlockElem = document.getElementById('network-block-id')
@@ -127,6 +135,21 @@ export default {
 .icon-title-bs {
   vertical-align: middle;
   font-size: 1.3em;
+}
+.icon-help {
+  vertical-align: middle;
+  font-size: 1.3em;
+  color: royalblue;
+  font-weight: bold;
+}
+.help-caption {
+  position: absolute;
+  color: white;
+  background-color: rgb(75, 75, 75);
+  padding: 10px;
+  border-radius: 10px;
+  opacity: 0.9;
+  z-index: 100;
 }
 .input-form {
   border-radius: 10px;

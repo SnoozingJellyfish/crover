@@ -21,6 +21,21 @@
         </h2>
         キーワードを含むツイートの感情と、一緒にツイートされている言葉を調べる
 
+        <i
+          class="bi bi-question-circle icon-help"
+          @mouseover="isShowHelp = true"
+          @mouseleave="isShowHelp = false"
+        ></i>
+        <div
+          class="help-caption"
+          v-show="isShowHelp"
+          :style="{ width: helpCaptionSize + 'px' }"
+        >
+          キーワードを含むツイートの中でよく出る単語を表示します。
+          <br />「意味で分ける」ボタンを押すと、単語のまとまりが意味によって分けられます。
+          <br />「感情分析」ボタンを押すと、それぞれのまとまりの単語を含むツイートをポジティブ・ニュートラル・ネガティブの3つに分類し、よく出る感情を表す言葉を表示します。
+        </div>
+
         <div class="row">
           <div class="form-group col-lg-3 col-md-5 col-sm-6 col-xs-12">
             <input
@@ -40,7 +55,7 @@
               name="tweet_num"
               v-model="tweetNum"
             >
-              <option>500</option>
+              <option selected>500</option>
               <option>1000</option>
               <option>2000</option>
             </select>
@@ -312,10 +327,11 @@ export default {
       backendErrorcode: 0,
       emotionResultElem: null,
       isOpen: false,
+      isShowHelp: false,
       trend: '',
       keyword: '',
       searchKeyword: '',
-      tweetNum: 100,
+      tweetNum: 500,
       isSpinner: true,
       spinnerColor: '#999',
       spinnerSize: '15px',
@@ -403,6 +419,14 @@ export default {
         return { color: 'rgb(151, 151, 151)' }
       } else {
         return { color: 'rgb(222, 222, 222)' }
+      }
+    },
+    // eslint-disable-next-line
+    helpCaptionSize: function () {
+      if (this.isMobile) {
+        return String(this.currentWindowWidth - 50)
+      } else {
+        return String(Number(this.currentWindowWidth / 2) - 140)
       }
     },
     // eslint-disable-next-line
