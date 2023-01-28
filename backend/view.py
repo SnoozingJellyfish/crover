@@ -25,7 +25,7 @@ from sudachipy import tokenizer
 from backend.clustering import clustering
 from backend.util import download_from_cloud
 from backend.emotion_analyze import emotion_analyze_all
-from backend.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet
+from backend.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet, datastore_upload_analyzed_retweet, get_analyzed_network
 
 #LOCAL_ENV = True
 LOCAL_ENV = False
@@ -425,10 +425,15 @@ class AnalyzeNetwork(Resource):
         try:
             graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
             whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
+            result_dict = {"errorcode": 0, "graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
         except:
-            return {"errorcode": 1}
+            result_dict = {"errorcode": 1}
 
-        return {"errorcode": 0, "graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
+        # 処理時間計測のためdatastoreにUPして再取得する
+        datastore_upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
+        result_dict = get_analyzed_network(keyword, start_date, end_date, result_dict)
+
+        return result_dict
 
 
 # 認証済みトークンのヘッダーを作成
@@ -1006,6 +1011,7 @@ def stop_noun(text, tokenizer_obj, mode):
 
 
 def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
+    logger.info('start make_word_cloud_node')
     whole_word_count = {}
     group_word_count = [{} for _ in range(group_num)]
 
@@ -1037,7 +1043,9 @@ def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
         for k, v in group_word.items():
             group_word_list[-1].append({"text": k, "value": 2 * v})
 
-    group_word_list.append([{ "text": "", "value": 1 }])
+    group_word_list.append([{"text": "", "value": 1}])
+
+    logger.info('finish make_word_cloud_node')
 
     return whole_word_list, group_word_list
 

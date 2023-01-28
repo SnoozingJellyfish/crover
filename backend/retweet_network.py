@@ -2,11 +2,12 @@ import os
 import logging
 import datetime as dt
 import itertools
+import json
 
 import numpy as np
 import networkx as nx
 from networkx.algorithms import community
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from google.cloud import datastore, storage
 
 from backend.util import make_retweet_list
@@ -27,6 +28,10 @@ else:
 '''
 
 logger = logging.getLogger(__name__)
+
+ANALYZED_KEYWORD_KIND = "retweet_analyzed_keyword"
+ANALYZED_DATE_KIND = "retweeted_analyzed_date"
+ANALYSIS_KIND = 'retweeted_analysis'
 
 KEYWORD_KIND = "retweet_keyword"
 DATE_KIND = "retweeted_date"
@@ -97,7 +102,7 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
 
 # datastoreからリツイートを取得しネットワークを生成する
 def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=False):
-    logger.info('analyze network')
+    logger.info('start analyze_network')
     start_date = int(start_date.replace('-', ''))
     end_date = int(end_date.replace('-', ''))
 
@@ -150,6 +155,8 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=Fals
 
     # 頻出単語のワードクラウドを作成する
     group_num = max(cmap_idx) + 1
+
+    logger.info('finish analyze_network')
 
     return graph_dict, keyword, retweet, group_num
 
@@ -229,7 +236,7 @@ def make_graph_dict(edge, retweet, cmap_idx):
     return graph_dict
 
 
-def make_word_cloud_node(keyword, retweet, group_num, algo='sudachi'):
+def make_word_cloud_node_old(keyword, retweet, group_num, algo='sudachi'):
     if algo == 'mecab':
         tokenizer_obj = MeCab.Tagger("-Ochasen")
     elif algo == 'sudachi':
@@ -302,3 +309,57 @@ def datastore_upload_retweet(keyword, date, retweet_info):
     if len(tweet_entities) > 0:
         client.put_multi(tweet_entities)
 
+
+# ネットワーク解析済みのリツイートデータをdatastoreに保存する
+def datastore_upload_analyzed_retweet(keyword, start_date, end_date, retweet_dict):
+    logger.info('start uploading ANALYZED retweet str')
+
+    client = datastore.Client()
+    retweet_str = json.dumps(retweet_dict)
+
+    # リツイートのキーワードをアップロード
+    logger.info(f'retweet keyword: {keyword}')
+    keyword_entity = datastore.Entity(client.key(ANALYZED_KEYWORD_KIND, keyword))
+    client.put(keyword_entity)
+
+    # リツイートした日付をアップロード
+    dates = f'{start_date}_{end_date}'
+    logger.info(f'dates: {dates}')
+    keyword_entity = client.get(client.key(ANALYZED_KEYWORD_KIND, keyword))
+    date_entity = datastore.Entity(client.key(ANALYZED_DATE_KIND, dates, parent=keyword_entity.key))
+    client.put(date_entity)
+
+    # リツイートされたツイートとリツイートした人をアップロード
+    date_entity = client.get(client.key(ANALYZED_DATE_KIND, dates, parent=keyword_entity.key))
+    analysis_entity = datastore.Entity(client.key(ANALYSIS_KIND, dates, parent=date_entity.key))
+    analysis_entity.update({'retweet_str': retweet_str})
+    client.put(analysis_entity)
+
+    logger.info('finish uploading ANALYZED retweet str')
+
+
+# datastoreからネットワーク解析済みリツイートデータを取得する
+def get_analyzed_network(keyword, start_date, end_date):
+    logger.info('start getting ANALYZED network')
+
+    client = datastore.Client()
+    
+    # リツイートしたキーワードを取得
+    logger.info(f'retweet keyword: {keyword}')
+    keyword_entity = client.get(client.key(ANALYZED_KEYWORD_KIND, keyword))
+
+    # リツイートした日付を取得
+    dates = f'{start_date}_{end_date}'
+    logger.info(f'dates: {dates}, keyword_entity.key: {keyword_entity.key}')
+    date_entity = client.get(client.key(ANALYZED_DATE_KIND, dates, parent=keyword_entity.key))
+    
+    # 解析済みリツイート結果を取得
+    logger.info(f'date_entity.key: {date_entity.key}')
+    analysis_entity = client.get(client.key(ANALYSIS_KIND, dates, parent=date_entity.key))
+    retweet_str = analysis_entity['retweet_str']
+    retweet_dict = json.loads(retweet_str)
+
+    logger.info('finish getting ANALYZED network')
+
+    return retweet_dict
+    
