@@ -431,7 +431,7 @@ class AnalyzeNetwork(Resource):
 
         # 処理時間計測のためdatastoreにUPして再取得する
         upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
-        result_dict = get_analyzed_network(keyword, start_date, end_date, result_dict)
+        result_dict = get_analyzed_network(keyword, start_date, end_date)
 
         return result_dict
 
