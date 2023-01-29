@@ -416,6 +416,7 @@ class LoadTweet(Resource):
 # 収集済みのリツイートキーワードを取得
 class InitRetweet(Resource):
     def get(self):
+        global RE_KEYWORD
         RE_KEYWORD = get_retweet_keyword(LOCAL_ENV)
         return RE_KEYWORD
         # return get_retweet_keyword(LOCAL_ENV)
