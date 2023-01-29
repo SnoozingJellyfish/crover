@@ -355,8 +355,17 @@ def get_analyzed_network(keyword, start_date, end_date):
                                            os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
                                            )
 
-    #logger.info(f'downloaded retweet text: {retweet_str}')
-    
+    logger.info('analyzed data')
+    bucket = storage_client.bucket(bucket_name)
+    all_blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/")
+    logger.info(f'all_blobs: {all_blobs}')
+    for blob in all_blobs:
+        if blob.name.endswith('/'):
+            logger.info(f'dir: {blob.name}')
+    keyword_blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/{keyword}/")
+    logger.info(f'keyword_blobs: {keyword_blobs}')
+
+
     '''
     client = datastore.Client()
 
