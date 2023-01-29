@@ -358,12 +358,12 @@ def get_analyzed_network(keyword, start_date, end_date):
     logger.info('analyzed data')
     bucket = storage_client.bucket(bucket_name)
     all_blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/")
-    logger.info(f'all_blobs: {all_blobs}')
+    logger.info(f'all_blobs: {[b.name for b in all_blobs]}')
     for blob in all_blobs:
         if blob.name.endswith('/'):
             logger.info(f'dir: {blob.name}')
     keyword_blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/{keyword}/")
-    logger.info(f'keyword_blobs: {keyword_blobs}')
+    logger.info(f'keyword_blobs: {[b.name for b in keyword_blobs]}')
 
 
     '''
