@@ -429,16 +429,16 @@ class AnalyzeNetwork(Resource):
         start_date = query_data['startDate']
         end_date = query_data['endDate']
 
-        '''
+        
         try:
             graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
             whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
             result_dict = {"errorcode": 0, "graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
         except:
             result_dict = {"errorcode": 1}
-        '''
-        # 処理時間計測のためdatastoreにUPして再取得する
-        #upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
+        
+        # 処理時間計測のためcloud storageにUPして再取得する
+        upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
         result_dict = get_analyzed_network(keyword, start_date, end_date)
 
         return result_dict

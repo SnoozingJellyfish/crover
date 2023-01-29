@@ -39,6 +39,8 @@ TWEET_KIND = 'retweeted_tweet'
 
 
 def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
+    logger.info('get retweet keyword and date')
+
     # debug用
     if LOCAL_ENV:
         # 収集済みリツイートキーワード
@@ -50,7 +52,10 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
 
     # release用
     client = datastore.Client()
-    logger.info('get retweet keyword and date')
+
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
+    bucket = storage_client.bucket(bucket_name)
 
     re_keyword = {'keywordList': [],
                   'startDateList': [],
@@ -97,6 +102,9 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
         re_keyword['minDateList'].append(start_date)
         re_keyword['maxDateList'].append(end_date)
 
+        blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/{keyword}/")
+        data_path = [b.name for b in blobs]
+
     return re_keyword
 
 
@@ -130,6 +138,8 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=Fals
 
             for tweet_entity in tweet_entities:
                 tweet_id_str = str(tweet_entity['tweet_id'])
+
+                # 異なる日で重複しているリツイートの情報は統合する
                 if tweet_id_str in retweet_dict:
                     retweet_elem = retweet_dict[tweet_id_str]
                     retweet_elem['count'] = max((retweet_elem['count'], tweet_entity['count']))
@@ -142,7 +152,8 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=Fals
                                                   'count': tweet_entity['count'],
                                                   're_author': tweet_entity['re_author']}
 
-    retweet = list(retweet_dict.values())
+    # リツイートされたツイートの個数が多い場合は、リツイート回数が少ないツイートを削除
+    retweet = del_low_count_retweet(retweet_dict)
 
     # リツイート間のユーザー類似度を算出する
     edge = author_similarity(retweet, sim_thre)
@@ -159,6 +170,19 @@ def analyze_network(keyword, start_date, end_date, sim_thre=0.03, LOCAL_ENV=Fals
     logger.info('finish analyze_network')
 
     return graph_dict, keyword, retweet, group_num
+
+
+# リツイートされたツイートの個数が多い場合は、リツイート回数が少ないツイートを削除
+def del_low_count_retweet(retweet_dict, max_len=50):
+    retweet = list(retweet_dict.values())
+
+    if len(retweet) > max_len:
+        retweet = np.array(retweet)
+        cnt = np.array([r['count'] for r in retweet])
+        sorted_index = np.argsort(cnt)[::-1]  # 降順
+        retweet = list(retweet[sorted_index[:max_len]])
+
+    return retweet
 
 
 # リツイート間のユーザー類似度を算出する
@@ -354,13 +378,6 @@ def get_analyzed_network(keyword, start_date, end_date):
                                            bucket_name,
                                            os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
                                            )
-
-    logger.info('analyzed data')
-    bucket = storage_client.bucket(bucket_name)
-    all_blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/")
-    logger.info(f'all_blobs: {[b.name for b in all_blobs]}')
-    keyword_blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/{keyword}/")
-    logger.info(f'keyword_blobs: {[b.name for b in keyword_blobs]}')
 
 
     '''
