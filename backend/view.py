@@ -27,6 +27,13 @@ from backend.util import download_from_cloud
 from backend.emotion_analyze import emotion_analyze_all
 from backend.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet, upload_analyzed_retweet, get_analyzed_network
 
+# GCPのログエクスプローラにログを出力できるようにする
+import google.cloud.logging
+client = google.cloud.logging.Client()
+client.setup_logging()
+
+logger = logging.getLogger(__name__)
+
 #LOCAL_ENV = True
 LOCAL_ENV = False
 ONCE_TWEET_NUM = 15
@@ -62,7 +69,7 @@ TIMEZONE = dt.timezone(dt.timedelta(hours=9), 'JST')
 
 sess_info = {}  # global variable containing recent session information
 
-logger = logging.getLogger(__name__)
+
 
 # 全ツイートからサンプリングした単語の頻出度の辞書を読み込む
 if LOCAL_ENV:
@@ -422,15 +429,16 @@ class AnalyzeNetwork(Resource):
         start_date = query_data['startDate']
         end_date = query_data['endDate']
 
+        '''
         try:
             graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
             whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
             result_dict = {"errorcode": 0, "graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
         except:
             result_dict = {"errorcode": 1}
-
+        '''
         # 処理時間計測のためdatastoreにUPして再取得する
-        upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
+        #upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
         result_dict = get_analyzed_network(keyword, start_date, end_date)
 
         return result_dict

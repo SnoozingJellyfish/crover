@@ -355,7 +355,7 @@ def get_analyzed_network(keyword, start_date, end_date):
                                            os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
                                            )
 
-    logger.info(f'downloaded retweet text: {retweet_str}')
+    #logger.info(f'downloaded retweet text: {retweet_str}')
     
     '''
     client = datastore.Client()
