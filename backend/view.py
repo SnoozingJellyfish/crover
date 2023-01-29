@@ -25,7 +25,7 @@ from sudachipy import tokenizer
 from backend.clustering import clustering
 from backend.util import download_from_cloud
 from backend.emotion_analyze import emotion_analyze_all
-from backend.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet, datastore_upload_analyzed_retweet, get_analyzed_network
+from backend.retweet_network import analyze_network, get_retweet_keyword, datastore_upload_retweet, upload_analyzed_retweet, get_analyzed_network
 
 #LOCAL_ENV = True
 LOCAL_ENV = False
@@ -430,7 +430,7 @@ class AnalyzeNetwork(Resource):
             result_dict = {"errorcode": 1}
 
         # 処理時間計測のためdatastoreにUPして再取得する
-        datastore_upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
+        upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
         result_dict = get_analyzed_network(keyword, start_date, end_date, result_dict)
 
         return result_dict

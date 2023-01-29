@@ -18,10 +18,17 @@ def download_from_cloud(storage_client, bucket_name, filename):
     return pickle.load(BytesIO(bytedata))
 
 
-def upload_to_cloud(storage_client, bucket_name, filename, bytedata):
+def download_text_from_cloud(storage_client, bucket_name, filename):
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(filename)
-    blob.upload_from_string(bytedata)
+    strdata = blob.download_as_text()
+    return strdata
+
+
+def upload_to_cloud(storage_client, bucket_name, filename, strdata):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filename)
+    blob.upload_from_string(strdata)
 
 
 # datastore upload

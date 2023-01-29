@@ -5,7 +5,7 @@ runtime: python38 # or another supported version for standard environment
 #env: flex
 entrypoint: gunicorn -b :$PORT main:app --timeout 30000
 
-instance_class: F2  # F4は1GB (asari用)
+instance_class: F2 # F4は1GB (asari用)
 #resources: # flex
 #  cpu: 1 # flex
 #  memory_gb: 1 # flex
@@ -15,6 +15,7 @@ env_variables:
   DICT_ALL_COUNT: "all_1-200-000_word_count_sudachi.pickle"
   WORD2VEC: "mecab_word2vec_dict_100d_9split/mecab_word2vec_dict_100d_9-"
   MLASK_EMOTION_DICTIONARY: "mlask_emotion_dictionary.pickle"
+  ANALYZED_RETWEET_DATA_DIR: "analyzed_retweet_data"
 
 readiness_check:
   app_start_timeout_sec: 1200
@@ -31,13 +32,13 @@ automatic_scaling:
 
 # secret token
 includes:
-- secret.yaml
+  - secret.yaml
 
 # for internal IP address using cloud SQL
 #vpc_access_connector:
 #  name: "projects/crover-twitter/locations/us-central1/connectors/crover-twitter-connector"
 
 handlers:
-- url: /favicon\.ico
-  static_files: favicon.ico
-  upload: favicon\.ico
+  - url: /favicon\.ico
+    static_files: favicon.ico
+    upload: favicon\.ico

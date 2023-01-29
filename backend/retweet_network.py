@@ -10,7 +10,7 @@ from networkx.algorithms import community
 # import matplotlib.pyplot as plt
 from google.cloud import datastore, storage
 
-from backend.util import make_retweet_list
+from backend.util import make_retweet_list, upload_to_cloud, download_text_from_cloud
 '''
 from crover import LOCAL_ENV
 from crover.process.preprocess import tokenizer, suda_dict, \
@@ -310,19 +310,19 @@ def datastore_upload_retweet(keyword, date, retweet_info):
         client.put_multi(tweet_entities)
 
 
-# ネットワーク解析済みのリツイートデータをdatastoreに保存する
-def datastore_upload_analyzed_retweet(keyword, start_date, end_date, retweet_dict):
+# ネットワーク解析済みのリツイートデータをdatastoreとcloud storageに保存する
+def upload_analyzed_retweet(keyword, start_date, end_date, retweet_dict):
     logger.info('start uploading ANALYZED retweet str')
 
     client = datastore.Client()
     retweet_str = json.dumps(retweet_dict)
 
-    # リツイートのキーワードをアップロード
+    # リツイートのキーワードをdatastoreにアップロード
     logger.info(f'retweet keyword: {keyword}')
     keyword_entity = datastore.Entity(client.key(ANALYZED_KEYWORD_KIND, keyword))
     client.put(keyword_entity)
 
-    # リツイートした日付をアップロード
+    # リツイートした日付をdatastoreにアップロード
     dates = f'{start_date}_{end_date}'
     logger.info(f'dates: {dates}')
     keyword_entity = client.get(client.key(ANALYZED_KEYWORD_KIND, keyword))
@@ -330,20 +330,36 @@ def datastore_upload_analyzed_retweet(keyword, start_date, end_date, retweet_dic
     client.put(date_entity)
 
     # リツイートされたツイートとリツイートした人をアップロード
-    date_entity = client.get(client.key(ANALYZED_DATE_KIND, dates, parent=keyword_entity.key))
-    analysis_entity = datastore.Entity(client.key(ANALYSIS_KIND, dates, parent=date_entity.key))
-    analysis_entity.update({'retweet_str': retweet_str})
-    client.put(analysis_entity)
+    # (datastoreには1項目あたり1500byte以上のデータを保存できないため、cloud storageに保存する)
+    logger.info('upload analyzed data')
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
+    upload_to_cloud(storage_client,
+                    bucket_name,
+                    os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
+                    retweet_str)
 
     logger.info('finish uploading ANALYZED retweet str')
 
 
-# datastoreからネットワーク解析済みリツイートデータを取得する
+# cloud storageからネットワーク解析済みリツイートデータを取得する
 def get_analyzed_network(keyword, start_date, end_date):
     logger.info('start getting ANALYZED network')
 
-    client = datastore.Client()
+    storage_client = storage.Client()
+    bucket_name = os.environ.get('BUCKET_NAME')
+    dates = f'{start_date}_{end_date}'
+
+    retweet_str = download_text_from_cloud(storage_client,
+                                           bucket_name,
+                                           os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
+                                           )
+
+    logger.info(f'downloaded retweet text: {retweet_str}')
     
+    '''
+    client = datastore.Client()
+
     # リツイートしたキーワードを取得
     logger.info(f'retweet keyword: {keyword}')
     keyword_entity = client.get(client.key(ANALYZED_KEYWORD_KIND, keyword))
@@ -357,6 +373,8 @@ def get_analyzed_network(keyword, start_date, end_date):
     logger.info(f'date_entity.key: {date_entity.key}')
     analysis_entity = client.get(client.key(ANALYSIS_KIND, dates, parent=date_entity.key))
     retweet_str = analysis_entity['retweet_str']
+    '''
+
     retweet_dict = json.loads(retweet_str)
 
     logger.info('finish getting ANALYZED network')
