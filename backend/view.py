@@ -69,6 +69,8 @@ TIMEZONE = dt.timezone(dt.timedelta(hours=9), 'JST')
 
 sess_info = {}  # global variable containing recent session information
 
+# debug
+RE_KEYWORD = {}
 
 
 # 全ツイートからサンプリングした単語の頻出度の辞書を読み込む
@@ -414,7 +416,9 @@ class LoadTweet(Resource):
 # 収集済みのリツイートキーワードを取得
 class InitRetweet(Resource):
     def get(self):
-        return get_retweet_keyword(LOCAL_ENV)
+        RE_KEYWORD = get_retweet_keyword(LOCAL_ENV)
+        return RE_KEYWORD
+        # return get_retweet_keyword(LOCAL_ENV)
 
 
 # リツイートネットワークを作成
@@ -429,7 +433,7 @@ class AnalyzeNetwork(Resource):
         start_date = query_data['startDate']
         end_date = query_data['endDate']
 
-        
+        '''
         try:
             graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
             whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
@@ -439,6 +443,44 @@ class AnalyzeNetwork(Resource):
         
         # 処理時間計測のためcloud storageにUPして再取得する
         upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
+        '''
+
+        # 過去のリツイートを解析してcloud storageに保存する
+        for i in range(len(RE_KEYWORD['keywordList'])):
+            keyword = RE_KEYWORD['keywordList'][i]
+            min_date = RE_KEYWORD['minDateList'][i]
+            max_date = RE_KEYWORD['maxDateList'][i]
+            min_date_dt = dt.datetime.strptime(min_date, '%Y/%m/%d')
+            max_date_dt = dt.datetime.strptime(max_date, '%Y/%m/%d')
+
+            end_date_dt = max_date_dt
+            j = 1
+            t_delta_1day = dt.timedelta(days=1)
+
+            while True:
+                if j < 3:
+                    t_delta = dt.timedelta(days=7)
+                else:
+                    t_delta = dt.timedelta(days=28)
+
+                start_date_dt = end_date_dt - t_delta + t_delta_1day
+                if (start_date_dt - min_date_dt).days <= 0:
+                    break
+
+                start_date = start_date_dt.strftime('%Y-%m-%d')
+                end_date = end_date_dt.strftime('%Y-%m-%d')
+
+                logger.info(f'KEYWORD: {keyword}, START DATE: {start_date}')
+
+                graph_dict, keyword, retweet, group_num = analyze_network(keyword, start_date, end_date, LOCAL_ENV=LOCAL_ENV)
+                whole_word, group_word = make_word_cloud_node(keyword, retweet, group_num)
+                result_dict = {"errorcode": 0, "graph": graph_dict, "wholeWord": whole_word, "groupWord": group_word}
+
+                upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
+
+                end_date_dt = start_date_dt - t_delta_1day
+                j += 1
+                
         result_dict = get_analyzed_network(keyword, start_date, end_date)
 
         return result_dict
