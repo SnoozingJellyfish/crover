@@ -446,6 +446,7 @@ class AnalyzeNetwork(Resource):
         upload_analyzed_retweet(keyword, start_date, end_date, result_dict)
         '''
 
+        '''
         # 過去のリツイートを解析してcloud storageに保存する
         for i in range(len(RE_KEYWORD['keywordList'])):
             keyword = RE_KEYWORD['keywordList'][i]
@@ -481,7 +482,8 @@ class AnalyzeNetwork(Resource):
 
                 end_date_dt = start_date_dt - t_delta_1day
                 j += 1
-                
+        '''
+        
         result_dict = get_analyzed_network(keyword, start_date, end_date)
 
         return result_dict
