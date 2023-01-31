@@ -29,10 +29,7 @@ from backend.retweet_network import analyze_network, get_retweet_keyword, datast
 
 # GCPのログエクスプローラにログを出力できるようにする
 import google.cloud.logging
-client = google.cloud.logging.Client()
-client.setup_logging()
 
-logger = logging.getLogger(__name__)
 
 #LOCAL_ENV = True
 LOCAL_ENV = False
@@ -66,6 +63,12 @@ elif ALGO == 'sudachi':
 
 # TIMEZONE = pytz.timezone('Asia/Tokyo')
 TIMEZONE = dt.timezone(dt.timedelta(hours=9), 'JST')
+
+if not LOCAL_ENV:
+    client = google.cloud.logging.Client()
+    client.setup_logging()
+
+logger = logging.getLogger(__name__)
 
 sess_info = {}  # global variable containing recent session information
 
@@ -416,10 +419,10 @@ class LoadTweet(Resource):
 # 収集済みのリツイートキーワードを取得
 class InitRetweet(Resource):
     def get(self):
-        global RE_KEYWORD
-        RE_KEYWORD = get_retweet_keyword(LOCAL_ENV)
-        return RE_KEYWORD
-        # return get_retweet_keyword(LOCAL_ENV)
+        # global RE_KEYWORD
+        # RE_KEYWORD = get_retweet_keyword(LOCAL_ENV)
+        # return RE_KEYWORD
+        return get_retweet_keyword(LOCAL_ENV)
 
 
 # リツイートネットワークを作成
@@ -427,12 +430,14 @@ class AnalyzeNetwork(Resource):
     def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument('keyword', type=str)
-        parser.add_argument('startDate', type=str)
-        parser.add_argument('endDate', type=str)
+        parser.add_argument('retweetDate', type=str)
+        # parser.add_argument('startDate', type=str)
+        # parser.add_argument('endDate', type=str)
         query_data = parser.parse_args()
         keyword = query_data['keyword']
-        start_date = query_data['startDate']
-        end_date = query_data['endDate']
+        dates = query_data['retweetDate']
+        # start_date = query_data['startDate']
+        # end_date = query_data['endDate']
 
         '''
         try:
@@ -484,7 +489,8 @@ class AnalyzeNetwork(Resource):
                 j += 1
         '''
         
-        result_dict = get_analyzed_network(keyword, start_date, end_date)
+        # result_dict = get_analyzed_network(keyword, start_date, end_date)
+        result_dict = get_analyzed_network(keyword, dates, LOCAL_ENV)
 
         return result_dict
 

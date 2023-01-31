@@ -45,27 +45,27 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
     if LOCAL_ENV:
         # 収集済みリツイートキーワード
         re_keyword = {'keywordList': ['テスト-コロナ', 'テスト-地震'],
-                      'startDateList': ['2022/01/01', '2022/01/02'],
-                      'minDateList': ['2022/01/01', '2022/01/02'],
-                      'maxDateList': ['2022/01/02', '2022/01/03']}
+                      "dateLists": [
+                                    ["2022/01/01~2022/01/02", "2022/02/02~2022/02/03"],
+                                    ["2022/03/01~2022/03/02", "2022/04/02~2022/04/03"]
+                                   ]
+                      }
         return re_keyword
 
     # release用
-    client = datastore.Client()
-
     storage_client = storage.Client()
     bucket_name = os.environ.get('BUCKET_NAME')
     bucket = storage_client.bucket(bucket_name)
 
-    re_keyword = {'keywordList': [],
-                  'startDateList': [],
-                  'minDateList': [],
-                  'maxDateList': []}
-
-    keyword_query = client.query(kind=KEYWORD_KIND)
+    datastore_client = datastore.Client()
+    keyword_query = datastore_client.query(kind=KEYWORD_KIND)
     keyword_entities = list(keyword_query.fetch())
 
+    re_keyword = {'keywordList': [],
+                  'dateLists': []}
+
     for keyword_entity in keyword_entities:
+        '''
         # リツイートされたツイートとリツイートした人をアップロード
         date_query = client.query(kind=DATE_KIND, ancestor=keyword_entity.key)
         date_entities = list(date_query.fetch())
@@ -94,16 +94,28 @@ def get_retweet_keyword(LOCAL_ENV=False, ignore_day=7):
             default_start_date_dt = start_date_dt
 
         default_start_date = default_start_date_dt.strftime('%Y/%m/%d')
+        '''
 
         keyword = keyword_entity.key.name
         re_keyword['keywordList'].append(keyword)
         logger.info(f'date of retweet keyword- {keyword}')
+        '''
         re_keyword['startDateList'].append(default_start_date)
         re_keyword['minDateList'].append(start_date)
         re_keyword['maxDateList'].append(end_date)
+        '''
 
         blobs = bucket.list_blobs(prefix=f"{os.environ.get('ANALYZED_RETWEET_DATA_DIR')}/{keyword}/")
-        data_path = [b.name for b in blobs]
+        
+        # date_path = []
+        date_list = []
+        for b in blobs:
+            # date_path.append(b.name)
+            date_list.append(os.path.basename(b.name).replace('-', '/').replace('_', '~').split('.')[0])
+            
+        # 日付を新しい順にする
+        # re_keyword['datePath'].append(date_path[::-1])
+        re_keyword['dateLists'].append(date_list[::-1])
 
     return re_keyword
 
@@ -367,17 +379,22 @@ def upload_analyzed_retweet(keyword, start_date, end_date, retweet_dict):
 
 
 # cloud storageからネットワーク解析済みリツイートデータを取得する
-def get_analyzed_network(keyword, start_date, end_date):
+def get_analyzed_network(keyword, dates, LOCAL_ENV):
     logger.info('start getting ANALYZED network')
 
-    storage_client = storage.Client()
-    bucket_name = os.environ.get('BUCKET_NAME')
-    dates = f'{start_date}_{end_date}'
+    if LOCAL_ENV:
+        with open('backend/data/test_analyzed_retweet.txt', 'r') as f:
+            retweet_str = f.read()
+    else:
+        storage_client = storage.Client()
+        bucket_name = os.environ.get('BUCKET_NAME')
+        dates = dates.replace('/', '-').replace('~', '_')
+        # dates = f'{start_date}_{end_date}'
 
-    retweet_str = download_text_from_cloud(storage_client,
-                                           bucket_name,
-                                           os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
-                                           )
+        retweet_str = download_text_from_cloud(storage_client,
+                                               bucket_name,
+                                               os.path.join(os.environ.get('ANALYZED_RETWEET_DATA_DIR'), keyword, f'{dates}.txt'),
+                                               )
 
 
     '''

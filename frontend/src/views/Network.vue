@@ -49,6 +49,7 @@
           </div>
 
           <div class="col-lg-3 col-md-4 col-sm-6 col-12">
+            <!--
             <Datepicker
               v-model="dateRange[selectedKeywordId]"
               :minDate="minDateList[selectedKeywordId]"
@@ -56,6 +57,16 @@
               :enableTimePicker="false"
               range
             />
+            -->
+            <select
+              class="form-control input-form"
+              id="retweet-date-list"
+              v-model="retweetDate"
+            >
+              <option v-for="r in retweetDateList" v-bind:key="r">
+                {{ r }}
+              </option>
+            </select>
           </div>
 
           <div class="form-group col-8 d-grid" v-if="isMobile"></div>
@@ -183,8 +194,8 @@ import { format } from 'date-fns'
 import Network from './NetworkD3.vue'
 
 export default {
-  // components: { Datepicker, PulseLoader, VueD3Cloud },
-  components: { Datepicker, PulseLoader, Network, VueD3Cloud },
+  // components: { Datepicker, PulseLoader, VueD3Cloud, Network },
+  components: { PulseLoader, VueD3Cloud, Network },
   mixins: [Openable],
   name: 'network-block',
   data() {
@@ -195,6 +206,8 @@ export default {
       isShowHelp: false,
       keywordList: [],
       searchKeyword: '',
+      retweetDateLists: [],
+      retweetDate: '',
       startDateList: [],
       minDateList: [],
       maxDateList: [],
@@ -261,15 +274,23 @@ export default {
     // eslint-disable-next-line
     keyword: function () {
       return this.keywordList[this.selectedKeywordId]
+    },
+    // eslint-disable-next-line
+    retweetDateList: function () {
+      return this.retweetDateLists[this.selectedKeywordId]
     }
   },
   mounted() {
     const retweetKeywordElem = document.getElementById('retweet-keyword')
-    retweetKeywordElem.onchange = () =>
-      (this.selectedKeywordId = retweetKeywordElem.selectedIndex)
+    retweetKeywordElem.onchange = () => {
+      this.selectedKeywordId = retweetKeywordElem.selectedIndex
+      this.retweetDate = this.retweetDateLists[this.selectedKeywordId][0]
+    }
     axios.get('/init_retweet').then((response) => {
       this.keywordList = response.data.keywordList
+      this.retweetDateLists = response.data.dateLists
 
+      /*
       for (var i = 0; i < this.keywordList.length; i++) {
         var d = response.data.minDateList[i]
         var minMonth = String(Number(d.substr(5, 2)) - 1)
@@ -287,7 +308,9 @@ export default {
 
         this.dateRange.push([startDate, maxDate])
       }
+      */
       this.selectedKeywordId = 0
+      this.retweetDate = this.retweetDateLists[this.selectedKeywordId][0]
     })
 
     this.currentWindowWidth = window.innerWidth
@@ -327,13 +350,16 @@ export default {
   },
   methods: {
     analyzeNetwork() {
+      /*
       if (!this.dateRange[this.selectedKeywordId][1]) {
         alert('ツイートを収集する最終日を入力してください。')
         return
       }
+      */
       this.isSpinner = true
       this.networkResultElem = null
 
+      /*
       var startDateStr = format(
         this.dateRange[this.selectedKeywordId][0],
         'yyyy-MM-dd'
@@ -342,12 +368,15 @@ export default {
         this.dateRange[this.selectedKeywordId][1],
         'yyyy-MM-dd'
       )
+      */
+
       axios
         .get('/analyze_network', {
           params: {
             keyword: this.keyword,
-            startDate: startDateStr,
-            endDate: endDateStr
+            retweetDate: this.retweetDate
+            // startDate: startDateStr,
+            // endDate: endDateStr
           }
         })
         .then((response) => {
